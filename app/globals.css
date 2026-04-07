@@ -2,26 +2,344 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Self-hosted fonts ─────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/Open_Sans/OpenSans-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/Open_Sans/OpenSans-LightItalic.ttf') format('truetype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/Open_Sans/OpenSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/Open_Sans/OpenSans-RegularItalic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/Open_Sans/OpenSans-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/Open_Sans/OpenSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@font-face {
+  font-family: 'Merriweather';
+  src: url('/fonts/Merriweather/Merriweather-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Merriweather';
+  src: url('/fonts/Merriweather/Merriweather-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Colliers CSS Custom Properties ─────────────────────────────────────────── */
+:root {
+  /* Colors */
+  --colliers-navy: #000759;
+  --colliers-blue: #25408F;
+  --colliers-blue-bright: #1C54F4;
+  --colliers-blue-mid: #3860BE;
+  --colliers-blue-dark: #1D4F76;
+
+  --colliers-bg-white: #FFFFFF;
+  --colliers-bg-light-blue: #EDF2FF;
+  --colliers-bg-blue-tint: #DBE5FF;
+  --colliers-bg-gray: #F4F4F4;
+  --colliers-bg-green: #F9FFFA;
+
+  --colliers-green: #468254;
+  --colliers-cyan: #0C9ED9;
+  --colliers-gray: #555555;
+  --colliers-border: #BDBDBD;
+  --colliers-dark-text: #212121;
+
+  /* Typography */
+  --font-sans: 'Open Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Merriweather', Georgia, serif;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Layout */
+  --container-max: 1200px;
+  --gutter: 24px;
+
+  /* Radius — ostre rogi! */
+  --radius-none: 0px;
+  --radius-sm: 4px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 7, 89, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 7, 89, 0.10);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+}
+
+/* ── Base styles ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--colliers-navy);
+  background-color: #FFFFFF;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* ── Typography helpers ───────────────────────────────────────────────────────── */
+.overline {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2.1px;
+  text-transform: uppercase;
+  color: var(--colliers-blue-bright);
+}
+
+.heading-serif {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  color: var(--colliers-navy);
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--colliers-navy);
+  color: #FFFFFF;
+  padding: 12px 32px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  background-color: var(--colliers-blue);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--colliers-navy);
+  border: 2px solid var(--colliers-navy);
+  padding: 10px 30px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-outline:hover {
+  background-color: var(--colliers-navy);
+  color: #FFFFFF;
+}
+
+.btn-outline-white {
+  background: transparent;
+  color: #FFFFFF;
+  border: 2px solid #FFFFFF;
+  padding: 10px 30px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-outline-white:hover {
+  background-color: rgba(255,255,255,0.15);
+}
+
+/* ── Card ─────────────────────────────────────────────────────────────────────── */
+.card {
+  background: #FFFFFF;
+  border: 1px solid var(--colliers-border);
+  border-radius: var(--radius-none);
+  overflow: hidden;
+}
+
+/* ── Nav link ─────────────────────────────────────────────────────────────────── */
+.nav-link {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--colliers-navy);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.nav-link:hover {
+  color: var(--colliers-blue-bright);
+}
+
+/* ── Mapbox overrides ─────────────────────────────────────────────────────────── */
+.mapboxgl-map {
+  border-radius: 0 !important;
+}
+
+/* ── Modal ─────────────────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 7, 89, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-content {
+  background: #FFFFFF;
+  border-radius: var(--radius-none);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: modal-enter 0.2s ease;
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
   }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Utilities ─────────────────────────────────────────────────────────────────── */
+.container-colliers {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Badge */
+.badge-featured {
+  background-color: var(--colliers-blue-bright);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Form inputs */
+.form-input {
+  width: 100%;
+  border: 1px solid var(--colliers-border);
+  border-radius: var(--radius-none);
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--colliers-navy);
+  background: #FFFFFF;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.form-input:focus {
+  border-color: var(--colliers-blue-bright);
+}
+
+.form-input.error {
+  border-color: #dc2626;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--colliers-navy);
+  margin-bottom: 6px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--colliers-bg-gray);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--colliers-border);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--colliers-gray);
 }
