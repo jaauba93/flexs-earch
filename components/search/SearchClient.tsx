@@ -275,7 +275,7 @@ export default function SearchClient({
     <>
       <Header onOpenForm={() => setFormOpen(true)} />
 
-      <div className="container-colliers">
+      <div className="px-8 lg:px-16">
         <Breadcrumbs crumbs={crumbs} />
         <h1 className="text-xl font-semibold text-[var(--colliers-navy)] mb-4 pb-0">{h1}</h1>
       </div>
@@ -288,7 +288,7 @@ export default function SearchClient({
         {/* Desktop: side-by-side */}
         <div className="hidden lg:flex" style={{ height: 'calc(100vh - 80px)' }}>
           {/* List — 40% */}
-          <div className="w-[40%] overflow-y-auto flex-shrink-0 border-r border-[var(--colliers-border)]">
+          <div className="w-[40%] overflow-y-auto flex-shrink-0 border-r border-[var(--colliers-border)]" data-lenis-prevent>
             {loading ? (
               <div className="p-8 flex flex-col items-center gap-3 text-[var(--colliers-gray)]">
                 <div className="w-5 h-5 border-2 border-[#1C54F4] border-t-transparent rounded-full animate-spin" />
@@ -312,7 +312,7 @@ export default function SearchClient({
                 </button>
               </div>
             ) : (
-              <div className="p-4 flex flex-col gap-4">
+              <div className="pt-4 pb-4 pl-16 pr-4 flex flex-col gap-4">
                 {visibleFeatured.length > 0 && (
                   <>
                     <p className="text-xs font-semibold text-[var(--colliers-blue-bright)] uppercase tracking-wide pt-2">
@@ -369,7 +369,7 @@ export default function SearchClient({
           </div>
 
           {/* Map — 60% */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden pr-16" data-lenis-prevent>
             <MapView
               listings={allFetched}
               highlightedId={highlightedId}

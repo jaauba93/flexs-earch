@@ -9,6 +9,10 @@ export default function SmoothScroll() {
       duration: 1.1,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
+      // Don't intercept scroll over elements marked data-lenis-prevent
+      prevent: (node: Element) =>
+        node.hasAttribute('data-lenis-prevent') ||
+        !!node.closest('[data-lenis-prevent]'),
     })
 
     let rafId: number
