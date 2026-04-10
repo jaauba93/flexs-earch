@@ -8,7 +8,12 @@ import SmoothScroll from '@/components/ui/SmoothScroll'
 import ScrollReveal from '@/components/ui/ScrollReveal'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://flex.colliers.pl'),
+  metadataBase: new URL(
+    (() => {
+      const u = process.env.NEXT_PUBLIC_SITE_URL || 'https://flex.colliers.pl'
+      return u.startsWith('http') ? u : `https://${u}`
+    })()
+  ),
   title: {
     default: 'Colliers Flex — Biura serwisowane w Polsce',
     template: '%s | Colliers Flex',
