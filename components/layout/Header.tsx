@@ -5,7 +5,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronDown, Menu, X } from 'lucide-react'
 import BasketDropdown from '@/components/comparator/BasketDropdown'
-import { useBasketContext } from '@/lib/context/BasketContext'
 
 const cities = [
   { label: 'Warszawa', slug: 'warszawa' },
@@ -25,9 +24,6 @@ export default function Header({ onOpenForm }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const { items, mounted } = useBasketContext()
-  const basketCount = mounted ? items.length : 0
-
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handler)

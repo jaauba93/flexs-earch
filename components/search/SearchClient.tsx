@@ -106,7 +106,7 @@ export default function SearchClient({
     setAllFetched(results)
     setTotal(count || 0)
     setLoading(false)
-  }, [city, district, stanowiskaOd, stanowiskaDo, ceniaDo, selectedOperator, selectedAmenities, sort, operators, amenities])
+  }, [city, district, stanowiskaOd, stanowiskaDo, ceniaDo, selectedOperator, sort, operators])
 
   useEffect(() => {
     fetchListings(1)
