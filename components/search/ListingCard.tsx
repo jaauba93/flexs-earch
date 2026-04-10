@@ -99,7 +99,7 @@ export default function ListingCard({ listing, highlighted }: ListingCardProps) 
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                inBasket ? removeItem(listing.id) : addItem(basketItem)
+                if (inBasket) { removeItem(listing.id) } else { addItem(basketItem) }
               }}
               className={`relative z-10 text-[9px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1 ${
                 inBasket

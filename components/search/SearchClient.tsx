@@ -101,18 +101,7 @@ export default function SearchClient({
     query = query.range(from, from + PAGE_SIZE - 1)
 
     const { data, count } = await query
-    let results = (data || []) as ListingWithOperator[]
-
-    // Amenities AND filter (post-fetch)
-    if (selectedAmenities.length > 0) {
-      const amenityIds = selectedAmenities
-        .map((slug) => amenities.find((a) => a.slug === slug)?.id)
-        .filter(Boolean) as string[]
-      if (amenityIds.length > 0) {
-        // Since listing_amenities is a join table, filter by checking each amenity
-        // For simplicity here we rely on the full data fetch — advanced AND filter needs a DB RPC in v2
-      }
-    }
+    const results = (data || []) as ListingWithOperator[]
 
     setAllFetched(results)
     setTotal(count || 0)
