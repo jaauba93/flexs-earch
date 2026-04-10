@@ -31,3 +31,27 @@ export function slugToCity(slug: string): string {
   }
   return map[slug] ?? slug.charAt(0).toUpperCase() + slug.slice(1)
 }
+
+export function slugToDistrict(slug: string): string {
+  const map: Record<string, string> = {
+    srodmiescie: 'Śródmieście',
+    wola: 'Wola',
+    mokotow: 'Mokotów',
+    podgorze: 'Podgórze',
+    'stare-miasto': 'Stare Miasto',
+    ochota: 'Ochota',
+    zoliborz: 'Żoliborz',
+    praga: 'Praga',
+    bielany: 'Bielany',
+    ursynow: 'Ursynów',
+    wilanow: 'Wilanów',
+    wawer: 'Wawer',
+    targowek: 'Targówek',
+    rembertow: 'Rembertów',
+    wesola: 'Wesoła',
+    wlochy: 'Włochy',
+    ursus: 'Ursus',
+    bemowo: 'Bemowo',
+  }
+  return map[slug] ?? slug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+}

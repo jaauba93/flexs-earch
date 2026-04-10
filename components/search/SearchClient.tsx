@@ -10,7 +10,7 @@ import ListingCard from '@/components/search/ListingCard'
 import MapView, { type MapBounds } from '@/components/search/MapView'
 import ContactForm from '@/components/forms/ContactForm'
 import { createClient } from '@/lib/supabase/client'
-import { slugToCity } from '@/lib/utils/slugify'
+import { slugToCity, slugToDistrict, slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator, Amenity } from '@/types/database'
 
 const PAGE_SIZE = 25
@@ -62,9 +62,7 @@ export default function SearchClient({
   const [formOpen, setFormOpen] = useState(false)
 
   const city = initialCity ? slugToCity(initialCity) : undefined
-  const district = initialDistrict
-    ? initialDistrict.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
-    : undefined
+  const district = initialDistrict ? slugToDistrict(initialDistrict) : undefined
 
   // ── Fetch from Supabase ──────────────────────────────────────────────────────
   const fetchListings = useCallback(async (pg = 1) => {
@@ -76,7 +74,7 @@ export default function SearchClient({
       .eq('is_active', true)
 
     if (city) query = query.ilike('address_city', city)
-    if (district) query = query.ilike('address_district', district)
+    // District filtered client-side — handles Polish diacritics in slugs
     if (stanowiskaOd) query = query.gte('total_workstations', parseInt(stanowiskaOd))
     if (stanowiskaDo) query = query.lte('total_workstations', parseInt(stanowiskaDo))
     if (ceniaDo) query = query.lte('price_desk_private', parseInt(ceniaDo))
@@ -97,16 +95,24 @@ export default function SearchClient({
       query = query.order('is_featured', { ascending: false }).order('name')
     }
 
-    const from = (pg - 1) * PAGE_SIZE
-    query = query.range(from, from + PAGE_SIZE - 1)
+    // When filtering by district client-side, fetch all city results (small dataset)
+    if (!initialDistrict) {
+      const from = (pg - 1) * PAGE_SIZE
+      query = query.range(from, from + PAGE_SIZE - 1)
+    }
 
     const { data, count } = await query
-    const results = (data || []) as ListingWithOperator[]
+    let results = (data || []) as ListingWithOperator[]
+
+    // Client-side district filter — slugify comparison handles Polish diacritics
+    if (initialDistrict) {
+      results = results.filter((l) => slugify(l.address_district || '') === initialDistrict)
+    }
 
     setAllFetched(results)
-    setTotal(count || 0)
+    setTotal(initialDistrict ? results.length : (count || 0))
     setLoading(false)
-  }, [city, district, stanowiskaOd, stanowiskaDo, ceniaDo, selectedOperator, sort, operators])
+  }, [city, initialDistrict, stanowiskaOd, stanowiskaDo, ceniaDo, selectedOperator, sort, operators])
 
   useEffect(() => {
     fetchListings(1)
@@ -156,15 +162,10 @@ export default function SearchClient({
 
   const crumbs = [
     { label: 'Strona główna', href: '/' },
+    { label: 'Wyszukaj', href: '/biura-serwisowane' },
     ...(city ? [{ label: city, href: `/biura-serwisowane/${initialCity}` }] : []),
-    ...(district ? [{ label: district }] : [{ label: 'Biura serwisowane' }]),
+    ...(district ? [{ label: district }] : []),
   ]
-
-  const h1 = city
-    ? district
-      ? `Biura serwisowane w ${district}, ${city} – ${total} lokalizacji`
-      : `Biura serwisowane w ${city} – ${total} lokalizacji`
-    : `Biura serwisowane w Polsce – ${total} lokalizacji`
 
   function handlePage(p: number) {
     setPage(p)
@@ -277,7 +278,6 @@ export default function SearchClient({
 
       <div className="px-8 lg:px-16">
         <Breadcrumbs crumbs={crumbs} />
-        <h1 className="text-xl font-semibold text-[var(--colliers-navy)] mb-4 pb-0">{h1}</h1>
       </div>
       <div className="px-8 lg:px-16">
         <FilterBar />
