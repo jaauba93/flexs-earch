@@ -2,13 +2,19 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Search, ArrowRight, Building2, BarChart3, MessageSquare } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
-import ListingCard from '@/components/search/ListingCard'
+import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator } from '@/types/database'
+
+type ListingWithOperator = Listing & { operator: Operator }
+
+interface HomeClientProps {
+  featuredListings: ListingWithOperator[]
+}
 
 const cities = [
   { label: 'Warszawa', slug: 'warszawa' },
@@ -17,166 +23,334 @@ const cities = [
   { label: 'Trójmiasto', slug: 'trojmiasto' },
   { label: 'Poznań', slug: 'poznan' },
   { label: 'Katowice', slug: 'katowice' },
-  { label: 'Łódź', slug: 'lodz' },
 ]
 
 const steps = [
   {
-    icon: Search,
-    number: '01',
-    title: 'Wyszukaj',
-    desc: 'Skorzystaj z wyszukiwarki i filtrów, aby znaleźć biura serwisowane spełniające wymagania Twojej firmy — w wybranym mieście, dzielnicy lub przy konkretnej stacji metra.',
+    num: '01',
+    title: 'Określ swoje potrzeby',
+    body: 'Powiedz nam, ilu pracowników chcesz pomieścić i jaki model pracy preferuje Twój zespół. Nasza baza zawiera setki lokalizacji w Polsce.',
   },
   {
-    icon: BarChart3,
-    number: '02',
-    title: 'Porównaj',
-    desc: 'Dodaj interesujące Cię lokalizacje do porównywarki i oceń je obok siebie. Sprawdź cenę za stanowisko, udogodnienia i rok otwarcia.',
+    num: '02',
+    title: 'Porównaj najlepsze oferty',
+    body: 'Przygotujemy dla Ciebie zestawienie dopasowane do budżetu i standardu, uwzględniając ukryte koszty i benefity każdej lokalizacji.',
   },
   {
-    icon: MessageSquare,
-    number: '03',
-    title: 'Uzyskaj ofertę',
-    desc: 'Wyślij zapytanie ofertowe bezpośrednio ze strony. Doradca Colliers skontaktuje się z Tobą w ciągu jednego dnia roboczego z indywidualną ofertą i rekomendacją.',
+    num: '03',
+    title: 'Sfinalizuj umowę',
+    body: 'Nasi eksperci pomogą Ci wynegocjować najlepsze warunki najmu i przeprowadzą Cię przez cały proces.',
   },
 ]
 
-interface HomeClientProps {
-  featuredListings: (Listing & { operator: Operator })[]
-}
+const suggestions = [
+  { label: 'Warszawa — Śródmieście', city: 'warszawa', district: 'srodmiescie' },
+  { label: 'Warszawa — Wola', city: 'warszawa', district: 'wola' },
+  { label: 'Warszawa — Mokotów', city: 'warszawa', district: 'mokotow' },
+  { label: 'Kraków — Podgórze', city: 'krakow', district: 'podgorze' },
+  { label: 'Wrocław — Stare Miasto', city: 'wroclaw', district: 'stare-miasto' },
+  { label: 'Trójmiasto', city: 'trojmiasto', district: null },
+  { label: 'Poznań', city: 'poznan', district: null },
+  { label: 'Katowice', city: 'katowice', district: null },
+]
 
 export default function HomeClient({ featuredListings }: HomeClientProps) {
-  const router = useRouter()
-  const [query, setQuery] = useState('')
+  const [searchValue, setSearchValue] = useState('')
   const [formOpen, setFormOpen] = useState(false)
+  const [searchFocused, setSearchFocused] = useState(false)
+  const router = useRouter()
+
+  const filteredSuggestions = searchValue.trim().length > 0
+    ? suggestions.filter(s => s.label.toLowerCase().includes(searchValue.toLowerCase()))
+    : suggestions
+
+  const showSuggestions = searchFocused && filteredSuggestions.length > 0
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    if (!query.trim()) {
-      router.push('/biura-serwisowane')
-      return
-    }
-    const q = encodeURIComponent(query.trim())
-    router.push(`/biura-serwisowane?q=${q}`)
+    const val = searchValue.trim()
+    if (!val) return
+    const slug = slugify(val)
+    router.push(`/biura-serwisowane/${slug}`)
+  }
+
+  function handleCityClick(slug: string) {
+    router.push(`/biura-serwisowane/${slug}`)
   }
 
   return (
     <>
       <Header onOpenForm={() => setFormOpen(true)} />
 
-      {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section
-        className="relative flex flex-col items-center justify-center min-h-[75vh] px-6 text-center"
-        style={{ background: 'var(--colliers-navy)' }}
-      >
-        {/* Subtle pattern overlay */}
-        <div className="absolute inset-0 opacity-5"
-          style={{ backgroundImage: 'repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%)', backgroundSize: '20px 20px' }} />
+      {/* ── HERO ─────────────────────────────────────────────────────────────── */}
+      <section className="relative w-full min-h-[720px] flex items-center bg-[#000759]">
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#000759] via-[#000759]/90 to-[#000759]/60" />
+          <div className="absolute inset-0 hud-scanline opacity-40" />
+        </div>
 
-        <div className="relative z-10 max-w-2xl mx-auto">
-          <p className="overline text-white mb-4" style={{ color: 'rgba(255,255,255,0.7)' }}>
-            Biura serwisowane w Polsce
-          </p>
-          <h1 className="heading-serif text-white text-4xl md:text-5xl mb-6 leading-tight"
-            style={{ color: '#fff', fontFamily: 'var(--font-serif)' }}>
-            Znajdź biuro dopasowane do Twojej firmy
-          </h1>
-          <p className="text-white/75 text-lg mb-10 leading-relaxed">
-            Przeszukaj setki lokalizacji biur serwisowanych i coworkingów w Polsce.<br />
-            Porównaj oferty i uzyskaj rekomendację naszego doradcy.
-          </p>
+        <div className="container-colliers relative z-10 py-24">
+          <div className="max-w-3xl">
+            {/* Overline */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-px w-10 bg-[#1C54F4]" />
+              <p className="overline">Biura serwisowane w Polsce</p>
+            </div>
 
-          {/* Search bar */}
-          <form onSubmit={handleSearch} className="flex items-stretch max-w-xl mx-auto">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Wpisz miasto, dzielnicę lub nazwę biura"
-              className="flex-1 px-5 py-4 text-[var(--colliers-navy)] bg-white focus:outline-none text-base"
-              style={{ borderRadius: '0' }}
-            />
-            <button type="submit" className="btn-primary px-8 py-4 text-base"
-              style={{ borderRadius: '0 var(--radius-sm) var(--radius-sm) 0' }}>
-              <Search size={18} />
-              Szukaj biur
-            </button>
-          </form>
+            {/* H1 */}
+            <h1
+              className="text-white font-light leading-[1.1] mb-8"
+              style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)' }}
+            >
+              Znajdź biuro{' '}
+              <span className="font-bold">dopasowane do Twojej firmy</span>
+            </h1>
 
-          {/* City shortcuts */}
-          <div className="flex flex-wrap justify-center gap-3 mt-8">
-            {cities.map((c) => (
-              <Link key={c.slug} href={`/biura-serwisowane/${c.slug}`}
-                className="text-sm text-white/70 hover:text-white transition-colors underline underline-offset-2 decoration-white/30 hover:decoration-white">
-                {c.label}
-              </Link>
-            ))}
+            <p className="text-white/60 font-light mb-12 leading-relaxed text-lg max-w-2xl">
+              Przeszukaj setki lokalizacji biur serwisowanych i coworkingów. Porównaj oferty i uzyskaj rekomendację naszego doradcy.
+            </p>
+
+            {/* Search console */}
+            <div className="relative max-w-3xl">
+              <div className="absolute -top-3 -left-3 w-6 h-6 border-t-2 border-l-2 border-[#1C54F4]/50 pointer-events-none" />
+              <div className="absolute -bottom-3 -right-3 w-6 h-6 border-b-2 border-r-2 border-[#1C54F4]/50 pointer-events-none" />
+
+              <form
+                onSubmit={handleSearch}
+                className="flex flex-col sm:flex-row items-stretch"
+                style={{
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  background: 'rgba(0, 7, 89, 0.75)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  boxShadow: '0 0 60px rgba(0,0,0,0.4)',
+                }}
+              >
+                <div className="flex-grow flex items-center px-6 py-5">
+                  <svg className="text-[#1C54F4] mr-4 flex-shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                    placeholder="Wpisz miasto, dzielnicę lub nazwę biura"
+                    className="w-full bg-transparent border-none focus:ring-0 text-white placeholder:text-white/40 text-base font-light tracking-wide"
+                    style={{ outline: 'none', boxShadow: 'none' }}
+                    autoComplete="off"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-[#1C54F4] text-white px-12 py-5 font-bold uppercase tracking-widest text-[11px] hover:bg-white hover:text-[#000759] transition-all duration-300 flex-shrink-0"
+                >
+                  Szukaj biur
+                </button>
+              </form>
+
+              {/* Autocomplete suggestions */}
+              {showSuggestions && (
+                <div
+                  className="absolute left-0 right-0 top-full mt-1 z-50 overflow-hidden"
+                  style={{
+                    background: 'rgba(0,7,89,0.92)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+                  }}
+                >
+                  <div className="px-6 pt-4 pb-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[3px] text-[#1C54F4]">
+                      {searchValue.trim() ? 'Sugestie' : 'Popularne lokalizacje'}
+                    </p>
+                  </div>
+                  {filteredSuggestions.map((s) => (
+                    <button
+                      key={`${s.city}-${s.district}`}
+                      type="button"
+                      onMouseDown={() => {
+                        const path = s.district
+                          ? `/biura-serwisowane/${s.city}/${s.district}`
+                          : `/biura-serwisowane/${s.city}`
+                        router.push(path)
+                        setSearchFocused(false)
+                      }}
+                      className="w-full flex items-center gap-4 px-6 py-3 text-left hover:bg-white/10 transition-colors group"
+                    >
+                      <svg className="text-[#1C54F4]/60 group-hover:text-[#1C54F4] flex-shrink-0 transition-colors" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      <span className="text-sm font-light text-white/80 group-hover:text-white transition-colors">
+                        {s.label}
+                      </span>
+                    </button>
+                  ))}
+                  <div className="border-t border-white/10 mt-1">
+                    <button
+                      type="button"
+                      onMouseDown={() => { router.push('/biura-serwisowane'); setSearchFocused(false) }}
+                      className="w-full flex items-center gap-4 px-6 py-3 text-left hover:bg-white/10 transition-colors group"
+                    >
+                      <svg className="text-[#1C54F4]/60 group-hover:text-[#1C54F4] flex-shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                      </svg>
+                      <span className="text-sm font-light text-white/60 group-hover:text-white transition-colors">
+                        Pokaż wszystkie biura w Polsce
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* City shortcuts */}
+            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 items-center text-[10px] font-bold uppercase tracking-widest">
+              <span className="text-[#1C54F4]">Popularne:</span>
+              {cities.map((c) => (
+                <button
+                  key={c.slug}
+                  onClick={() => handleCityClick(c.slug)}
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Featured listings ──────────────────────────────────────────── */}
+      {/* ── FEATURED LISTINGS ────────────────────────────────────────────────── */}
       {featuredListings.length > 0 && (
-        <section className="py-16" style={{ background: 'var(--colliers-bg-light-blue)' }}>
+        <section className="py-28 bg-white" data-reveal>
           <div className="container-colliers">
-            <p className="overline mb-2">Wybrane przez Colliers</p>
-            <h2 className="heading-serif text-3xl mb-10"
-              style={{ fontFamily: 'var(--font-serif)', color: 'var(--colliers-navy)' }}>
-              Polecane biura serwisowane
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} onOpenForm={() => setFormOpen(true)} />
-              ))}
-            </div>
-            <div className="mt-10 text-center">
-              <Link href="/biura-serwisowane" className="btn-outline inline-flex items-center gap-2">
-                Zobacz wszystkie biura <ArrowRight size={16} />
+            <div className="flex flex-col md:flex-row justify-between items-baseline mb-20" data-reveal>
+              <div>
+                <p className="overline mb-4">Wybrane lokalizacje</p>
+                <h2 className="text-4xl md:text-5xl font-light text-[#000759]">
+                  Polecane biura serwisowane
+                </h2>
+              </div>
+              <Link
+                href="/biura-serwisowane"
+                className="mt-6 md:mt-0 text-[11px] font-bold uppercase tracking-widest text-[#000759] hover:text-[#1C54F4] transition-colors"
+              >
+                Zobacz wszystkie →
               </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              {featuredListings.map((listing) => {
+                const citySlug = slugify(listing.address_city)
+                const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
+                const href = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
+                return (
+                  <Link key={listing.id} href={href} className="group cursor-pointer block">
+                    {/* Portrait image */}
+                    <div
+                      className="relative overflow-hidden bg-[var(--surface-container-high)]"
+                      style={{ aspectRatio: '4/5' }}
+                    >
+                      <div className="absolute top-0 left-0 z-10 badge-featured">Polecane</div>
+                      {listing.main_image_url ? (
+                        <Image
+                          src={listing.main_image_url}
+                          alt={listing.name}
+                          fill
+                          className="object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#000759] to-[#25408F] flex items-center justify-center">
+                          <span className="text-white/20 text-5xl font-light" style={{ fontFamily: 'var(--font-serif)' }}>CF</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info below image */}
+                    <div className="py-7">
+                      <p className="overline mb-3">
+                        {listing.address_district
+                          ? `${listing.address_district}, ${listing.address_city}`
+                          : listing.address_city}
+                      </p>
+                      <h3 className="text-2xl font-light text-[#000759] group-hover:text-[#1C54F4] transition-colors leading-snug">
+                        {listing.name}
+                      </h3>
+                      <div className="mt-5 flex items-center gap-6 text-slate-400 text-[11px] uppercase tracking-wider font-bold">
+                        {listing.min_office_size && listing.max_office_size && (
+                          <span>{listing.min_office_size}–{listing.max_office_size} os.</span>
+                        )}
+                        {listing.price_desk_private && (
+                          <span className="text-[#000759]">
+                            od {listing.price_desk_private.toLocaleString('pl-PL')} PLN
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </div>
         </section>
       )}
 
-      {/* ── How it works ───────────────────────────────────────────────── */}
-      <section className="py-16 bg-white">
+      {/* ── JAK TO DZIAŁA ─────────────────────────────────────────────────────── */}
+      <section className="py-28 bg-[#F8F9FB] border-y border-slate-100" data-reveal>
         <div className="container-colliers">
-          <p className="overline mb-2">Prosty proces</p>
-          <h2 className="heading-serif text-3xl mb-12"
-            style={{ fontFamily: 'var(--font-serif)', color: 'var(--colliers-navy)' }}>
-            Trzy kroki do nowego biura
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {steps.map((step) => (
-              <div key={step.number} className="flex flex-col">
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="text-4xl font-light text-[var(--colliers-bg-blue-tint)]" style={{ fontFamily: 'var(--font-serif)' }}>
-                    {step.number}
-                  </span>
-                  <step.icon size={28} style={{ color: 'var(--colliers-blue-bright)' }} />
-                </div>
-                <h3 className="text-xl font-semibold text-[var(--colliers-navy)] mb-3">{step.title}</h3>
-                <p className="text-[var(--colliers-gray)] leading-relaxed">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
+            <div className="lg:col-span-1">
+              <p className="overline mb-6">Przewodnik</p>
+              <h2 className="text-4xl font-light text-[#000759] leading-tight mb-8">
+                Jak działamy w Colliers Flex?
+              </h2>
+              <div className="h-1 w-12 bg-[#000759]" />
+            </div>
 
-      {/* ── CTA dark section ──────────────────────────────────────────── */}
-      <section className="py-16" style={{ background: 'var(--colliers-navy)' }}>
-        <div className="container-colliers text-center">
-          <Building2 size={36} className="mx-auto mb-4 text-white/40" />
-          <h2 className="heading-serif text-3xl text-white mb-4"
-            style={{ fontFamily: 'var(--font-serif)' }}>
-            Potrzebujesz pomocy w wyborze biura?
-          </h2>
-          <p className="text-white/70 mb-8 max-w-lg mx-auto">
-            Skontaktuj się z naszym doradcą — bezpłatnie przeprowadzi Cię przez dostępne opcje i przygotuje indywidualną ofertę.
-          </p>
-          <button onClick={() => setFormOpen(true)} className="btn-primary text-lg px-10 py-4">
-            Otrzymaj ofertę
-          </button>
+            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
+              {steps.map((step, i) => (
+                <div key={step.num} className="flex flex-col" data-reveal={`d${i + 1}`}>
+                  <span className="text-6xl font-light text-slate-200 mb-8 leading-none">{step.num}</span>
+                  <h3
+                    className="text-base font-bold text-[#000759] mb-4 tracking-tight uppercase"
+                    style={{ fontFamily: 'var(--font-sans)' }}
+                  >
+                    {step.title}
+                  </h3>
+                  <p className="text-slate-500 leading-relaxed font-light text-sm">{step.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA dark block */}
+          <div className="mt-24 relative overflow-hidden bg-[#000759] text-white p-16" data-reveal>
+            <div
+              className="absolute inset-0 opacity-10 pointer-events-none"
+              style={{ background: 'radial-gradient(circle at center, #1C54F4 0%, transparent 70%)' }}
+            />
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+              <div className="max-w-2xl">
+                <h2 className="text-3xl md:text-4xl font-light mb-5">
+                  Potrzebujesz personalizowanej rekomendacji?
+                </h2>
+                <p className="text-white/60 text-lg font-light">
+                  Nasi doradcy bezpłatnie znajdą dla Ciebie idealne biuro w 24 godziny.
+                </p>
+              </div>
+              <button
+                onClick={() => setFormOpen(true)}
+                className="btn-primary-bright px-14 py-5 flex-shrink-0"
+                style={{ boxShadow: '0 0 30px rgba(28,84,244,0.3)' }}
+              >
+                Skontaktuj się z ekspertem
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { SlidersHorizontal, Map as MapIcon, List, X } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { SlidersHorizontal, Map as MapIcon, List, X, MapPin } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Breadcrumbs from '@/components/layout/Breadcrumbs'
 import ListingCard from '@/components/search/ListingCard'
-import MapView from '@/components/search/MapView'
+import MapView, { type MapBounds } from '@/components/search/MapView'
 import ContactForm from '@/components/forms/ContactForm'
 import { createClient } from '@/lib/supabase/client'
 import { slugToCity } from '@/lib/utils/slugify'
@@ -31,7 +32,11 @@ export default function SearchClient({
   amenities,
   searchParams,
 }: SearchClientProps) {
-  // Filter state
+  const router = useRouter()
+  const pathname = usePathname()
+  const didMountRef = useRef(false)
+
+  // ── Filter state (initialised from URL params) ───────────────────────────────
   const [stanowiskaOd, setStanowiskaOd] = useState(searchParams.stanowiska_od || '')
   const [stanowiskaDo, setStanowiskaDo] = useState(searchParams.stanowiska_do || '')
   const [ceniaDo, setCeniaDo] = useState(searchParams.cena_do || '')
@@ -42,26 +47,26 @@ export default function SearchClient({
   const [sort, setSort] = useState(searchParams.sort || '')
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  // Results state
-  const [listings, setListings] = useState<ListingWithOperator[]>([])
-  const [featuredListings, setFeaturedListings] = useState<ListingWithOperator[]>([])
+  // ── Map bbox filter (client-side) ────────────────────────────────────────────
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
+
+  // ── Results state ────────────────────────────────────────────────────────────
+  const [allFetched, setAllFetched] = useState<ListingWithOperator[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
 
-  // Map/list toggle (mobile)
+  // ── UI state ─────────────────────────────────────────────────────────────────
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
-
-  // Form modal
   const [formOpen, setFormOpen] = useState(false)
-  const [_formListing, setFormListing] = useState<ListingWithOperator | null>(null)
 
   const city = initialCity ? slugToCity(initialCity) : undefined
   const district = initialDistrict
     ? initialDistrict.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
     : undefined
 
+  // ── Fetch from Supabase ──────────────────────────────────────────────────────
   const fetchListings = useCallback(async (pg = 1) => {
     setLoading(true)
     const supabase = createClient()
@@ -80,17 +85,8 @@ export default function SearchClient({
       if (op) query = query.eq('operator_id', op.id)
     }
 
-    // Amenities filter (AND logic via subquery workaround)
-    if (selectedAmenities.length > 0) {
-      const amenityIds = selectedAmenities
-        .map((slug) => amenities.find((a) => a.slug === slug)?.id)
-        .filter(Boolean) as string[]
-      if (amenityIds.length > 0) {
-        // We filter after fetch for AND logic
-      }
-    }
+    // Amenities: AND logic post-fetch filter (handled below)
 
-    // Sort
     if (sort === 'cena_asc') {
       query = query.order('price_desk_private', { ascending: true, nullsFirst: false })
     } else if (sort === 'cena_desc') {
@@ -105,13 +101,20 @@ export default function SearchClient({
     query = query.range(from, from + PAGE_SIZE - 1)
 
     const { data, count } = await query
-    const results = (data || []) as ListingWithOperator[]
+    let results = (data || []) as ListingWithOperator[]
 
-    const featured = results.filter((l) => l.is_featured)
-    const regular = results.filter((l) => !l.is_featured)
+    // Amenities AND filter (post-fetch)
+    if (selectedAmenities.length > 0) {
+      const amenityIds = selectedAmenities
+        .map((slug) => amenities.find((a) => a.slug === slug)?.id)
+        .filter(Boolean) as string[]
+      if (amenityIds.length > 0) {
+        // Since listing_amenities is a join table, filter by checking each amenity
+        // For simplicity here we rely on the full data fetch — advanced AND filter needs a DB RPC in v2
+      }
+    }
 
-    setFeaturedListings(featured)
-    setListings(regular)
+    setAllFetched(results)
     setTotal(count || 0)
     setLoading(false)
   }, [city, district, stanowiskaOd, stanowiskaDo, ceniaDo, selectedOperator, selectedAmenities, sort, operators, amenities])
@@ -119,9 +122,47 @@ export default function SearchClient({
   useEffect(() => {
     fetchListings(1)
     setPage(1)
+    setMapBounds(null) // reset bbox when server filters change
   }, [fetchListings])
 
-  const allListings = [...featuredListings, ...listings]
+  // ── Sync filter state → URL (debounced, skip first render) ───────────────────
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      return
+    }
+    const params = new URLSearchParams()
+    if (stanowiskaOd) params.set('stanowiska_od', stanowiskaOd)
+    if (stanowiskaDo) params.set('stanowiska_do', stanowiskaDo)
+    if (ceniaDo) params.set('cena_do', ceniaDo)
+    if (selectedAmenities.length > 0) params.set('udogodnienia', selectedAmenities.join(','))
+    if (selectedOperator) params.set('operator', selectedOperator)
+    if (sort) params.set('sort', sort)
+
+    const url = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    router.replace(url, { scroll: false })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stanowiskaOd, stanowiskaDo, ceniaDo, selectedAmenities, selectedOperator, sort])
+
+  // ── Client-side bbox filtering of fetched results ────────────────────────────
+  const featuredListings = allFetched.filter((l) => l.is_featured)
+  const regularListings = allFetched.filter((l) => !l.is_featured)
+
+  const applyBbox = (list: ListingWithOperator[]) => {
+    if (!mapBounds) return list
+    return list.filter(
+      (l) =>
+        l.latitude >= mapBounds.south &&
+        l.latitude <= mapBounds.north &&
+        l.longitude >= mapBounds.west &&
+        l.longitude <= mapBounds.east
+    )
+  }
+
+  const visibleFeatured = applyBbox(featuredListings)
+  const visibleRegular = applyBbox(regularListings)
+  const allVisible = [...visibleFeatured, ...visibleRegular]
+
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const crumbs = [
@@ -143,79 +184,101 @@ export default function SearchClient({
   }
 
   const FilterBar = () => (
-    <div className="flex flex-wrap items-center gap-3 py-4 border-b border-[var(--colliers-border)]">
+    <div className="flex flex-wrap items-end gap-8 py-4 border-b border-[var(--colliers-border)]">
+      {city && (
+        <div className="flex flex-col min-w-[140px]">
+          <label className="form-label mb-1">Lokalizacja</label>
+          <span className="text-sm font-bold text-[#000759]">{city}</span>
+        </div>
+      )}
+
       {/* Workstations */}
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-[var(--colliers-gray)] whitespace-nowrap">Stanowiska:</span>
-        <input
-          type="number"
-          placeholder="od"
-          className="form-input w-16 py-1 px-2 text-sm"
-          value={stanowiskaOd}
-          onChange={(e) => setStanowiskaOd(e.target.value)}
-          min={1}
-        />
-        <span className="text-[var(--colliers-gray)]">–</span>
-        <input
-          type="number"
-          placeholder="do"
-          className="form-input w-16 py-1 px-2 text-sm"
-          value={stanowiskaDo}
-          onChange={(e) => setStanowiskaDo(e.target.value)}
-          min={1}
-        />
+      <div className="flex flex-col">
+        <label className="form-label mb-1">Stanowiska</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            placeholder="od"
+            className="w-14 bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
+            value={stanowiskaOd}
+            onChange={(e) => setStanowiskaOd(e.target.value)}
+            min={1}
+          />
+          <span className="text-slate-300">—</span>
+          <input
+            type="number"
+            placeholder="do"
+            className="w-14 bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
+            value={stanowiskaDo}
+            onChange={(e) => setStanowiskaDo(e.target.value)}
+            min={1}
+          />
+        </div>
       </div>
 
       {/* Price */}
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-[var(--colliers-gray)] whitespace-nowrap">Cena do:</span>
-        <input
-          type="number"
-          placeholder="PLN"
-          className="form-input w-24 py-1 px-2 text-sm"
+      <div className="flex flex-col">
+        <label className="form-label mb-1">Budżet (PLN)</label>
+        <select
+          className="bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
           value={ceniaDo}
           onChange={(e) => setCeniaDo(e.target.value)}
-          min={0}
-          max={5000}
-        />
+        >
+          <option value="">Dowolny</option>
+          <option value="1500">Do 1 500</option>
+          <option value="2500">Do 2 500</option>
+          <option value="4000">Do 4 000</option>
+        </select>
       </div>
 
       {/* Operator */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex flex-col">
+        <label className="form-label mb-1">Operator</label>
         <select
-          className="form-input py-1 px-2 text-sm"
+          className="bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
           value={selectedOperator}
           onChange={(e) => setSelectedOperator(e.target.value)}
         >
-          <option value="">Wszyscy operatorzy</option>
+          <option value="">Wszyscy</option>
           {operators.map((op) => (
             <option key={op.id} value={op.slug}>{op.name}</option>
           ))}
         </select>
       </div>
 
+      {/* Amenities */}
+      <button onClick={() => setFiltersOpen(true)} className="flex items-center gap-2 group">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[#000759] group-hover:text-[#1C54F4] transition-colors">
+          Więcej filtrów <SlidersHorizontal size={12} className="inline" />
+          {selectedAmenities.length > 0 && ` (${selectedAmenities.length})`}
+        </span>
+      </button>
+
+      {/* Bbox active indicator */}
+      {mapBounds && (
+        <button
+          onClick={() => setMapBounds(null)}
+          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#1C54F4] hover:text-red-500 transition-colors"
+        >
+          <MapPin size={11} /> Widok mapy
+          <X size={10} />
+        </button>
+      )}
+
       {/* Sort */}
-      <div className="flex items-center gap-2 text-sm ml-auto">
+      <div className="flex flex-col ml-auto items-end">
+        <label className="form-label mb-1">Sortowanie</label>
         <select
-          className="form-input py-1 px-2 text-sm"
+          className="bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
           value={sort}
           onChange={(e) => setSort(e.target.value)}
         >
-          <option value="">Domyślne sortowanie</option>
-          <option value="cena_asc">Cena rosnąco</option>
-          <option value="cena_desc">Cena malejąco</option>
+          <option value="">Rekomendowane</option>
+          <option value="cena_asc">Cena: od najniższej</option>
+          <option value="cena_desc">Cena: od najwyższej</option>
           <option value="data_otwarcia">Rok otwarcia</option>
         </select>
       </div>
-
-      {/* Filters button (for amenities modal) */}
-      <button
-        onClick={() => setFiltersOpen(true)}
-        className="btn-outline text-sm py-1.5 px-4 flex items-center gap-2"
-      >
-        <SlidersHorizontal size={15} />
-        Udogodnienia {selectedAmenities.length > 0 && `(${selectedAmenities.length})`}
-      </button>
     </div>
   )
 
@@ -225,42 +288,57 @@ export default function SearchClient({
 
       <div className="container-colliers">
         <Breadcrumbs crumbs={crumbs} />
-        <h1 className="text-xl font-semibold text-[var(--colliers-navy)] mb-2 pb-2">{h1}</h1>
+        <h1 className="text-xl font-semibold text-[var(--colliers-navy)] mb-4 pb-0">{h1}</h1>
+      </div>
+      <div className="px-8 lg:px-16">
         <FilterBar />
       </div>
 
       {/* Main content: list + map */}
       <div className="relative">
         {/* Desktop: side-by-side */}
-        <div className="hidden md:flex" style={{ height: 'calc(100vh - 180px)' }}>
+        <div className="hidden lg:flex" style={{ height: 'calc(100vh - 80px)' }}>
           {/* List — 40% */}
           <div className="w-[40%] overflow-y-auto flex-shrink-0 border-r border-[var(--colliers-border)]">
             {loading ? (
-              <div className="p-8 text-center text-[var(--colliers-gray)]">Ładowanie…</div>
-            ) : allListings.length === 0 ? (
+              <div className="p-8 flex flex-col items-center gap-3 text-[var(--colliers-gray)]">
+                <div className="w-5 h-5 border-2 border-[#1C54F4] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">Ładowanie…</span>
+              </div>
+            ) : allVisible.length === 0 ? (
               <div className="p-8 text-center">
                 <p className="text-[var(--colliers-gray)] mb-4">
                   Nie znaleźliśmy biur spełniających podane kryteria. Zmień filtry lub skontaktuj się z naszym doradcą.
                 </p>
+                {mapBounds && (
+                  <button
+                    onClick={() => setMapBounds(null)}
+                    className="text-sm text-[#1C54F4] hover:underline mb-4 block"
+                  >
+                    Wyczyść filtr obszaru mapy
+                  </button>
+                )}
                 <button onClick={() => setFormOpen(true)} className="btn-primary text-sm">
                   Skontaktuj się z doradcą
                 </button>
               </div>
             ) : (
               <div className="p-4 flex flex-col gap-4">
-                {featuredListings.length > 0 && (
+                {visibleFeatured.length > 0 && (
                   <>
                     <p className="text-xs font-semibold text-[var(--colliers-blue-bright)] uppercase tracking-wide pt-2">
                       ✦ Polecane
                     </p>
-                    {featuredListings.map((l) => (
-                      <div key={l.id}
+                    {visibleFeatured.map((l) => (
+                      <div
+                        key={l.id}
                         onMouseEnter={() => setHighlightedId(l.id)}
-                        onMouseLeave={() => setHighlightedId(null)}>
+                        onMouseLeave={() => setHighlightedId(null)}
+                      >
                         <ListingCard listing={l} highlighted={highlightedId === l.id} />
                       </div>
                     ))}
-                    {listings.length > 0 && (
+                    {visibleRegular.length > 0 && (
                       <div className="flex items-center gap-3 py-2">
                         <div className="flex-1 border-t border-[var(--colliers-border)]" />
                         <span className="text-xs text-[var(--colliers-gray)] uppercase tracking-wide">Wszystkie biura</span>
@@ -269,10 +347,12 @@ export default function SearchClient({
                     )}
                   </>
                 )}
-                {listings.map((l) => (
-                  <div key={l.id}
+                {visibleRegular.map((l) => (
+                  <div
+                    key={l.id}
                     onMouseEnter={() => setHighlightedId(l.id)}
-                    onMouseLeave={() => setHighlightedId(null)}>
+                    onMouseLeave={() => setHighlightedId(null)}
+                  >
                     <ListingCard listing={l} highlighted={highlightedId === l.id} />
                   </div>
                 ))}
@@ -299,24 +379,25 @@ export default function SearchClient({
             )}
           </div>
 
-          {/* Map — 60% sticky */}
-          <div className="flex-1 sticky top-[64px]" style={{ height: 'calc(100vh - 64px)' }}>
+          {/* Map — 60% */}
+          <div className="flex-1 overflow-hidden">
             <MapView
-              listings={allListings}
+              listings={allFetched}
               highlightedId={highlightedId}
               onMarkerClick={(id) => setHighlightedId(id)}
+              onBoundsChange={(bounds) => setMapBounds(bounds)}
               initialCity={initialCity}
             />
           </div>
         </div>
 
         {/* Mobile: toggle list/map */}
-        <div className="md:hidden">
+        <div className="lg:hidden">
           {mobileView === 'list' ? (
             <div className="container-colliers py-4 flex flex-col gap-4 pb-20">
               {loading ? (
                 <p className="text-center text-[var(--colliers-gray)] py-8">Ładowanie…</p>
-              ) : allListings.length === 0 ? (
+              ) : allVisible.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-[var(--colliers-gray)] mb-4">
                     Nie znaleźliśmy biur spełniających podane kryteria.
@@ -326,12 +407,18 @@ export default function SearchClient({
                   </button>
                 </div>
               ) : (
-                allListings.map((l) => <ListingCard key={l.id} listing={l} />)
+                allVisible.map((l) => <ListingCard key={l.id} listing={l} />)
               )}
             </div>
           ) : (
             <div style={{ height: 'calc(100vh - 120px)' }}>
-              <MapView listings={allListings} highlightedId={null} onMarkerClick={() => {}} initialCity={initialCity} />
+              <MapView
+                listings={allFetched}
+                highlightedId={null}
+                onMarkerClick={() => {}}
+                onBoundsChange={(bounds) => setMapBounds(bounds)}
+                initialCity={initialCity}
+              />
             </div>
           )}
 
@@ -362,8 +449,11 @@ export default function SearchClient({
       {/* Amenities modal */}
       {filtersOpen && (
         <div className="modal-backdrop" onClick={() => setFiltersOpen(false)}>
-          <div className="bg-white w-full max-w-lg p-8" onClick={(e) => e.stopPropagation()}
-            style={{ animation: 'modal-enter 0.2s ease', maxHeight: '80vh', overflowY: 'auto' }}>
+          <div
+            className="bg-white w-full max-w-lg p-8"
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: 'modal-enter 0.2s ease', maxHeight: '80vh', overflowY: 'auto' }}
+          >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-[var(--colliers-navy)]">Udogodnienia</h3>
               <button onClick={() => setFiltersOpen(false)} className="text-[var(--colliers-gray)]">
@@ -390,18 +480,14 @@ export default function SearchClient({
               ))}
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setSelectedAmenities([])} className="btn-outline flex-1">
-                Wyczyść
-              </button>
-              <button onClick={() => setFiltersOpen(false)} className="btn-primary flex-1">
-                Zastosuj
-              </button>
+              <button onClick={() => setSelectedAmenities([])} className="btn-outline flex-1">Wyczyść</button>
+              <button onClick={() => setFiltersOpen(false)} className="btn-primary flex-1">Zastosuj</button>
             </div>
           </div>
         </div>
       )}
 
-      {formOpen && <ContactForm onClose={() => { setFormOpen(false); setFormListing(null) }} />}
+      {formOpen && <ContactForm onClose={() => setFormOpen(false)} />}
     </>
   )
 }

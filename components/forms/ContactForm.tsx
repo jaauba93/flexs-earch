@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, CheckCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, CheckCircle, Loader2, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useBasketContext } from '@/lib/context/BasketContext'
@@ -46,7 +46,7 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [apiError, setApiError] = useState('')
-  const [workstationsOpen, setWorkstationsOpen] = useState(false)
+  const [extraOpen, setExtraOpen] = useState(false)
 
   function validate(): boolean {
     const e: FormErrors = {}
@@ -63,11 +63,8 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!validate()) return
-    if (listings.length === 0) return
-
     setLoading(true)
     setApiError('')
-
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
@@ -82,15 +79,13 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
           listing_names: listings.map((l) => `${l.name} — ${l.address_street}, ${l.address_city}`),
         }),
       })
-
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Błąd serwera')
       }
-
       setSuccess(true)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Nie udało się wysłać zapytania. Sprawdź połączenie i spróbuj ponownie.'
+      const message = err instanceof Error ? err.message : 'Nie udało się wysłać zapytania.'
       setApiError(message)
     } finally {
       setLoading(false)
@@ -100,14 +95,17 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
   if (success) {
     return (
       <div className="modal-backdrop" onClick={onClose}>
-        <div className="bg-white p-12 text-center max-w-md mx-auto" onClick={(e) => e.stopPropagation()}
-          style={{ animation: 'modal-enter 0.2s ease' }}>
-          <CheckCircle size={48} className="mx-auto mb-4" style={{ color: 'var(--colliers-green)' }} />
-          <h2 className="text-2xl font-light mb-3" style={{ fontFamily: 'var(--font-serif)', color: 'var(--colliers-navy)' }}>
+        <div
+          className="bg-white p-12 text-center max-w-md mx-auto"
+          onClick={(e) => e.stopPropagation()}
+          style={{ animation: 'modal-enter 0.2s ease' }}
+        >
+          <CheckCircle size={48} className="mx-auto mb-4 text-[#468254]" />
+          <h2 className="text-2xl font-light text-[#000759] mb-3">
             Zapytanie zostało wysłane
           </h2>
-          <p className="text-[var(--colliers-gray)] mb-8">
-            Dziękujemy za kontakt. Nasz doradca odpowie na Twoje zapytanie w ciągu jednego dnia roboczego.
+          <p className="text-slate-500 mb-8 text-sm leading-relaxed">
+            Dziękujemy. Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.
           </p>
           <Link href="/biura-serwisowane" onClick={onClose} className="btn-outline">
             Wróć do wyszukiwarki
@@ -119,173 +117,202 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--colliers-border)]">
-          <div>
-            <h2 className="text-2xl font-light" style={{ fontFamily: 'var(--font-serif)', color: 'var(--colliers-navy)' }}>
-              Zapytaj o ofertę
-            </h2>
-            <p className="text-sm text-[var(--colliers-gray)] mt-1">
+      <div
+        className="bg-white w-full max-w-5xl flex flex-col md:flex-row shadow-2xl overflow-hidden"
+        style={{ maxHeight: '90vh', borderRadius: 0, animation: 'modal-enter 0.2s ease' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 z-10 text-slate-400 hover:text-[#000759] transition-colors"
+        >
+          <X size={22} />
+        </button>
+
+        {/* LEFT — form */}
+        <div className="flex-[3] p-8 md:p-12 bg-white overflow-y-auto">
+          <header className="mb-8">
+            <p className="overline mb-2">Zapytanie ofertowe</p>
+            <h2 className="text-3xl font-light text-[#000759] mb-3">Zapytaj o ofertę</h2>
+            <p className="text-slate-500 font-light text-sm max-w-md">
               Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.
             </p>
-          </div>
-          <button onClick={onClose} className="p-2 text-[var(--colliers-gray)] hover:text-[var(--colliers-navy)] transition-colors ml-4">
-            <X size={24} />
-          </button>
-        </div>
+          </header>
 
-        {/* Body */}
-        <form onSubmit={handleSubmit}>
-          <div className="grid md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-[var(--colliers-border)]">
-            {/* Left — contact data */}
-            <div className="p-8 flex flex-col gap-5">
-              <div>
-                <label htmlFor="email" className="form-label">Adres email *</label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email + Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="ghost-border">
+                <label className="form-label">Email (wymagane)</label>
                 <input
-                  id="email"
                   type="email"
-                  className={`form-input ${errors.email ? 'error' : ''}`}
+                  className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                  placeholder="twoj@email.pl"
                   value={formData.email}
                   onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
-                  placeholder="adres@firma.pl"
                 />
-                {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
+                {errors.email && <p className="text-red-600 text-[11px] mt-1">{errors.email}</p>}
               </div>
-
-              <div>
-                <label htmlFor="phone" className="form-label">Numer telefonu</label>
+              <div className="ghost-border">
+                <label className="form-label">Telefon (opcjonalnie)</label>
                 <input
-                  id="phone"
                   type="tel"
-                  className="form-input"
+                  className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                  placeholder="+48 ___ ___ ___"
                   value={formData.phone}
                   onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
-                  placeholder="+48 000 000 000"
                 />
               </div>
+            </div>
 
-              <div>
-                <label htmlFor="message" className="form-label">Dodatkowe informacje</label>
-                <textarea
-                  id="message"
-                  className="form-input resize-none"
-                  rows={3}
-                  maxLength={500}
-                  value={formData.message}
-                  onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
-                  placeholder="Opisz swoje potrzeby..."
-                />
-              </div>
-
-              {/* Workstations accordion */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setWorkstationsOpen((v) => !v)}
-                  className="flex items-center justify-between w-full text-left text-sm font-semibold text-[var(--colliers-navy)] py-2 border-t border-[var(--colliers-border)]"
-                >
-                  Preferowana liczba stanowisk pracy
-                  {workstationsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-                {workstationsOpen && (
-                  <div className="flex items-center gap-3 mt-3">
-                    <input
-                      type="number"
-                      min={1}
-                      max={500}
-                      className="form-input"
-                      placeholder="od"
-                      value={formData.workstations_from}
-                      onChange={(e) => setFormData((p) => ({ ...p, workstations_from: e.target.value }))}
-                    />
-                    <span className="text-[var(--colliers-gray)] flex-shrink-0">–</span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={500}
-                      className="form-input"
-                      placeholder="do"
-                      value={formData.workstations_to}
-                      onChange={(e) => setFormData((p) => ({ ...p, workstations_to: e.target.value }))}
-                    />
-                    <span className="text-[var(--colliers-gray)] text-sm flex-shrink-0">stanowisk</span>
+            {/* Extra info accordion */}
+            <div className="border-t border-b border-[var(--outline-variant)]/20 py-4">
+              <button
+                type="button"
+                onClick={() => setExtraOpen((v) => !v)}
+                className="flex items-center justify-between w-full font-bold text-[11px] uppercase tracking-widest text-[#000759] hover:text-[#1C54F4] transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-lg">+</span>
+                  Dodatkowe informacje (opcjonalnie)
+                </span>
+                <ChevronRight size={16} className={`transition-transform ${extraOpen ? 'rotate-90' : ''}`} />
+              </button>
+              {extraOpen && (
+                <div className="mt-5 space-y-5">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="ghost-border">
+                      <label className="form-label">Stanowisk (od)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                        placeholder="np. 10"
+                        value={formData.workstations_from}
+                        onChange={(e) => setFormData((p) => ({ ...p, workstations_from: e.target.value }))}
+                      />
+                    </div>
+                    <div className="ghost-border">
+                      <label className="form-label">Stanowisk (do)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                        placeholder="np. 25"
+                        value={formData.workstations_to}
+                        onChange={(e) => setFormData((p) => ({ ...p, workstations_to: e.target.value }))}
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
-
-              {/* Consent */}
-              <div>
-                <label className="flex gap-3 cursor-pointer items-start">
-                  <input
-                    type="checkbox"
-                    className="mt-1 flex-shrink-0 accent-[var(--colliers-navy)]"
-                    checked={formData.consent}
-                    onChange={(e) => setFormData((p) => ({ ...p, consent: e.target.checked }))}
-                  />
-                  <span className="text-xs text-[var(--colliers-gray)] leading-relaxed">
-                    Wyrażam zgodę na przetwarzanie moich danych osobowych przez Colliers International Poland sp. z o.o.
-                    z siedzibą w Warszawie (ul. Złota 59, 00-120 Warszawa) w celu udzielenia odpowiedzi na moje zapytanie.
-                    Więcej informacji w{' '}
-                    <Link href="/polityka-prywatnosci" target="_blank" className="underline hover:text-[var(--colliers-blue-bright)]">
-                      Polityce prywatności
-                    </Link>
-                    . *
-                  </span>
-                </label>
-                {errors.consent && <p className="text-red-600 text-xs mt-1">{errors.consent}</p>}
-              </div>
-
-              {apiError && (
-                <p className="text-red-600 text-sm bg-red-50 p-3 border border-red-200">{apiError}</p>
+                  <div className="ghost-border">
+                    <label className="form-label">Dodatkowe uwagi</label>
+                    <textarea
+                      rows={2}
+                      className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm resize-none"
+                      placeholder="Inne wymagania..."
+                      value={formData.message}
+                      onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
+                    />
+                  </div>
+                </div>
               )}
+            </div>
 
+            {/* Consent */}
+            <div className="flex gap-4 items-start pt-2">
+              <input
+                type="checkbox"
+                className="mt-1 flex-shrink-0 w-4 h-4 accent-[#000759] cursor-pointer"
+                checked={formData.consent}
+                onChange={(e) => setFormData((p) => ({ ...p, consent: e.target.checked }))}
+              />
+              <label className="text-[11px] text-slate-500 leading-relaxed cursor-pointer select-none">
+                Wyrażam zgodę na przetwarzanie moich danych osobowych przez Colliers International Poland sp. z o.o.
+                w celu obsługi zapytania oraz przesyłania informacji handlowych.{' '}
+                <Link href="/polityka-prywatnosci" target="_blank" className="text-[#1C54F4] underline">
+                  Polityka prywatności
+                </Link>
+                .
+              </label>
+            </div>
+            {errors.consent && <p className="text-red-600 text-[11px]">{errors.consent}</p>}
+
+            {apiError && (
+              <p className="text-red-600 text-sm bg-red-50 p-3 border border-red-200">{apiError}</p>
+            )}
+
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading || listings.length === 0}
-                className="btn-primary justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                title={listings.length === 0 ? 'Dodaj przynajmniej jedno biuro' : undefined}
+                className="btn-primary py-4 px-10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+                {loading && <Loader2 size={16} className="animate-spin" />}
                 Wyślij zapytanie
               </button>
             </div>
+          </form>
+        </div>
 
-            {/* Right — selected listings */}
-            <div className="p-8">
-              <p className="form-label mb-4">Wybrane biura ({listings.length})</p>
-              {listings.length === 0 ? (
-                <p className="text-sm text-[var(--colliers-gray)]">Brak wybranych biur.</p>
-              ) : (
-                <ul className="flex flex-col gap-3">
-                  {listings.map((item) => (
-                    <li key={item.id} className="flex items-center gap-3 p-3 border border-[var(--colliers-border)]">
-                      <div className="w-12 h-12 flex-shrink-0 bg-[var(--colliers-bg-gray)] overflow-hidden">
-                        {item.main_image_url ? (
-                          <Image src={item.main_image_url} alt={item.name} width={48} height={48}
-                            className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-[var(--colliers-navy)] to-[var(--colliers-blue)]" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[var(--colliers-navy)] truncate">{item.name}</p>
-                        <p className="text-xs text-[var(--colliers-gray)]">{item.address_street}, {item.address_city}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setListings((prev) => prev.filter((l) => l.id !== item.id))}
-                        className="text-[var(--colliers-gray)] hover:text-[var(--colliers-navy)] flex-shrink-0"
-                      >
-                        <X size={16} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+        {/* RIGHT — selected offices */}
+        <div className="flex-[2] bg-[var(--surface-container-low)] p-8 md:p-12 border-l border-[var(--outline-variant)]/10 overflow-hidden flex flex-col">
+          <div className="mb-8">
+            <p className="overline mb-2">Twój wybór</p>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-[#000759]">Wybrane biura</h3>
+          </div>
+
+          {listings.length === 0 ? (
+            <p className="text-sm text-slate-400 italic">Brak wybranych biur.</p>
+          ) : (
+            <div className="flex flex-col gap-3 overflow-y-auto pr-1" style={{ maxHeight: 320 }}>
+              {listings.map((item) => (
+                <div key={item.id} className="bg-white shadow-sm flex items-center gap-4 p-4">
+                  <div className="w-14 h-14 flex-shrink-0 overflow-hidden bg-[var(--surface-container-high)]">
+                    {item.main_image_url ? (
+                      <Image src={item.main_image_url} alt={item.name} width={56} height={56} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#000759] to-[#25408F]" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-[#000759] truncate">{item.name}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{item.address_street}, {item.address_city}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setListings((prev) => prev.filter((l) => l.id !== item.id))}
+                    className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0 p-1"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Guarantees */}
+          <div className="mt-8 border-t border-[var(--outline-variant)]/20 pt-8 space-y-5 hidden md:block">
+            <div className="flex items-start gap-4">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C54F4" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <div>
+                <p className="text-xs font-bold text-[#000759] mb-1">Gwarancja jakości Colliers</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">Wszystkie przestrzenie są weryfikowane przez naszych ekspertów.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C54F4" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <div>
+                <p className="text-xs font-bold text-[#000759] mb-1">Szybka odpowiedź</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">Otrzymasz propozycje w ciągu jednego dnia roboczego.</p>
+              </div>
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )

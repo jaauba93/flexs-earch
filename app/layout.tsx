@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import 'mapbox-gl/dist/mapbox-gl.css'
 import { BasketProvider } from '@/lib/context/BasketContext'
 import CookieBanner from '@/components/ui/CookieBanner'
 import GoogleAnalytics from '@/components/ui/GoogleAnalytics'
+import SmoothScroll from '@/components/ui/SmoothScroll'
+import ScrollReveal from '@/components/ui/ScrollReveal'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://flex.colliers.pl'),
@@ -15,7 +18,6 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'pl_PL',
     siteName: 'Colliers Flex',
-    images: [{ url: '/images/og-default.jpg', width: 1200, height: 630 }],
   },
   robots: { index: true, follow: true },
 }
@@ -29,6 +31,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CookieBanner />
         </BasketProvider>
         <GoogleAnalytics />
+        <SmoothScroll />
+        <ScrollReveal />
       </body>
     </html>
   )

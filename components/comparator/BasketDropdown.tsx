@@ -3,14 +3,15 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingBag, X, ArrowRight } from 'lucide-react'
+import { ShoppingBag, X, ArrowRight, ArrowLeftRight } from 'lucide-react'
 import { useBasketContext } from '@/lib/context/BasketContext'
 
 interface BasketDropdownProps {
   onOpenForm?: () => void
+  variant?: 'mobile' | 'desktop'
 }
 
-export default function BasketDropdown({ onOpenForm }: BasketDropdownProps) {
+export default function BasketDropdown({ onOpenForm, variant = 'mobile' }: BasketDropdownProps) {
   const { items, count, removeItem, mounted } = useBasketContext()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -23,7 +24,12 @@ export default function BasketDropdown({ onOpenForm }: BasketDropdownProps) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  if (!mounted) return (
+  if (!mounted) return variant === 'desktop' ? (
+    <button className="relative flex items-center gap-2 border border-[var(--colliers-navy)]/20 px-4 py-3 text-[var(--colliers-navy)]" aria-label="Porównywarka">
+      <ArrowLeftRight size={16} />
+      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Porównaj</span>
+    </button>
+  ) : (
     <button className="relative p-2 text-[var(--colliers-navy)]" aria-label="Porównywarka">
       <ShoppingBag size={22} />
     </button>
@@ -31,19 +37,40 @@ export default function BasketDropdown({ onOpenForm }: BasketDropdownProps) {
 
   return (
     <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="relative p-2 text-[var(--colliers-navy)] hover:text-[var(--colliers-blue-bright)] transition-colors"
-        aria-label={`Porównywarka (${count} biur)`}
-      >
-        <ShoppingBag size={22} />
-        {count > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
-            style={{ background: 'var(--colliers-blue-bright)' }}>
-            {count}
+      {variant === 'desktop' ? (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="relative flex items-center gap-2 border border-[var(--colliers-navy)]/20 px-4 py-3 hover:bg-[var(--colliers-navy)]/5 hover:border-[var(--colliers-navy)]/40 transition-all group"
+          aria-label={`Porównywarka (${count} biur)`}
+        >
+          <ArrowLeftRight size={16} className="text-[var(--colliers-navy)]" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--colliers-navy)]/80 group-hover:text-[var(--colliers-navy)]">
+            Porównaj
           </span>
-        )}
-      </button>
+          {count > 0 && (
+            <span className="absolute -top-2 -right-2 flex h-5 w-5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1C54F4] opacity-50" />
+              <span className="relative inline-flex rounded-full h-5 w-5 bg-[#1C54F4] items-center justify-center text-[9px] font-bold text-white">
+                {count}
+              </span>
+            </span>
+          )}
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="relative p-2 text-[var(--colliers-navy)] hover:text-[var(--colliers-blue-bright)] transition-colors"
+          aria-label={`Porównywarka (${count} biur)`}
+        >
+          <ShoppingBag size={22} />
+          {count > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
+              style={{ background: 'var(--colliers-blue-bright)' }}>
+              {count}
+            </span>
+          )}
+        </button>
+      )}
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-[var(--colliers-border)] shadow-[var(--shadow-md)] z-50"

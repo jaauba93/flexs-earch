@@ -237,7 +237,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
         {/* Map */}
         <section id="lokalizacja" className="mt-12 mb-12">
           <h2 className="text-xl font-semibold text-[var(--colliers-navy)] mb-4">Lokalizacja</h2>
-          <div style={{ height: 360 }}>
+          <div style={{ height: 360, overflow: 'hidden', position: 'relative' }}>
             <MapView
               listings={[listing as any]}
               highlightedId={listing.id}

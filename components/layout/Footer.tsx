@@ -2,39 +2,51 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 export default function Footer() {
+  const year = new Date().getFullYear()
+
   return (
-    <footer style={{ background: 'var(--colliers-navy)' }} className="text-white">
-      <div className="container-colliers py-12">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-          <div>
+    <footer className="bg-[#000759] text-white px-8 md:px-12 py-20 border-t border-white/5">
+      <div className="max-w-[1440px] mx-auto">
+        {/* Main grid */}
+        <div className="flex flex-col md:flex-row justify-between items-start gap-16 border-b border-white/5 pb-16">
+          {/* Logo + tagline */}
+          <div className="flex flex-col gap-8">
             <Image
               src="/images/logo-dark.png"
-              alt="Colliers"
+              alt="Colliers Flex"
               width={160}
               height={40}
-              className="h-8 w-auto mb-4"
+              className="h-8 w-auto"
             />
-            <p className="text-sm text-white/70 max-w-sm">
-              Colliers Flex — dedykowana wyszukiwarka biur serwisowanych w Polsce.
+            <p className="text-white/40 max-w-xs font-light text-xs leading-relaxed uppercase tracking-wider">
+              Profesjonalne doradztwo w zakresie biur serwisowanych i przestrzeni coworkingowych w całej Polsce.
             </p>
           </div>
-          <nav className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
-            <Link href="/biura-serwisowane" className="text-white/80 hover:text-white transition-colors">
-              Biura serwisowane
-            </Link>
-            <Link href="/porownaj" className="text-white/80 hover:text-white transition-colors">
-              Porównywarka
-            </Link>
-            <Link href="/polityka-prywatnosci" className="text-white/80 hover:text-white transition-colors">
-              Polityka prywatności
-            </Link>
-            <Link href="/polityka-cookies" className="text-white/80 hover:text-white transition-colors">
-              Polityka cookies
-            </Link>
-          </nav>
+
+          {/* Link columns */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-12 md:gap-20">
+            <div className="flex flex-col gap-5">
+              <span className="overline">Platforma</span>
+              <Link href="/biura-serwisowane" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">Szukaj biur</Link>
+              <Link href="/porownaj" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">Porównaj</Link>
+            </div>
+            <div className="flex flex-col gap-5">
+              <span className="overline">Prywatność</span>
+              <Link href="/polityka-prywatnosci" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">Polityka prywatności</Link>
+              <Link href="/polityka-cookies" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">Pliki cookies</Link>
+            </div>
+            <div className="flex flex-col gap-5">
+              <span className="overline">Kontakt</span>
+              <a href="mailto:flex@colliers.pl" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">flex@colliers.pl</a>
+              <a href="tel:+48223317800" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">+48 22 331 78 00</a>
+            </div>
+          </div>
         </div>
-        <div className="border-t border-white/10 mt-8 pt-8 text-xs text-white/50">
-          © {new Date().getFullYear()} Colliers International Poland sp. z o.o. Wszelkie prawa zastrzeżone.
+
+        {/* Bottom bar */}
+        <div className="pt-10 flex flex-col md:flex-row justify-between items-center gap-6 text-white/20 text-[9px] font-bold uppercase tracking-[0.2em]">
+          <p>© {year} Colliers Flex. Wszelkie prawa zastrzeżone.</p>
+          <span>Polska</span>
         </div>
       </div>
     </footer>
