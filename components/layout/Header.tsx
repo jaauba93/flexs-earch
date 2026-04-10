@@ -34,17 +34,17 @@ export default function Header({ onOpenForm }: HeaderProps) {
     <header
       className={`sticky top-0 z-40 h-20 nav-glass transition-shadow duration-200 ${scrolled ? 'shadow-[0_2px_20px_rgba(0,7,89,0.08)]' : 'border-b border-black/5'}`}
     >
-      <div className="container-colliers flex justify-between items-center h-full">
+      <div className="w-full px-8 lg:px-16 flex justify-between items-center h-full">
 
         {/* Left: Logo + Nav */}
         <div className="flex items-center gap-12 h-full">
           <Link href="/" className="flex items-center h-full py-4 flex-shrink-0">
             <Image
-              src="/images/logo-light.png"
+              src="/images/logo-colliers.png"
               alt="Colliers Flex"
-              width={140}
-              height={36}
-              className="h-8 w-auto"
+              width={120}
+              height={120}
+              className="h-10 w-auto"
               priority
             />
           </Link>

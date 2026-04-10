@@ -106,7 +106,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
               <span className="font-bold">dopasowane do Twojej firmy</span>
             </h1>
 
-            <p className="text-white/60 font-light mb-12 leading-relaxed text-lg max-w-2xl">
+            <p className="text-white font-normal mb-12 leading-relaxed text-lg max-w-2xl" style={{ fontFamily: 'var(--font-sans)' }}>
               Przeszukaj setki lokalizacji biur serwisowanych i coworkingów. Porównaj oferty i uzyskaj rekomendację naszego doradcy.
             </p>
 

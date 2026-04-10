@@ -5,18 +5,18 @@ export default function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-[#000759] text-white px-8 md:px-12 py-20 border-t border-white/5">
-      <div className="max-w-[1440px] mx-auto">
+    <footer className="bg-[#000759] text-white px-8 lg:px-16 py-20 border-t border-white/5">
+      <div className="w-full">
         {/* Main grid */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-16 border-b border-white/5 pb-16">
           {/* Logo + tagline */}
           <div className="flex flex-col gap-8">
             <Image
-              src="/images/logo-dark.png"
+              src="/images/logo-colliers.png"
               alt="Colliers Flex"
-              width={160}
-              height={40}
-              className="h-8 w-auto"
+              width={120}
+              height={120}
+              className="h-10 w-auto"
             />
             <p className="text-white/40 max-w-xs font-light text-xs leading-relaxed uppercase tracking-wider">
               Profesjonalne doradztwo w zakresie biur serwisowanych i przestrzeni coworkingowych w całej Polsce.
