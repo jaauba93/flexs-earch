@@ -48,14 +48,33 @@
 
 /* ── CSS Custom Properties ─────────────────────────────────────────────────── */
 :root {
-  --colliers-navy: #000759;
-  --colliers-blue: #25408F;
-  --colliers-blue-bright: #1C54F4;
-  --colliers-blue-mid: #3860BE;
+  /* Primary blues (brand dominant) */
+  --colliers-navy: #000759;        /* Deep Blue */
+  --colliers-blue: #25408F;        /* Dark Blue / Colliers Dark Blue */
+  --colliers-blue-bright: #1C54F4; /* Medium Blue */
+  --colliers-blue-light: #4D93FF;  /* Light Blue — digital accent */
+  --colliers-blue-pale: #C3E6FF;   /* Pale Blue — tints/backgrounds */
+
+  /* Secondary blue-greys (backgrounds, text, supporting) */
+  --colliers-bg-deep: #353E59;
+  --colliers-bg-dark: #56648F;
+  --colliers-bg-mid: #7B8BBD;
+  --colliers-bg-light-grey: #ACBBE8;
+  --colliers-bg-pale: #DBE5FF;
+
+  /* Tertiary / accent (sparingly) */
+  --colliers-red: #ED1B34;
+  --colliers-yellow: #FFD400;
+  --colliers-cyan: #0C9ED9;
   --colliers-green: #468254;
+  --colliers-teal: #2AB6A9;
+
+  /* Neutrals */
   --colliers-gray: #555555;
   --colliers-border: #BDBDBD;
+  --colliers-dark-text: #212121;
 
+  /* Surfaces */
   --surface: #f8f9fb;
   --surface-container-lowest: #ffffff;
   --surface-container-low: #f2f4f6;
@@ -63,52 +82,45 @@
   --surface-container-high: #e7e8ea;
   --surface-container-highest: #e1e2e4;
 
+  /* Material tokens */
   --on-surface: #191c1e;
   --on-surface-variant: #464651;
   --outline: #767682;
   --outline-variant: #c6c5d2;
 
+  /* Typography */
   --font-sans: 'Open Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-serif: 'Merriweather', Georgia, serif;
 
+  /* Layout */
   --container-max: 1440px;
   --gutter: 64px;
 
+  /* Radius — Colliers brand: sharp corners */
   --radius-none: 0px;
   --radius-sm: 4px;
 
+  /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 7, 89, 0.06);
-  --shadow-md: 0 8px 16px rgba(0, 7, 89, 0.08);
+  --shadow-md: 0 8px 24px rgba(0, 7, 89, 0.10);
+  --shadow-lg: 0 16px 48px rgba(0, 7, 89, 0.14);
 
+  /* Transitions */
   --transition-fast: 0.15s ease;
-  --transition-base: 0.2s ease;
+  --transition-base: 0.25s ease;
   --transition-slow: 0.5s ease;
+  --transition-xl: 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
-/* ── Scroll reveal animations ────────────────────────────────────────────────── */
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1), transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-}
-[data-reveal].reveal-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-[data-reveal="d1"] { transition-delay: 0.1s; }
-[data-reveal="d2"] { transition-delay: 0.2s; }
-[data-reveal="d3"] { transition-delay: 0.3s; }
-[data-reveal="d4"] { transition-delay: 0.45s; }
-
 body {
   font-family: var(--font-sans);
   font-size: 16px;
   font-weight: 400;
-  line-height: 24px;
+  line-height: 1.6;
   color: var(--on-surface);
   background-color: var(--surface);
   -webkit-font-smoothing: antialiased;
@@ -116,40 +128,146 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
+  font-weight: 300;
+}
+
+/* ── Scroll Reveal ───────────────────────────────────────────────────────────── */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+}
+[data-reveal].reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+[data-reveal="left"] {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+}
+[data-reveal="left"].reveal-visible { opacity: 1; transform: translateX(0); }
+[data-reveal="right"] {
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+}
+[data-reveal="right"].reveal-visible { opacity: 1; transform: translateX(0); }
+[data-reveal="d1"] { opacity: 0; transform: translateY(32px); transition-delay: 0.1s; }
+[data-reveal="d2"] { opacity: 0; transform: translateY(32px); transition-delay: 0.2s; }
+[data-reveal="d3"] { opacity: 0; transform: translateY(32px); transition-delay: 0.3s; }
+[data-reveal="d4"] { opacity: 0; transform: translateY(32px); transition-delay: 0.45s; }
+[data-reveal="d1"].reveal-visible,
+[data-reveal="d2"].reveal-visible,
+[data-reveal="d3"].reveal-visible,
+[data-reveal="d4"].reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ── Navigation glass ────────────────────────────────────────────────────────── */
 .nav-glass {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
-/* ── Overline signature ──────────────────────────────────────────────────────── */
+/* ── Overline — Open Sans Bold ALL CAPS, letter-spacing 100-175 ──────────────── */
 .overline {
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 0.18em;
   color: var(--colliers-blue-bright);
+}
+
+/* ── Keyline — the Colliers signature graphic element ────────────────────────── */
+/* A thin line that frames, organizes and leads the eye */
+.keyline {
+  position: relative;
+}
+.keyline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--colliers-blue-bright);
+}
+
+/* Horizontal keyline variant */
+.keyline-h::before {
+  width: 40px;
+  height: 2px;
+  top: auto;
+  bottom: -12px;
+  left: 0;
+}
+
+/* Animated keyline that draws on scroll reveal */
+.keyline-draw {
+  position: relative;
+  overflow: hidden;
+}
+.keyline-draw::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 2px;
+  width: 0;
+  background: linear-gradient(90deg, var(--colliers-navy) 0%, var(--colliers-blue-bright) 50%, var(--colliers-blue-light) 100%);
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+}
+.reveal-visible .keyline-draw::after,
+.keyline-draw.reveal-visible::after {
+  width: 100%;
+}
+
+/* Corner keyline brackets */
+.corner-bracket {
+  position: relative;
+}
+.corner-bracket::before,
+.corner-bracket::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+}
+.corner-bracket::before {
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--colliers-blue-bright);
+  border-left: 2px solid var(--colliers-blue-bright);
+}
+.corner-bracket::after {
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid var(--colliers-blue-bright);
+  border-right: 2px solid var(--colliers-blue-bright);
 }
 
 /* ── Buttons ───────────────────────────────────────────────────────────────── */
 .btn-primary {
   background-color: var(--colliers-navy);
   color: #ffffff;
-  padding: 12px 32px;
+  padding: 14px 32px;
   border-radius: var(--radius-sm);
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.16em;
   border: none;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-base), transform 0.1s ease, box-shadow var(--transition-base);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -158,21 +276,23 @@ h1, h2, h3, h4 {
 }
 .btn-primary:hover {
   background-color: var(--colliers-blue);
+  box-shadow: 0 4px 16px rgba(0, 7, 89, 0.25);
 }
+.btn-primary:active { transform: translateY(1px); }
 
 .btn-primary-bright {
   background-color: var(--colliers-blue-bright);
   color: #ffffff;
-  padding: 12px 32px;
+  padding: 14px 32px;
   border-radius: var(--radius-sm);
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.16em;
   border: none;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition: background-color var(--transition-base), box-shadow var(--transition-base);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -182,21 +302,22 @@ h1, h2, h3, h4 {
 .btn-primary-bright:hover {
   background-color: #fff;
   color: var(--colliers-navy);
+  box-shadow: 0 4px 20px rgba(28, 84, 244, 0.25);
 }
 
 .btn-outline {
   background: transparent;
   color: var(--colliers-navy);
-  border: 1px solid var(--colliers-navy);
-  padding: 10px 24px;
+  border: 1.5px solid var(--colliers-navy);
+  padding: 12px 28px;
   border-radius: var(--radius-sm);
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.16em;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition: background-color var(--transition-base), color var(--transition-base);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -206,6 +327,25 @@ h1, h2, h3, h4 {
 .btn-outline:hover {
   background-color: var(--colliers-navy);
   color: #ffffff;
+}
+
+/* Text CTA link — Colliers signature style */
+.cta-link {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--colliers-navy);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--transition-fast), gap var(--transition-fast);
+}
+.cta-link:hover {
+  color: var(--colliers-blue-bright);
+  gap: 10px;
 }
 
 /* ── Nav link ─────────────────────────────────────────────────────────────── */
@@ -234,13 +374,14 @@ h1, h2, h3, h4 {
   border: 1px solid var(--colliers-border);
   border-radius: var(--radius-none);
   overflow: hidden;
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
 }
 .card:hover {
   border-color: var(--colliers-blue-bright);
+  box-shadow: var(--shadow-md);
 }
 
-/* ── Ghost border inputs (Stitch style) ──────────────────────────────────── */
+/* ── Form ─────────────────────────────────────────────────────────────────── */
 .ghost-border {
   border-bottom: 1px solid rgba(118, 118, 130, 0.3);
   transition: border-bottom var(--transition-fast);
@@ -249,7 +390,6 @@ h1, h2, h3, h4 {
   border-bottom: 2px solid var(--colliers-blue);
 }
 
-/* ── Form input ───────────────────────────────────────────────────────────── */
 .form-input {
   width: 100%;
   border: 1px solid var(--colliers-border);
@@ -268,22 +408,22 @@ h1, h2, h3, h4 {
 
 .form-label {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.16em;
   color: var(--outline);
   margin-bottom: 4px;
 }
 
 /* ── Badge ────────────────────────────────────────────────────────────────── */
 .badge-featured {
-  background-color: var(--colliers-navy);
+  background-color: var(--colliers-blue-bright);
   color: #ffffff;
   font-size: 9px;
   font-weight: 700;
   padding: 4px 10px;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
 }
 
@@ -291,9 +431,9 @@ h1, h2, h3, h4 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(25, 28, 30, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 7, 89, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -308,12 +448,12 @@ h1, h2, h3, h4 {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  animation: modal-enter 0.2s ease;
+  animation: modal-enter 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes modal-enter {
-  from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.96) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* ── Container ────────────────────────────────────────────────────────────── */
@@ -329,11 +469,42 @@ h1, h2, h3, h4 {
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--surface-container-low); }
-::-webkit-scrollbar-thumb { background: var(--colliers-border); }
-::-webkit-scrollbar-thumb:hover { background: var(--outline); }
+::-webkit-scrollbar-thumb { background: var(--colliers-bg-light-grey); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--colliers-blue); }
 
-/* ── Hero scanline HUD ────────────────────────────────────────────────────── */
-.hud-scanline {
-  background: linear-gradient(to bottom, transparent 50%, rgba(28, 84, 244, 0.04) 50%);
-  background-size: 100% 4px;
+/* ── Colliers Block element (brand graphic: solid color block) ───────────────── */
+.brand-block {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* ── Gradient Keyline animation ──────────────────────────────────────────────── */
+@keyframes keyline-extend {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+@keyframes gradient-pan {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes float-up {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2); opacity: 0; }
+}
+@keyframes counter-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Mapbox popup ─────────────────────────────────────────────────────────── */
+.mapboxgl-popup-content {
+  border-radius: 0 !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 4px 20px rgba(0,7,89,0.18) !important;
+  border: 1px solid rgba(0,7,89,0.08) !important;
 }

@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator } from '@/types/database'
@@ -34,19 +33,40 @@ export default function ListingCard({ listing, highlighted }: ListingCardProps) 
 
   return (
     <article
-      className={`relative flex flex-row bg-white border group cursor-pointer transition-colors h-[210px] overflow-hidden ${
+      className={`relative flex flex-row bg-white group cursor-pointer h-[200px] overflow-hidden transition-all duration-300 ${
         highlighted
-          ? 'border-[#1C54F4]'
-          : 'border-[var(--colliers-border)] hover:border-[#1C54F4]'
+          ? 'shadow-[0_0_0_2px_#1C54F4,0_4px_20px_rgba(28,84,244,0.15)]'
+          : 'border border-[#e7e8ea] hover:border-[#1C54F4] hover:shadow-[0_4px_20px_rgba(0,7,89,0.1)]'
       }`}
     >
-      {/* Cover link — spans entire card, interactive elements use z-10 to sit above it */}
+      {/* Cover link */}
       <Link href={href} className="absolute inset-0 z-0" tabIndex={-1} aria-hidden="true" />
 
-      {/* Image — 40% */}
-      <div className="w-2/5 relative overflow-hidden flex-shrink-0">
+      {/* Keyline left accent — brand signature element, animates on hover */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[2px] z-10 transition-all duration-300 origin-top"
+        style={{
+          background: highlighted
+            ? 'linear-gradient(to bottom, #1C54F4, #4D93FF)'
+            : 'linear-gradient(to bottom, #1C54F4, transparent)',
+          transform: highlighted ? 'scaleY(1)' : 'scaleY(0)',
+        }}
+      />
+      <style jsx>{`
+        article:hover .keyline-left { transform: scaleY(1) !important; }
+      `}</style>
+      <div
+        className="keyline-left absolute left-0 top-0 bottom-0 w-[2px] z-10 transition-transform duration-400 origin-top"
+        style={{
+          background: 'linear-gradient(to bottom, #1C54F4, #4D93FF)',
+          transform: highlighted ? 'scaleY(1)' : 'scaleY(0)',
+        }}
+      />
+
+      {/* Image — 38% */}
+      <div className="w-[38%] relative overflow-hidden flex-shrink-0">
         {listing.is_featured && (
-          <div className="absolute top-0 left-0 z-10 badge-featured">Polecane</div>
+          <div className="absolute top-0 left-0 z-10 badge-featured text-[8px]">Polecane</div>
         )}
         {listing.main_image_url ? (
           <Image
@@ -57,40 +77,51 @@ export default function ListingCard({ listing, highlighted }: ListingCardProps) 
             sizes="(max-width: 768px) 40vw, 20vw"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#000759] to-[#25408F] flex items-center justify-center">
-            <span className="text-white/20 text-3xl font-light" style={{ fontFamily: 'var(--font-serif)' }}>CF</span>
+          <div className="w-full h-full bg-gradient-to-br from-[#000759] via-[#25408F] to-[#353E59] flex items-center justify-center">
+            <span className="text-white/15 font-light" style={{ fontFamily: 'var(--font-sans)', fontSize: '2.5rem', fontWeight: 300 }}>CF</span>
           </div>
         )}
       </div>
 
-      {/* Content — 60% */}
-      <div className="w-3/5 p-4 flex flex-col justify-between">
+      {/* Content — 62% */}
+      <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
         <div>
-          <div className="flex justify-between items-start mb-1">
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-              {listing.address_district ? `${listing.address_district}, ` : ''}{listing.address_city}
+          {/* Location + operator overline */}
+          <div className="flex justify-between items-start mb-2 gap-2">
+            <p
+              className="text-[10px] font-bold uppercase text-[#7B8BBD]"
+              style={{ letterSpacing: '0.14em' }}
+            >
+              {listing.address_district ? `${listing.address_district}` : listing.address_city}
             </p>
-            <span className="text-[9px] text-slate-400 font-semibold truncate ml-2">
+            <span className="text-[9px] text-[#ACBBE8] font-semibold truncate ml-1 flex-shrink-0">
               {listing.operator.name}
             </span>
           </div>
-          <h3 className="text-base font-bold text-[#000759] leading-tight group-hover:text-[#1C54F4] transition-colors">
+
+          {/* Name — Open Sans Light at mid size */}
+          <h3
+            className="text-[#000759] leading-tight group-hover:text-[#1C54F4] transition-colors duration-200"
+            style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '0.9rem' }}
+          >
             {listing.name}
           </h3>
+
           {listing.description && (
-            <p className="text-[11px] text-slate-500 mt-2 leading-relaxed line-clamp-2">
+            <p className="text-[11px] text-[#7B8BBD] mt-2 leading-relaxed line-clamp-2 font-light">
               {listing.description}
             </p>
           )}
         </div>
 
-        <div className="border-t border-slate-100 pt-3">
-          <div className="mb-2">
-            <p className="text-[9px] text-slate-400 mb-0.5">Cena od</p>
-            <p className="text-base font-bold text-[#000759]">
+        {/* Bottom — price + actions */}
+        <div className="border-t border-[#f2f4f6] pt-3 mt-2">
+          <div className="mb-2.5">
+            <p className="text-[9px] font-bold uppercase text-[#ACBBE8] mb-0.5" style={{ letterSpacing: '0.14em' }}>Cena od</p>
+            <p className="font-bold text-[#000759] leading-none" style={{ fontSize: '0.95rem' }}>
               {listing.price_desk_private
-                ? <>{listing.price_desk_private.toLocaleString('pl-PL')} PLN <span className="text-[10px] font-normal text-slate-400">/ mies.</span></>
-                : <span className="text-slate-400 text-sm font-normal">–</span>
+                ? <>{listing.price_desk_private.toLocaleString('pl-PL')} PLN <span className="text-[10px] font-normal text-[#ACBBE8]">/ mies.</span></>
+                : <span className="text-[#ACBBE8] text-sm font-normal">–</span>
               }
             </p>
           </div>
@@ -101,15 +132,16 @@ export default function ListingCard({ listing, highlighted }: ListingCardProps) 
                 e.stopPropagation()
                 if (inBasket) { removeItem(listing.id) } else { addItem(basketItem) }
               }}
-              className={`relative z-10 text-[9px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1 ${
+              className={`relative z-10 text-[9px] font-bold uppercase transition-colors flex items-center gap-1.5 ${
                 inBasket
                   ? 'text-[#468254]'
-                  : 'text-[#000759] hover:text-[#1C54F4]'
+                  : 'text-[#56648F] hover:text-[#1C54F4]'
               }`}
+              style={{ letterSpacing: '0.12em' }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 {inBasket
-                  ? <><polyline points="20 6 9 17 4 12"/></>
+                  ? <polyline points="20 6 9 17 4 12"/>
                   : <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>
                 }
               </svg>
@@ -118,9 +150,13 @@ export default function ListingCard({ listing, highlighted }: ListingCardProps) 
 
             <Link
               href={href}
-              className="relative z-10 text-[10px] font-bold uppercase tracking-widest text-[#000759] hover:text-[#1C54F4] transition-colors flex items-center gap-1"
+              className="relative z-10 text-[9px] font-bold uppercase text-[#000759] hover:text-[#1C54F4] transition-colors flex items-center gap-1"
+              style={{ letterSpacing: '0.12em' }}
             >
-              Szczegóły <ArrowRight size={14} />
+              Szczegóły
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
             </Link>
           </div>
         </div>
