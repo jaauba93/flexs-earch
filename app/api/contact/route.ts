@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resendApiKey = process.env.RESEND_API_KEY
+const resend = resendApiKey ? new Resend(resendApiKey) : null
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,6 +28,11 @@ export async function POST(req: NextRequest) {
       workstations_to: workstations_to || null,
       listing_ids,
     })
+
+    if (!resend) {
+      console.warn('Skipping email send: RESEND_API_KEY is not configured')
+      return NextResponse.json({ error: 'Błąd konfiguracji poczty' }, { status: 500 })
+    }
 
     // Send email via Resend
     const listingsHtml = (listing_names as string[])
