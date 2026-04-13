@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
 import { slugify } from '@/lib/utils/slugify'
+import { SEARCH_OPTIONS, findSearchOption, getSearchHref, normalizeSearchText } from '@/lib/search/locations'
 import type { Listing, Operator } from '@/types/database'
 
 type ListingWithOperator = Listing & { operator: Operator }
@@ -46,17 +47,6 @@ const steps = [
   },
 ]
 
-const suggestions = [
-  { label: 'Warszawa — Śródmieście', city: 'warszawa', district: 'srodmiescie' },
-  { label: 'Warszawa — Wola', city: 'warszawa', district: 'wola' },
-  { label: 'Warszawa — Mokotów', city: 'warszawa', district: 'mokotow' },
-  { label: 'Kraków — Podgórze', city: 'krakow', district: 'podgorze' },
-  { label: 'Wrocław — Stare Miasto', city: 'wroclaw', district: 'stare-miasto' },
-  { label: 'Trójmiasto', city: 'trojmiasto', district: null },
-  { label: 'Poznań', city: 'poznan', district: null },
-  { label: 'Katowice', city: 'katowice', district: null },
-]
-
 const stats = [
   { value: '500+', label: 'Lokalizacji w Polsce' },
   { value: '24h', label: 'Czas reakcji' },
@@ -77,8 +67,8 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
   }, [])
 
   const filteredSuggestions = searchValue.trim().length > 0
-    ? suggestions.filter(s => s.label.toLowerCase().includes(searchValue.toLowerCase()))
-    : suggestions
+    ? SEARCH_OPTIONS.filter((s) => [s.label, ...(s.aliases ?? [])].some((value) => normalizeSearchText(value).includes(normalizeSearchText(searchValue))))
+    : SEARCH_OPTIONS
 
   const showSuggestions = searchFocused && filteredSuggestions.length > 0
 
@@ -86,8 +76,8 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
     e.preventDefault()
     const val = searchValue.trim()
     if (!val) return
-    const slug = slugify(val)
-    router.push(`/biura-serwisowane/${slug}`)
+    const option = findSearchOption(val)
+    router.push(option ? getSearchHref(option) : `/biura-serwisowane?q=${encodeURIComponent(val)}`)
   }
 
   function handleCityClick(slug: string) {
@@ -273,14 +263,11 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                     </p>
                   </div>
                   {filteredSuggestions.map((s) => (
-                    <button
-                      key={`${s.city}-${s.district}`}
+                  <button
+                      key={s.key}
                       type="button"
                       onMouseDown={() => {
-                        const path = s.district
-                          ? `/biura-serwisowane/${s.city}/${s.district}`
-                          : `/biura-serwisowane/${s.city}`
-                        router.push(path)
+                        router.push(getSearchHref(s))
                         setSearchFocused(false)
                       }}
                       className="w-full flex items-center gap-4 px-6 py-3 text-left transition-colors group"

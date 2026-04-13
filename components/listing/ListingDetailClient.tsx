@@ -242,7 +242,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
               listings={[listing as any]}
               highlightedId={listing.id}
               onMarkerClick={() => {}}
-              initialCity={listing.address_city.toLowerCase()}
+              initialCity={citySlug}
             />
           </div>
         </section>

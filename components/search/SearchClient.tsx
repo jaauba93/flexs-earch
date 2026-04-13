@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { SlidersHorizontal, Map as MapIcon, List, X, MapPin } from 'lucide-react'
 import Header from '@/components/layout/Header'
@@ -11,6 +11,8 @@ import MapView, { type MapBounds } from '@/components/search/MapView'
 import ContactForm from '@/components/forms/ContactForm'
 import { createClient } from '@/lib/supabase/client'
 import { slugToCity, slugToDistrict, slugify } from '@/lib/utils/slugify'
+import { METRO_LINES, type MetroLineId, isNearMetroLine } from '@/lib/mapbox/metro'
+import { SEARCH_OPTIONS, findSearchOption, normalizeSearchText, type SearchTargetOption } from '@/lib/search/locations'
 import type { Listing, Operator, Amenity } from '@/types/database'
 
 const PAGE_SIZE = 25
@@ -24,7 +26,6 @@ interface SearchClientProps {
 }
 
 type ListingWithOperator = Listing & { operator: Operator }
-
 export default function SearchClient({
   initialCity,
   initialDistrict,
@@ -35,6 +36,29 @@ export default function SearchClient({
   const router = useRouter()
   const pathname = usePathname()
   const didMountRef = useRef(false)
+  const initialSearchTarget = useMemo<SearchTargetOption | null>(() => {
+    if (initialDistrict) {
+      return findSearchOption(`${slugToCity(initialCity ?? '')} — ${slugToDistrict(initialDistrict)}`)
+    }
+    if (initialCity) {
+      return findSearchOption(slugToCity(initialCity))
+    }
+    const q = searchParams.q || searchParams.search || ''
+    const type = searchParams.search_type
+    if (type === 'metro' && searchParams.metro_line) {
+      return SEARCH_OPTIONS.find((option) => option.type === 'metro' && option.metroLine === searchParams.metro_line as MetroLineId) ?? null
+    }
+    if (type === 'city' && q) {
+      return findSearchOption(q)
+    }
+    if (type === 'district' && q) {
+      return findSearchOption(q)
+    }
+    if (q) {
+      return findSearchOption(q)
+    }
+    return null
+  }, [initialCity, initialDistrict, searchParams.q, searchParams.search, searchParams.search_type, searchParams.metro_line])
 
   // ── Filter state (initialised from URL params) ───────────────────────────────
   const [stanowiskaOd, setStanowiskaOd] = useState(searchParams.stanowiska_od || '')
@@ -46,6 +70,28 @@ export default function SearchClient({
   const [selectedOperator, setSelectedOperator] = useState(searchParams.operator || '')
   const [sort, setSort] = useState(searchParams.sort || '')
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [searchInput, setSearchInput] = useState(() => initialSearchTarget?.label || searchParams.q || searchParams.search || '')
+  const [searchTarget, setSearchTarget] = useState<SearchTargetOption | null>(initialSearchTarget)
+  const [selectedMetroLine, setSelectedMetroLine] = useState<MetroLineId | ''>(
+    initialSearchTarget?.type === 'metro' ? (initialSearchTarget.metroLine || '') : ((searchParams.metro_line as MetroLineId | undefined) || '')
+  )
+  const [showDistrictGrid, setShowDistrictGrid] = useState(true)
+  const [showMetroLines, setShowMetroLines] = useState(true)
+
+  useEffect(() => {
+    setSearchTarget(initialSearchTarget)
+    setSearchInput(initialSearchTarget?.label || searchParams.q || searchParams.search || '')
+    setSelectedMetroLine(
+      initialSearchTarget?.type === 'metro'
+        ? (initialSearchTarget.metroLine || '')
+        : ((searchParams.metro_line as MetroLineId | undefined) || '')
+    )
+  }, [
+    initialSearchTarget,
+    searchParams.metro_line,
+    searchParams.q,
+    searchParams.search,
+  ])
 
   // ── Map bbox filter (client-side) ────────────────────────────────────────────
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
@@ -61,8 +107,34 @@ export default function SearchClient({
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
 
-  const city = initialCity ? slugToCity(initialCity) : undefined
-  const district = initialDistrict ? slugToDistrict(initialDistrict) : undefined
+  const resolvedCitySlug = initialCity ?? searchTarget?.citySlug
+  const resolvedDistrictSlug = initialDistrict ?? (searchTarget?.type === 'district' ? searchTarget.districtSlug : undefined)
+  const city = resolvedCitySlug ? slugToCity(resolvedCitySlug) : undefined
+  const district = resolvedDistrictSlug ? slugToDistrict(resolvedDistrictSlug) : undefined
+
+  const filteredSearchOptions = useMemo(() => {
+    const query = normalizeSearchText(searchInput)
+    if (!query) return SEARCH_OPTIONS.slice(0, 12)
+    return SEARCH_OPTIONS.filter((option) => {
+      const values = [option.label, ...(option.aliases ?? [])]
+      return values.some((value) => normalizeSearchText(value).includes(query))
+    }).slice(0, 12)
+  }, [searchInput])
+
+  const clearSearchTarget = useCallback(() => {
+    const params = new URLSearchParams()
+    if (stanowiskaOd) params.set('stanowiska_od', stanowiskaOd)
+    if (stanowiskaDo) params.set('stanowiska_do', stanowiskaDo)
+    if (ceniaDo) params.set('cena_do', ceniaDo)
+    if (selectedAmenities.length > 0) params.set('udogodnienia', selectedAmenities.join(','))
+    if (selectedOperator) params.set('operator', selectedOperator)
+    if (sort) params.set('sort', sort)
+
+    setSearchTarget(null)
+    setSearchInput('')
+    setSelectedMetroLine('')
+    router.replace(params.toString() ? `/biura-serwisowane?${params.toString()}` : '/biura-serwisowane', { scroll: false })
+  }, [ceniaDo, router, selectedAmenities, selectedOperator, sort, stanowiskaDo, stanowiskaOd])
 
   // ── Fetch from Supabase ──────────────────────────────────────────────────────
   const fetchListings = useCallback(async (pg = 1) => {
@@ -95,8 +167,10 @@ export default function SearchClient({
       query = query.order('is_featured', { ascending: false }).order('name')
     }
 
-    // When filtering by district client-side, fetch all city results (small dataset)
-    if (!initialDistrict) {
+    const shouldFetchAll = Boolean(initialDistrict || selectedMetroLine || searchTarget)
+
+    // For map-heavy client filters (metro, district/city autocomplete), fetch all first.
+    if (!shouldFetchAll) {
       const from = (pg - 1) * PAGE_SIZE
       query = query.range(from, from + PAGE_SIZE - 1)
     }
@@ -110,9 +184,9 @@ export default function SearchClient({
     }
 
     setAllFetched(results)
-    setTotal(initialDistrict ? results.length : (count || 0))
+    setTotal(shouldFetchAll ? results.length : (count || 0))
     setLoading(false)
-  }, [city, initialDistrict, stanowiskaOd, stanowiskaDo, ceniaDo, selectedOperator, sort, operators])
+  }, [city, initialDistrict, selectedMetroLine, searchTarget, stanowiskaOd, stanowiskaDo, ceniaDo, selectedOperator, sort, operators])
 
   useEffect(() => {
     fetchListings(1)
@@ -127,21 +201,47 @@ export default function SearchClient({
       return
     }
     const params = new URLSearchParams()
+    if (searchTarget) {
+      params.set('q', searchTarget.label)
+      params.set('search_type', searchTarget.type)
+      if (searchTarget.type === 'metro' && searchTarget.metroLine) {
+        params.set('metro_line', searchTarget.metroLine)
+      }
+    }
     if (stanowiskaOd) params.set('stanowiska_od', stanowiskaOd)
     if (stanowiskaDo) params.set('stanowiska_do', stanowiskaDo)
     if (ceniaDo) params.set('cena_do', ceniaDo)
     if (selectedAmenities.length > 0) params.set('udogodnienia', selectedAmenities.join(','))
     if (selectedOperator) params.set('operator', selectedOperator)
+    if (selectedMetroLine) params.set('metro_line', selectedMetroLine)
     if (sort) params.set('sort', sort)
 
     const url = params.toString() ? `${pathname}?${params.toString()}` : pathname
     router.replace(url, { scroll: false })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stanowiskaOd, stanowiskaDo, ceniaDo, selectedAmenities, selectedOperator, sort])
+  }, [stanowiskaOd, stanowiskaDo, ceniaDo, selectedAmenities, selectedOperator, selectedMetroLine, sort])
 
   // ── Client-side bbox filtering of fetched results ────────────────────────────
-  const featuredListings = allFetched.filter((l) => l.is_featured)
-  const regularListings = allFetched.filter((l) => !l.is_featured)
+  const featureFiltered = allFetched.filter((listing) => {
+    if (selectedMetroLine && !isNearMetroLine(listing.latitude, listing.longitude, selectedMetroLine, 1.2)) {
+      return false
+    }
+    if (searchTarget?.type === 'city') {
+      return slugify(listing.address_city) === slugify(searchTarget.label)
+    }
+    if (searchTarget?.type === 'district') {
+      const listingCity = slugify(listing.address_city)
+      const listingDistrict = slugify(listing.address_district || '')
+      return listingCity === searchTarget.citySlug && listingDistrict === searchTarget.districtSlug
+    }
+    if (searchTarget?.type === 'metro') {
+      return isNearMetroLine(listing.latitude, listing.longitude, searchTarget.metroLine as MetroLineId, 1.2)
+    }
+    return true
+  })
+
+  const featuredListings = featureFiltered.filter((l) => l.is_featured)
+  const regularListings = featureFiltered.filter((l) => !l.is_featured)
 
   const applyBbox = (list: ListingWithOperator[]) => {
     if (!mapBounds) return list
@@ -158,13 +258,14 @@ export default function SearchClient({
   const visibleRegular = applyBbox(regularListings)
   const allVisible = [...visibleFeatured, ...visibleRegular]
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const isClientOnlyFilterActive = Boolean(selectedMetroLine || searchTarget)
+  const totalPages = isClientOnlyFilterActive ? 1 : Math.ceil(total / PAGE_SIZE)
 
   const crumbs = [
     { label: 'Strona główna', href: '/' },
     { label: 'Wyszukaj', href: '/biura-serwisowane' },
-    ...(city ? [{ label: city, href: `/biura-serwisowane/${initialCity}` }] : []),
-    ...(district ? [{ label: district }] : []),
+    ...(city && resolvedCitySlug ? [{ label: city, href: `/biura-serwisowane/${resolvedCitySlug}` }] : []),
+    ...(district && resolvedCitySlug && resolvedDistrictSlug ? [{ label: district, href: `/biura-serwisowane/${resolvedCitySlug}/${resolvedDistrictSlug}` }] : []),
   ]
 
   function handlePage(p: number) {
@@ -175,12 +276,55 @@ export default function SearchClient({
 
   const FilterBar = () => (
     <div className="flex flex-wrap items-end gap-8 py-4 border-b border-[var(--colliers-border)]">
-      {city && (
-        <div className="flex flex-col min-w-[140px]">
-          <label className="form-label mb-1">Lokalizacja</label>
-          <span className="text-sm font-bold text-[#000759]">{city}</span>
+      <div className="flex flex-col min-w-[260px] relative">
+        <label className="form-label mb-1">Szukaj (miasto / dzielnica / metro)</label>
+        <div className="flex items-center gap-2 border-b border-[var(--colliers-border)] pb-1 pr-1">
+          <input
+            value={searchInput}
+            readOnly={Boolean(searchTarget)}
+            onChange={(e) => {
+              if (searchTarget) return
+              setSearchInput(e.target.value)
+            }}
+            onFocus={() => {
+              if (searchTarget) return
+            }}
+            placeholder={searchTarget ? searchTarget.label : 'np. Warszawa, Wola, M2'}
+            className={`flex-1 bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300 ${
+              searchTarget ? 'cursor-not-allowed' : ''
+            }`}
+          />
+          {searchTarget && (
+            <button
+              type="button"
+              onClick={clearSearchTarget}
+              className="shrink-0 text-[#1C54F4] hover:text-red-500 transition-colors"
+              aria-label="Usuń filtr wyszukiwania"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
-      )}
+        {!searchTarget && filteredSearchOptions.length > 0 && searchInput.trim().length > 0 && (
+          <div className="absolute top-[58px] left-0 right-0 bg-white border border-[var(--colliers-border)] shadow-[var(--shadow-md)] z-30 max-h-60 overflow-auto">
+            {filteredSearchOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => {
+                  setSearchTarget(option)
+                  setSearchInput(option.label)
+                  setSelectedMetroLine(option.type === 'metro' ? (option.metroLine as MetroLineId) : '')
+                }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--colliers-bg-light-blue)] text-[#000759] flex items-center justify-between"
+              >
+                <span>{option.label}</span>
+                <span className="text-[10px] uppercase tracking-widest text-[#7B8BBD]">{option.type}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Workstations */}
       <div className="flex flex-col">
@@ -232,6 +376,20 @@ export default function SearchClient({
           <option value="">Wszyscy</option>
           {operators.map((op) => (
             <option key={op.id} value={op.slug}>{op.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col">
+        <label className="form-label mb-1">Linia metra</label>
+        <select
+          className="bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
+          value={selectedMetroLine}
+          onChange={(e) => setSelectedMetroLine(e.target.value as MetroLineId | '')}
+        >
+          <option value="">Wszystkie</option>
+          {METRO_LINES.map((line) => (
+            <option key={line.id} value={line.id}>{line.name}</option>
           ))}
         </select>
       </div>
@@ -371,11 +529,15 @@ export default function SearchClient({
           {/* Map — 60% */}
           <div className="flex-1 overflow-hidden pr-16" data-lenis-prevent>
             <MapView
-              listings={allFetched}
+              listings={featureFiltered}
               highlightedId={highlightedId}
               onMarkerClick={(id) => setHighlightedId(id)}
               onBoundsChange={(bounds) => setMapBounds(bounds)}
-              initialCity={initialCity}
+              initialCity={resolvedCitySlug}
+              showDistrictGrid={showDistrictGrid}
+              showMetroLines={showMetroLines}
+              onToggleDistrictGrid={() => setShowDistrictGrid((value) => !value)}
+              onToggleMetroLines={() => setShowMetroLines((value) => !value)}
             />
           </div>
         </div>
@@ -402,11 +564,15 @@ export default function SearchClient({
           ) : (
             <div style={{ height: 'calc(100vh - 120px)' }}>
               <MapView
-                listings={allFetched}
+                listings={featureFiltered}
                 highlightedId={null}
                 onMarkerClick={() => {}}
                 onBoundsChange={(bounds) => setMapBounds(bounds)}
-                initialCity={initialCity}
+                initialCity={resolvedCitySlug}
+                showDistrictGrid={showDistrictGrid}
+                showMetroLines={showMetroLines}
+                onToggleDistrictGrid={() => setShowDistrictGrid((value) => !value)}
+                onToggleMetroLines={() => setShowMetroLines((value) => !value)}
               />
             </div>
           )}

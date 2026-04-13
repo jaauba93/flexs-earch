@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import type { Listing, Operator } from '@/types/database'
 import { POLAND_CENTER, POLAND_ZOOM, CITY_CENTERS } from '@/lib/mapbox/helpers'
+import { METRO_LINES } from '@/lib/mapbox/metro'
+import { getCityAreaPolygonsByCity, type CitySlug } from '@/lib/mapbox/city-areas'
 import { slugify } from '@/lib/utils/slugify'
 
 export interface MapBounds {
@@ -19,30 +21,26 @@ interface MapViewProps {
   onMarkerClick: (id: string) => void
   onBoundsChange?: (bounds: MapBounds) => void
   initialCity?: string
+  showDistrictGrid?: boolean
+  showMetroLines?: boolean
+  onToggleDistrictGrid?: () => void
+  onToggleMetroLines?: () => void
 }
 
-type MarkerEntry = {
-  marker: mapboxgl.Marker
-  el: HTMLDivElement
-  dotEl: HTMLDivElement
-  listingId: string
-  isFeatured: boolean
-}
+const LISTINGS_SOURCE_ID = 'listings-source'
+const DISTRICTS_SOURCE_ID = 'districts-source'
+const METRO_SOURCE_ID = 'metro-source'
+const CLUSTERS_LAYER_ID = 'clusters-layer'
+const CLUSTER_COUNT_LAYER_ID = 'cluster-count-layer'
+const POINTS_LAYER_ID = 'points-layer'
+const HIGHLIGHTED_LAYER_ID = 'highlighted-layer'
+const DISTRICT_FILL_LAYER_ID = 'district-fill-layer'
+const DISTRICT_LINE_LAYER_ID = 'district-line-layer'
+const DISTRICT_ADMIN_LAYER_ID = 'district-admin-lines-layer'
+const METRO_LINE_LAYER_ID = 'metro-line-layer'
 
 const BASKET_KEY = 'colliers-flex-basket'
 const MAX_BASKET = 10
-
-function applyMarkerStyle(el: HTMLDivElement, isHighlighted: boolean, isFeatured: boolean) {
-  el.style.width = `${isHighlighted ? 14 : 11}px`
-  el.style.height = `${isHighlighted ? 14 : 11}px`
-  el.style.borderRadius = '9999px'
-  el.style.background = isFeatured ? '#1C54F4' : isHighlighted ? '#000759' : '#25408F'
-  el.style.border = '2px solid white'
-  el.style.boxShadow = '0 2px 8px rgba(0,7,89,0.35)'
-  el.style.cursor = 'pointer'
-  el.style.transition = 'transform 0.15s ease, width 0.15s ease, height 0.15s ease, background 0.15s ease'
-  el.style.transform = isHighlighted ? 'scale(1.4)' : 'scale(1)'
-}
 
 function addListingToBasket(listing: Listing & { operator: Operator }) {
   const nextItem = {
@@ -75,8 +73,6 @@ function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivEl
   const citySlug = slugify(listing.address_city)
   const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
   const detailsHref = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
-  const compareHref = '/porownaj'
-
   const root = document.createElement('div')
   root.style.fontFamily = "'Open Sans', sans-serif"
   root.style.minWidth = '180px'
@@ -127,8 +123,8 @@ function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivEl
   detailsLink.style.borderBottom = '1px solid #000759'
   detailsLink.style.paddingBottom = '1px'
 
-  const compareLink = document.createElement('a')
-  compareLink.href = compareHref
+  const compareLink = document.createElement('button')
+  compareLink.type = 'button'
   compareLink.textContent = 'Porównaj →'
   compareLink.style.display = 'inline-block'
   compareLink.style.fontSize = '10px'
@@ -139,7 +135,15 @@ function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivEl
   compareLink.style.textDecoration = 'none'
   compareLink.style.borderBottom = '1px solid #1C54F4'
   compareLink.style.paddingBottom = '1px'
-  compareLink.addEventListener('click', () => {
+  compareLink.style.background = 'transparent'
+  compareLink.style.borderLeft = 'none'
+  compareLink.style.borderTop = 'none'
+  compareLink.style.borderRight = 'none'
+  compareLink.style.borderRadius = '0'
+  compareLink.style.cursor = 'pointer'
+  compareLink.addEventListener('click', (event) => {
+    event.preventDefault()
+    event.stopPropagation()
     addListingToBasket(listing)
   })
 
@@ -149,13 +153,78 @@ function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivEl
   return root
 }
 
-export default function MapView({ listings, highlightedId, onMarkerClick, onBoundsChange, initialCity }: MapViewProps) {
+function buildListingsGeoJson(listings: (Listing & { operator: Operator })[]) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: listings.map((listing) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [listing.longitude, listing.latitude] as [number, number],
+      },
+      properties: {
+        id: listing.id,
+        isFeatured: listing.is_featured ? 1 : 0,
+      },
+    })),
+  }
+}
+
+function buildDistrictsGeoJson(citySlug?: string) {
+  const cityDistricts = citySlug
+    ? getCityAreaPolygonsByCity(citySlug as CitySlug)
+    : []
+
+  return {
+    type: 'FeatureCollection' as const,
+    features: cityDistricts.map((area) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: area.coordinates,
+      },
+      properties: {
+        district: area.label,
+        city: area.city,
+      },
+    })),
+  }
+}
+
+function buildMetroGeoJson() {
+  return {
+    type: 'FeatureCollection' as const,
+    features: METRO_LINES.map((line) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: line.path,
+      },
+      properties: {
+        id: line.id,
+        color: line.color,
+      },
+    })),
+  }
+}
+
+export default function MapView({
+  listings,
+  highlightedId,
+  onMarkerClick,
+  onBoundsChange,
+  initialCity,
+  showDistrictGrid = true,
+  showMetroLines = true,
+  onToggleDistrictGrid,
+  onToggleMetroLines,
+}: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
-  const markerEntriesRef = useRef<MarkerEntry[]>([])
+  const listingsByIdRef = useRef<Map<string, Listing & { operator: Operator }>>(new Map())
   const hasUserInteracted = useRef(false)
-  const lockedIdRef = useRef<string | null>(null)
   const activePopupRef = useRef<mapboxgl.Popup | null>(null)
+  const lockedPopupIdRef = useRef<string | null>(null)
   const onMarkerClickRef = useRef(onMarkerClick)
   const [mapLoaded, setMapLoaded] = useState(false)
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
@@ -179,7 +248,202 @@ export default function MapView({ listings, highlightedId, onMarkerClick, onBoun
       })
       mapRef.current = map
 
-      map.on('load', () => setMapLoaded(true))
+      map.on('load', () => {
+        map.addSource(LISTINGS_SOURCE_ID, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+          cluster: true,
+          clusterMaxZoom: 13,
+          clusterRadius: 48,
+        })
+
+        map.addLayer({
+          id: CLUSTERS_LAYER_ID,
+          type: 'circle',
+          source: LISTINGS_SOURCE_ID,
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': '#4D93FF',
+            'circle-stroke-color': '#25408F',
+            'circle-stroke-width': 2,
+            'circle-radius': [
+              'step',
+              ['get', 'point_count'],
+              14,
+              15, 18,
+              40, 24,
+              100, 30,
+            ],
+          },
+        })
+
+        map.addLayer({
+          id: CLUSTER_COUNT_LAYER_ID,
+          type: 'symbol',
+          source: LISTINGS_SOURCE_ID,
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': ['get', 'point_count_abbreviated'],
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': 12,
+          },
+          paint: {
+            'text-color': '#FFFFFF',
+          },
+        })
+
+        map.addLayer({
+          id: POINTS_LAYER_ID,
+          type: 'circle',
+          source: LISTINGS_SOURCE_ID,
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': 6,
+            'circle-color': [
+              'case',
+              ['==', ['get', 'isFeatured'], 1],
+              '#1C54F4',
+              '#25408F',
+            ],
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#FFFFFF',
+          },
+        })
+
+        map.addLayer({
+          id: HIGHLIGHTED_LAYER_ID,
+          type: 'circle',
+          source: LISTINGS_SOURCE_ID,
+          filter: ['==', ['get', 'id'], ''],
+          paint: {
+            'circle-radius': 9,
+            'circle-color': '#000759',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#FFFFFF',
+          },
+        })
+
+        map.addSource(DISTRICTS_SOURCE_ID, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        })
+
+        map.addLayer({
+          id: DISTRICT_FILL_LAYER_ID,
+          type: 'fill',
+          source: DISTRICTS_SOURCE_ID,
+          paint: {
+            'fill-color': '#1C54F4',
+            'fill-opacity': 0.05,
+          },
+        })
+
+        map.addLayer({
+          id: DISTRICT_LINE_LAYER_ID,
+          type: 'line',
+          source: DISTRICTS_SOURCE_ID,
+          paint: {
+            'line-color': '#1C54F4',
+            'line-width': 1.5,
+            'line-opacity': 0.55,
+            'line-dasharray': [4, 3],
+          },
+        })
+
+        // Real Mapbox admin boundaries from composite/streets tileset (admin_level 7-9 = city districts)
+        map.addLayer({
+          id: DISTRICT_ADMIN_LAYER_ID,
+          type: 'line',
+          source: 'composite',
+          'source-layer': 'admin',
+          minzoom: 9,
+          filter: ['all',
+            ['>=', ['get', 'admin_level'], 7],
+            ['<=', ['get', 'admin_level'], 9],
+          ],
+          paint: {
+            'line-color': '#000759',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.8, 12, 1.4, 15, 2.0],
+            'line-opacity': 0.5,
+          },
+        }, 'road-label')
+
+        map.addSource(METRO_SOURCE_ID, {
+          type: 'geojson',
+          data: buildMetroGeoJson(),
+        })
+
+        map.addLayer({
+          id: METRO_LINE_LAYER_ID,
+          type: 'line',
+          source: METRO_SOURCE_ID,
+          paint: {
+            'line-color': ['coalesce', ['get', 'color'], '#1C54F4'],
+            'line-width': 3,
+            'line-opacity': 0.75,
+          },
+        })
+
+        map.on('click', CLUSTERS_LAYER_ID, (event) => {
+          const feature = event.features?.[0]
+          if (!feature) return
+          const clusterId = feature.properties?.cluster_id
+          const source = map.getSource(LISTINGS_SOURCE_ID) as mapboxgl.GeoJSONSource
+          source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err || typeof zoom !== 'number' || !feature.geometry || feature.geometry.type !== 'Point') return
+            map.easeTo({
+              center: feature.geometry.coordinates as [number, number],
+              zoom,
+              duration: 500,
+            })
+          })
+        })
+
+        map.on('mouseenter', CLUSTERS_LAYER_ID, () => {
+          map.getCanvas().style.cursor = 'pointer'
+        })
+        map.on('mouseleave', CLUSTERS_LAYER_ID, () => {
+          map.getCanvas().style.cursor = ''
+        })
+
+        map.on('click', POINTS_LAYER_ID, (event) => {
+          event.originalEvent.stopPropagation()
+          const feature = event.features?.[0]
+          if (!feature) return
+          const listingId = feature?.properties?.id as string | undefined
+          if (!listingId) return
+
+          const listing = listingsByIdRef.current.get(listingId)
+          if (!listing) return
+
+          if (!feature.geometry || feature.geometry.type !== 'Point') return
+          if (lockedPopupIdRef.current === listingId) {
+            onMarkerClickRef.current(listingId)
+            return
+          }
+          lockedPopupIdRef.current = listingId
+          activePopupRef.current?.remove()
+          activePopupRef.current = new mapboxgl.default.Popup({
+            offset: 15,
+            closeButton: false,
+            className: 'mapbox-popup-colliers',
+          })
+            .setDOMContent(buildPopupContent(listing))
+            .setLngLat(feature.geometry.coordinates as [number, number])
+            .addTo(map)
+
+          onMarkerClickRef.current(listingId)
+        })
+
+        map.on('mouseenter', POINTS_LAYER_ID, () => {
+          map.getCanvas().style.cursor = 'pointer'
+        })
+        map.on('mouseleave', POINTS_LAYER_ID, () => {
+          map.getCanvas().style.cursor = ''
+        })
+
+        setMapLoaded(true)
+      })
       map.on('dragstart', () => { hasUserInteracted.current = true })
       map.on('wheel', () => { hasUserInteracted.current = true })
 
@@ -195,13 +459,6 @@ export default function MapView({ listings, highlightedId, onMarkerClick, onBoun
           })
         }
       })
-
-      // Click on empty map area: release locked popup
-      map.on('click', () => {
-        lockedIdRef.current = null
-        activePopupRef.current?.remove()
-        activePopupRef.current = null
-      })
     })
 
     return () => {
@@ -216,92 +473,87 @@ export default function MapView({ listings, highlightedId, onMarkerClick, onBoun
   // ── Create markers when listing data changes (NOT on highlight change) ──────
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return
-
-    import('mapbox-gl').then((mapboxgl) => {
-      // Remove old markers and clear any open popup
-      markerEntriesRef.current.forEach(({ marker }) => marker.remove())
-      markerEntriesRef.current = []
-      lockedIdRef.current = null
-      activePopupRef.current?.remove()
-      activePopupRef.current = null
-
-      const valid = listings.filter(
-        (l) => l.latitude != null && l.longitude != null && isFinite(l.latitude) && isFinite(l.longitude)
-      )
-
-      valid.forEach((listing) => {
-        const el = document.createElement('div')
-        el.style.display = 'flex'
-        el.style.alignItems = 'center'
-        el.style.justifyContent = 'center'
-
-        const dotEl = document.createElement('div')
-        applyMarkerStyle(dotEl, false, !!listing.is_featured)
-        el.append(dotEl)
-
-        const currentMap = mapRef.current
-        if (!currentMap) return
-
-        const marker = new mapboxgl.default.Marker({ element: el })
-          .setLngLat([listing.longitude, listing.latitude])
-          .addTo(currentMap)
-
-        const openPopup = () => {
-          activePopupRef.current?.remove()
-          const popup = new mapboxgl.default.Popup({
-            offset: 15,
-            closeButton: false,
-            className: 'mapbox-popup-colliers',
-          })
-            .setDOMContent(buildPopupContent(listing))
-            .setLngLat([listing.longitude, listing.latitude])
-          if (mapRef.current) {
-            popup.addTo(mapRef.current)
-            activePopupRef.current = popup
-          }
-        }
-
-        el.addEventListener('mouseenter', (e) => {
-          e.stopPropagation()
-          openPopup()
-        })
-        el.addEventListener('mouseleave', () => {
-          // Keep popup if this marker is locked (clicked)
-          if (lockedIdRef.current === listing.id) return
-          activePopupRef.current?.remove()
-          activePopupRef.current = null
-        })
-        el.addEventListener('click', (e) => {
-          e.stopPropagation()
-          lockedIdRef.current = listing.id
-          openPopup()
-          onMarkerClickRef.current(listing.id)
-        })
-
-        markerEntriesRef.current.push({ marker, el, dotEl, listingId: listing.id, isFeatured: !!listing.is_featured })
-      })
-
-      // Auto-fit bounds on initial load only
-      if (!hasUserInteracted.current && valid.length > 0 && valid.length < 60 && mapRef.current) {
-        const bounds = valid.reduce(
-          (b, l) => b.extend([l.longitude, l.latitude] as [number, number]),
-          new mapboxgl.default.LngLatBounds(
-            [valid[0].longitude, valid[0].latitude],
-            [valid[0].longitude, valid[0].latitude]
-          )
-        )
-        mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 600 })
-      }
+    const map = mapRef.current
+    const cityData = initialCity ? CITY_CENTERS[initialCity] : null
+    map.easeTo({
+      center: cityData ? cityData.center : POLAND_CENTER,
+      zoom: cityData ? cityData.zoom : POLAND_ZOOM,
+      duration: 500,
     })
+
+    const districtSource = map.getSource(DISTRICTS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
+    if (districtSource) districtSource.setData(buildDistrictsGeoJson(initialCity))
+
+    activePopupRef.current?.remove()
+    activePopupRef.current = null
+    lockedPopupIdRef.current = null
+  }, [initialCity, mapLoaded])
+
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return
+    
+    const valid = listings.filter(
+      (listing) =>
+        listing.latitude != null &&
+        listing.longitude != null &&
+        Number.isFinite(listing.latitude) &&
+        Number.isFinite(listing.longitude)
+    )
+
+    listingsByIdRef.current = new Map(valid.map((listing) => [listing.id, listing]))
+
+    const map = mapRef.current
+    const listingSource = map.getSource(LISTINGS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
+    if (listingSource) listingSource.setData(buildListingsGeoJson(valid))
+
+    // Auto-fit bounds on initial load only
+    if (!hasUserInteracted.current && valid.length > 0 && valid.length < 100) {
+      const minLng = Math.min(...valid.map((item) => item.longitude))
+      const maxLng = Math.max(...valid.map((item) => item.longitude))
+      const minLat = Math.min(...valid.map((item) => item.latitude))
+      const maxLat = Math.max(...valid.map((item) => item.latitude))
+      map.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        { padding: 80, maxZoom: 14, duration: 600 }
+      )
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listings, mapLoaded])
 
-  // ── Update highlight style without recreating markers ───────────────────────
+  // ── Update highlighted point ────────────────────────────────────────────────
   useEffect(() => {
-    markerEntriesRef.current.forEach(({ dotEl, listingId, isFeatured }) => {
-      applyMarkerStyle(dotEl, listingId === highlightedId, isFeatured)
-    })
-  }, [highlightedId])
+    if (!mapRef.current || !mapLoaded) return
+    const highlightFilter = highlightedId
+      ? ['==', ['get', 'id'], highlightedId]
+      : ['==', ['get', 'id'], '']
+    mapRef.current.setFilter(HIGHLIGHTED_LAYER_ID, highlightFilter as mapboxgl.FilterSpecification)
+  }, [highlightedId, mapLoaded])
+
+  // ── Toggle map overlays ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapLoaded) return
+    const vis = showDistrictGrid ? 'visible' : 'none'
+    const safeSet = (layerId: string) => {
+      try { if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', vis) } catch { /* layer not ready */ }
+    }
+    safeSet(DISTRICT_FILL_LAYER_ID)
+    safeSet(DISTRICT_LINE_LAYER_ID)
+    safeSet(DISTRICT_ADMIN_LAYER_ID)
+  }, [mapLoaded, showDistrictGrid])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapLoaded) return
+    try {
+      if (map.getLayer(METRO_LINE_LAYER_ID)) {
+        map.setLayoutProperty(METRO_LINE_LAYER_ID, 'visibility', showMetroLines ? 'visible' : 'none')
+      }
+    } catch { /* layer not ready */ }
+  }, [mapLoaded, showMetroLines])
 
   if (!token) {
     return (
@@ -314,6 +566,29 @@ export default function MapView({ listings, highlightedId, onMarkerClick, onBoun
   return (
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
+      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+        <div className="flex items-center gap-2 bg-white/95 backdrop-blur border border-[var(--colliers-border)] shadow-[var(--shadow-md)] px-3 py-2 rounded-md">
+          <button
+            type="button"
+            onClick={() => onToggleMetroLines?.()}
+            className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
+              showMetroLines ? 'text-[#1C54F4]' : 'text-[#7B8BBD]'
+            }`}
+          >
+            Linie metra
+          </button>
+          <span className="text-[10px] text-slate-300">|</span>
+          <button
+            type="button"
+            onClick={() => onToggleDistrictGrid?.()}
+            className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
+              showDistrictGrid ? 'text-[#1C54F4]' : 'text-[#7B8BBD]'
+            }`}
+          >
+            Dzielnice
+          </button>
+        </div>
+      </div>
       {!mapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-[var(--colliers-bg-light-blue)]">
           <div className="flex flex-col items-center gap-3">
