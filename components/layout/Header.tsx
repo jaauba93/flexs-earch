@@ -18,9 +18,10 @@ const cities = [
 
 interface HeaderProps {
   onOpenForm?: () => void
+  transparent?: boolean
 }
 
-export default function Header({ onOpenForm }: HeaderProps) {
+export default function Header({ onOpenForm, transparent = false }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -33,10 +34,10 @@ export default function Header({ onOpenForm }: HeaderProps) {
 
   return (
     <header
-      className={`sticky top-0 z-40 h-20 nav-glass transition-all duration-300 ${
-        scrolled
-          ? 'shadow-[0_2px_24px_rgba(0,7,89,0.1)]'
-          : 'border-b border-[#000759]/6'
+      className={`sticky top-0 z-40 h-20 transition-all duration-300 ${
+        transparent
+          ? 'bg-transparent border-b border-white/10 shadow-none'
+          : `nav-glass ${scrolled ? 'shadow-[0_2px_24px_rgba(0,7,89,0.1)]' : 'border-b border-[#000759]/6'}`
       }`}
     >
       {/* Keyline gradient — top border that shifts color slightly on scroll */}
@@ -44,7 +45,7 @@ export default function Header({ onOpenForm }: HeaderProps) {
         className="absolute top-0 left-0 right-0 h-[2px] transition-opacity duration-300"
         style={{
           background: 'linear-gradient(90deg, #000759 0%, #1C54F4 40%, #4D93FF 70%, #000759 100%)',
-          opacity: scrolled ? 0.7 : 0.25,
+          opacity: transparent ? 0.25 : (scrolled ? 0.7 : 0.25),
         }}
       />
 
@@ -58,7 +59,7 @@ export default function Header({ onOpenForm }: HeaderProps) {
               alt="Colliers Flex"
               width={120}
               height={120}
-              className="h-10 w-auto"
+              className={`h-10 w-auto ${transparent ? 'brightness-0 invert' : ''}`}
               priority
             />
           </Link>
@@ -70,7 +71,10 @@ export default function Header({ onOpenForm }: HeaderProps) {
               onMouseEnter={() => setDropdownOpen(true)}
               onMouseLeave={() => setDropdownOpen(false)}
             >
-              <button className="nav-link active flex items-center gap-1.5 h-full border-b-2 border-[#1C54F4] opacity-100">
+              <button
+                className="nav-link active flex items-center gap-1.5 h-full border-b-2 border-[#1C54F4] opacity-100"
+                style={transparent ? { color: '#ffffff' } : undefined}
+              >
                 Wyszukaj
                 <ChevronDown
                   size={13}
@@ -123,25 +127,37 @@ export default function Header({ onOpenForm }: HeaderProps) {
               )}
             </div>
 
-            <a href="#" className="nav-link h-full flex items-center">O nas</a>
-            <a href="#" className="nav-link h-full flex items-center">Blog</a>
+            <a
+              href="#"
+              className="nav-link h-full flex items-center"
+              style={transparent ? { color: '#ffffff', opacity: 0.9 } : undefined}
+            >
+              O nas
+            </a>
+            <a
+              href="#"
+              className="nav-link h-full flex items-center"
+              style={transparent ? { color: '#ffffff', opacity: 0.9 } : undefined}
+            >
+              Blog
+            </a>
           </nav>
         </div>
 
         {/* Right: Compare + CTA */}
         <div className="hidden lg:flex items-center gap-6">
-          <BasketDropdown onOpenForm={onOpenForm} variant="desktop" />
-          <button onClick={onOpenForm} className="btn-primary">
+          <BasketDropdown onOpenForm={onOpenForm} variant="desktop" transparent={transparent} />
+          <button onClick={onOpenForm} className={transparent ? 'btn-primary-bright' : 'btn-primary'}>
             Otrzymaj ofertę
           </button>
         </div>
 
         {/* Mobile actions */}
         <div className="flex lg:hidden items-center gap-4">
-          <BasketDropdown onOpenForm={onOpenForm} />
+          <BasketDropdown onOpenForm={onOpenForm} transparent={transparent} />
           <button
             onClick={() => setMobileOpen((v) => !v)}
-            className="p-2 text-[#000759]"
+            className={`p-2 ${transparent ? 'text-white' : 'text-[#000759]'}`}
             aria-label="Menu"
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}

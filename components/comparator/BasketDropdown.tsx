@@ -9,9 +9,10 @@ import { useBasketContext } from '@/lib/context/BasketContext'
 interface BasketDropdownProps {
   onOpenForm?: () => void
   variant?: 'mobile' | 'desktop'
+  transparent?: boolean
 }
 
-export default function BasketDropdown({ onOpenForm, variant = 'mobile' }: BasketDropdownProps) {
+export default function BasketDropdown({ onOpenForm, variant = 'mobile', transparent = false }: BasketDropdownProps) {
   const { items, count, removeItem, mounted } = useBasketContext()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -25,7 +26,10 @@ export default function BasketDropdown({ onOpenForm, variant = 'mobile' }: Baske
   }, [])
 
   if (!mounted) return variant === 'desktop' ? (
-    <button className="relative flex items-center gap-2 border border-[var(--colliers-navy)]/20 px-4 py-3 text-[var(--colliers-navy)]" aria-label="Porównywarka">
+    <button
+      className={`relative flex items-center gap-2 px-4 py-3 ${transparent ? 'border border-white/30 text-white' : 'border border-[var(--colliers-navy)]/20 text-[var(--colliers-navy)]'}`}
+      aria-label="Porównywarka"
+    >
       <ArrowLeftRight size={16} />
       <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Porównaj</span>
     </button>
@@ -40,11 +44,15 @@ export default function BasketDropdown({ onOpenForm, variant = 'mobile' }: Baske
       {variant === 'desktop' ? (
         <button
           onClick={() => setOpen((v) => !v)}
-          className="relative flex items-center gap-2 border border-[var(--colliers-navy)]/20 px-4 py-3 hover:bg-[var(--colliers-navy)]/5 hover:border-[var(--colliers-navy)]/40 transition-all group"
+          className={`relative flex items-center gap-2 px-4 py-3 transition-all group ${
+            transparent
+              ? 'border border-white/30 text-white hover:bg-white/8 hover:border-white/55'
+              : 'border border-[var(--colliers-navy)]/20 hover:bg-[var(--colliers-navy)]/5 hover:border-[var(--colliers-navy)]/40'
+          }`}
           aria-label={`Porównywarka (${count} biur)`}
         >
-          <ArrowLeftRight size={16} className="text-[var(--colliers-navy)]" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--colliers-navy)]/80 group-hover:text-[var(--colliers-navy)]">
+          <ArrowLeftRight size={16} className={transparent ? 'text-white' : 'text-[var(--colliers-navy)]'} />
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${transparent ? 'text-white/90 group-hover:text-white' : 'text-[var(--colliers-navy)]/80 group-hover:text-[var(--colliers-navy)]'}`}>
             Porównaj
           </span>
           {count > 0 && (
@@ -59,7 +67,7 @@ export default function BasketDropdown({ onOpenForm, variant = 'mobile' }: Baske
       ) : (
         <button
           onClick={() => setOpen((v) => !v)}
-          className="relative p-2 text-[var(--colliers-navy)] hover:text-[var(--colliers-blue-bright)] transition-colors"
+          className={`relative p-2 transition-colors ${transparent ? 'text-white hover:text-white/80' : 'text-[var(--colliers-navy)] hover:text-[var(--colliers-blue-bright)]'}`}
           aria-label={`Porównywarka (${count} biur)`}
         >
           <ShoppingBag size={22} />
