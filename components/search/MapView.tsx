@@ -5,7 +5,6 @@ import type mapboxgl from 'mapbox-gl'
 import type { Listing, Operator } from '@/types/database'
 import { POLAND_CENTER, POLAND_ZOOM, CITY_CENTERS } from '@/lib/mapbox/helpers'
 import { METRO_LINES } from '@/lib/mapbox/metro'
-import { getCityAreaPolygonsByCity, type CitySlug } from '@/lib/mapbox/city-areas'
 import { slugify } from '@/lib/utils/slugify'
 
 export interface MapBounds {
@@ -170,24 +169,22 @@ function buildListingsGeoJson(listings: (Listing & { operator: Operator })[]) {
   }
 }
 
-function buildDistrictsGeoJson(citySlug?: string) {
-  const cityDistricts = citySlug
-    ? getCityAreaPolygonsByCity(citySlug as CitySlug)
-    : []
+const EMPTY_GEOJSON = { type: 'FeatureCollection' as const, features: [] }
 
-  return {
-    type: 'FeatureCollection' as const,
-    features: cityDistricts.map((area) => ({
-      type: 'Feature' as const,
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: area.coordinates,
-      },
-      properties: {
-        district: area.label,
-        city: area.city,
-      },
-    })),
+async function fetchDistrictsGeoJson(citySlug?: string): Promise<typeof EMPTY_GEOJSON> {
+  try {
+    const res = await fetch('/data/districts.geojson')
+    if (!res.ok) return EMPTY_GEOJSON
+    const all = await res.json()
+    if (!citySlug) return all
+    return {
+      ...all,
+      features: all.features.filter(
+        (f: { properties: { city: string } }) => f.properties.city === citySlug
+      ),
+    }
+  } catch {
+    return EMPTY_GEOJSON
   }
 }
 
@@ -482,7 +479,13 @@ export default function MapView({
     })
 
     const districtSource = map.getSource(DISTRICTS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
-    if (districtSource) districtSource.setData(buildDistrictsGeoJson(initialCity))
+    if (districtSource) {
+      fetchDistrictsGeoJson(initialCity).then((geojson) => {
+        // Re-check source still exists (map may have been unmounted)
+        const src = mapRef.current?.getSource(DISTRICTS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined
+        src?.setData(geojson as Parameters<typeof src.setData>[0])
+      })
+    }
 
     activePopupRef.current?.remove()
     activePopupRef.current = null
