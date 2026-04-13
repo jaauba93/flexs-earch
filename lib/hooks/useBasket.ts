@@ -20,15 +20,31 @@ export function useBasket() {
   const [items, setItems] = useState<BasketItem[]>([])
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
+  const syncFromStorage = useCallback(() => {
     try {
       const stored = localStorage.getItem(BASKET_KEY)
-      if (stored) setItems(JSON.parse(stored))
+      setItems(stored ? JSON.parse(stored) : [])
     } catch {
-      // ignore
+      setItems([])
     }
   }, [])
+
+  useEffect(() => {
+    setMounted(true)
+    syncFromStorage()
+
+    function handleBasketUpdate() {
+      syncFromStorage()
+    }
+
+    window.addEventListener('storage', handleBasketUpdate)
+    window.addEventListener('basket:update', handleBasketUpdate)
+
+    return () => {
+      window.removeEventListener('storage', handleBasketUpdate)
+      window.removeEventListener('basket:update', handleBasketUpdate)
+    }
+  }, [syncFromStorage])
 
   const persist = useCallback((next: BasketItem[]) => {
     setItems(next)

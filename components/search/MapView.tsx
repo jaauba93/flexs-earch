@@ -24,36 +24,129 @@ interface MapViewProps {
 type MarkerEntry = {
   marker: mapboxgl.Marker
   el: HTMLDivElement
+  dotEl: HTMLDivElement
   listingId: string
   isFeatured: boolean
 }
 
-function getMarkerStyle(isHighlighted: boolean, isFeatured: boolean): string {
-  return `
-    width: ${isHighlighted ? 14 : 11}px;
-    height: ${isHighlighted ? 14 : 11}px;
-    border-radius: 50%;
-    background: ${isFeatured ? '#1C54F4' : isHighlighted ? '#000759' : '#25408F'};
-    border: 2px solid white;
-    box-shadow: 0 2px 8px rgba(0,7,89,0.35);
-    cursor: pointer;
-    transition: transform 0.15s ease, width 0.15s ease, height 0.15s ease;
-    transform: ${isHighlighted ? 'scale(1.4)' : 'scale(1)'};
-  `
+const BASKET_KEY = 'colliers-flex-basket'
+const MAX_BASKET = 10
+
+function applyMarkerStyle(el: HTMLDivElement, isHighlighted: boolean, isFeatured: boolean) {
+  el.style.width = `${isHighlighted ? 14 : 11}px`
+  el.style.height = `${isHighlighted ? 14 : 11}px`
+  el.style.borderRadius = '9999px'
+  el.style.background = isFeatured ? '#1C54F4' : isHighlighted ? '#000759' : '#25408F'
+  el.style.border = '2px solid white'
+  el.style.boxShadow = '0 2px 8px rgba(0,7,89,0.35)'
+  el.style.cursor = 'pointer'
+  el.style.transition = 'transform 0.15s ease, width 0.15s ease, height 0.15s ease, background 0.15s ease'
+  el.style.transform = isHighlighted ? 'scale(1.4)' : 'scale(1)'
 }
 
-function buildPopupHTML(listing: Listing & { operator: Operator }): string {
+function addListingToBasket(listing: Listing & { operator: Operator }) {
+  const nextItem = {
+    id: listing.id,
+    name: listing.name,
+    address_street: listing.address_street,
+    address_city: listing.address_city,
+    address_district: listing.address_district,
+    address_postcode: listing.address_postcode,
+    main_image_url: listing.main_image_url,
+    slug: listing.slug,
+  }
+
+  try {
+    const stored = window.localStorage.getItem(BASKET_KEY)
+    const parsed = stored ? JSON.parse(stored) : []
+    const items = Array.isArray(parsed) ? parsed : []
+
+    if (items.some((item) => item?.id === listing.id)) return
+    if (items.length >= MAX_BASKET) return
+
+    window.localStorage.setItem(BASKET_KEY, JSON.stringify([...items, nextItem]))
+    window.dispatchEvent(new Event('basket:update'))
+  } catch {
+    // ignore basket persistence issues in popup CTA
+  }
+}
+
+function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivElement {
   const citySlug = slugify(listing.address_city)
   const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
-  const href = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
-  return `
-    <div style="font-family:'Open Sans',sans-serif;min-width:180px;padding:4px 2px">
-      <p style="font-weight:700;color:#000759;margin:0 0 3px;font-size:13px;line-height:1.3">${listing.name}</p>
-      <p style="color:#777;margin:0 0 6px;font-size:11px">${listing.address_street ?? ''}</p>
-      ${listing.price_desk_private ? `<p style="color:#1C54F4;margin:0 0 10px;font-size:12px;font-weight:700">od ${listing.price_desk_private.toLocaleString('pl-PL')} PLN / mies.</p>` : ''}
-      <a href="${href}" style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#000759;text-decoration:none;border-bottom:1px solid #000759;padding-bottom:1px">Szczegóły →</a>
-    </div>
-  `
+  const detailsHref = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
+  const compareHref = '/porownaj'
+
+  const root = document.createElement('div')
+  root.style.fontFamily = "'Open Sans', sans-serif"
+  root.style.minWidth = '180px'
+  root.style.padding = '4px 2px'
+
+  const title = document.createElement('p')
+  title.textContent = listing.name
+  title.style.fontWeight = '700'
+  title.style.color = '#000759'
+  title.style.margin = '0 0 3px'
+  title.style.fontSize = '13px'
+  title.style.lineHeight = '1.3'
+
+  const address = document.createElement('p')
+  address.textContent = listing.address_street ?? ''
+  address.style.color = '#777'
+  address.style.margin = '0 0 6px'
+  address.style.fontSize = '11px'
+
+  root.append(title, address)
+
+  if (listing.price_desk_private) {
+    const price = document.createElement('p')
+    price.textContent = `od ${listing.price_desk_private.toLocaleString('pl-PL')} PLN / mies.`
+    price.style.color = '#1C54F4'
+    price.style.margin = '0 0 10px'
+    price.style.fontSize = '12px'
+    price.style.fontWeight = '700'
+    root.append(price)
+  }
+
+  const actions = document.createElement('div')
+  actions.style.display = 'flex'
+  actions.style.alignItems = 'center'
+  actions.style.gap = '14px'
+  actions.style.flexWrap = 'wrap'
+
+  const detailsLink = document.createElement('a')
+  detailsLink.href = detailsHref
+  detailsLink.textContent = 'Szczegóły →'
+  detailsLink.style.display = 'inline-block'
+  detailsLink.style.fontSize = '10px'
+  detailsLink.style.fontWeight = '700'
+  detailsLink.style.textTransform = 'uppercase'
+  detailsLink.style.letterSpacing = '0.08em'
+  detailsLink.style.color = '#000759'
+  detailsLink.style.textDecoration = 'none'
+  detailsLink.style.borderBottom = '1px solid #000759'
+  detailsLink.style.paddingBottom = '1px'
+
+  const compareLink = document.createElement('a')
+  compareLink.href = compareHref
+  compareLink.textContent = 'Porównaj →'
+  compareLink.style.display = 'inline-block'
+  compareLink.style.fontSize = '10px'
+  compareLink.style.fontWeight = '700'
+  compareLink.style.textTransform = 'uppercase'
+  compareLink.style.letterSpacing = '0.08em'
+  compareLink.style.color = '#1C54F4'
+  compareLink.style.textDecoration = 'none'
+  compareLink.style.borderBottom = '1px solid #1C54F4'
+  compareLink.style.paddingBottom = '1px'
+  compareLink.addEventListener('click', () => {
+    addListingToBasket(listing)
+  })
+
+  actions.append(detailsLink, compareLink)
+  root.append(actions)
+
+  return root
 }
 
 export default function MapView({ listings, highlightedId, onMarkerClick, onBoundsChange, initialCity }: MapViewProps) {
@@ -138,7 +231,13 @@ export default function MapView({ listings, highlightedId, onMarkerClick, onBoun
 
       valid.forEach((listing) => {
         const el = document.createElement('div')
-        el.style.cssText = getMarkerStyle(false, !!listing.is_featured)
+        el.style.display = 'flex'
+        el.style.alignItems = 'center'
+        el.style.justifyContent = 'center'
+
+        const dotEl = document.createElement('div')
+        applyMarkerStyle(dotEl, false, !!listing.is_featured)
+        el.append(dotEl)
 
         const currentMap = mapRef.current
         if (!currentMap) return
@@ -154,7 +253,7 @@ export default function MapView({ listings, highlightedId, onMarkerClick, onBoun
             closeButton: false,
             className: 'mapbox-popup-colliers',
           })
-            .setHTML(buildPopupHTML(listing))
+            .setDOMContent(buildPopupContent(listing))
             .setLngLat([listing.longitude, listing.latitude])
           if (mapRef.current) {
             popup.addTo(mapRef.current)
@@ -179,7 +278,7 @@ export default function MapView({ listings, highlightedId, onMarkerClick, onBoun
           onMarkerClickRef.current(listing.id)
         })
 
-        markerEntriesRef.current.push({ marker, el, listingId: listing.id, isFeatured: !!listing.is_featured })
+        markerEntriesRef.current.push({ marker, el, dotEl, listingId: listing.id, isFeatured: !!listing.is_featured })
       })
 
       // Auto-fit bounds on initial load only
@@ -199,8 +298,8 @@ export default function MapView({ listings, highlightedId, onMarkerClick, onBoun
 
   // ── Update highlight style without recreating markers ───────────────────────
   useEffect(() => {
-    markerEntriesRef.current.forEach(({ el, listingId, isFeatured }) => {
-      el.style.cssText = getMarkerStyle(listingId === highlightedId, isFeatured)
+    markerEntriesRef.current.forEach(({ dotEl, listingId, isFeatured }) => {
+      applyMarkerStyle(dotEl, listingId === highlightedId, isFeatured)
     })
   }, [highlightedId])
 
