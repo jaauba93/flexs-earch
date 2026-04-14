@@ -28,93 +28,98 @@ const cities = [
 
 const TRANSITION_MS = 900
 const TRANSITION_EASING = 'cubic-bezier(0.77, 0, 0.175, 1)'
+// Minimum accumulated wheel delta before triggering a panel change.
+// Prevents accidental triggers on trackpads (many small events) while
+// still responding to a single mouse-wheel click (~100 per notch).
+const DELTA_THRESHOLD = 80
+
+type HeroPhase = 'active' | 'exiting' | 'dismissed'
 
 export default function HomeClient({ featuredListings }: HomeClientProps) {
   const [searchValue, setSearchValue] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [heroLoaded, setHeroLoaded] = useState(false)
-  const [heroOverlay, setHeroOverlay] = useState(true)
+  const [heroPhase, setHeroPhase] = useState<HeroPhase>('active')
   const [activePanel, setActivePanel] = useState(0)
   const router = useRouter()
 
-  // Refs
-  const heroWrapperRef = useRef<HTMLDivElement>(null)
+  // ── Refs (used inside event handlers to avoid stale closures) ─────────────
+  const heroPhaseRef = useRef<HeroPhase>('active')
   const activePanelRef = useRef(0)
   const isTransitioningRef = useRef(false)
+  const deltaAccumRef = useRef(0)
+  const lastWheelTimeRef = useRef(0)
+
+  // Sync heroPhase ref whenever state changes
+  const setHeroPhaseSync = (phase: HeroPhase) => {
+    heroPhaseRef.current = phase
+    setHeroPhase(phase)
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setHeroLoaded(true), 80)
     return () => clearTimeout(t)
   }, [])
 
-  // Track if header should be transparent (hero visible)
-  useEffect(() => {
-    const onScroll = () => {
-      const wrapper = heroWrapperRef.current
-      if (!wrapper) return
-      const rect = wrapper.getBoundingClientRect()
-      setHeroOverlay(rect.top <= 0 && rect.bottom > 80)
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  // Dot + panel indicator: sync with activePanelRef
-  const syncActivePanel = () => setActivePanel(activePanelRef.current)
-
-  // Wheel handler — intercepts scroll while hero is in view
+  // ── Wheel handler — installed once, uses refs for all mutable state ───────
   useEffect(() => {
     function goToPanel(next: number) {
       isTransitioningRef.current = true
       activePanelRef.current = next
-      syncActivePanel()
+      setActivePanel(next)
+      setTimeout(() => { isTransitioningRef.current = false }, TRANSITION_MS + 50)
+    }
+
+    function exitHero() {
+      isTransitioningRef.current = true
+      heroPhaseRef.current = 'exiting'
+      setHeroPhase('exiting')
       setTimeout(() => {
+        heroPhaseRef.current = 'dismissed'
+        setHeroPhase('dismissed')
         isTransitioningRef.current = false
       }, TRANSITION_MS + 50)
     }
 
     function onWheel(e: WheelEvent) {
-      const wrapper = heroWrapperRef.current
-      if (!wrapper) return
+      // Once dismissed, release all interception so page scrolls normally
+      if (heroPhaseRef.current === 'dismissed') return
 
-      const rect = wrapper.getBoundingClientRect()
-      // Hero is "active" when its sticky stage is visible in viewport
-      const inHero = rect.top <= 0 && rect.bottom > 0
+      // Always prevent browser scroll while hero is visible
+      e.preventDefault()
 
-      if (!inHero) return
+      // Don't trigger panel changes during exit animation or panel transition
+      if (heroPhaseRef.current === 'exiting') return
+      if (isTransitioningRef.current) return
 
-      if (isTransitioningRef.current) {
-        e.preventDefault()
-        return
-      }
+      // Accumulate delta; reset accumulator after 500ms idle
+      const now = Date.now()
+      if (now - lastWheelTimeRef.current > 500) deltaAccumRef.current = 0
+      lastWheelTimeRef.current = now
+      deltaAccumRef.current += e.deltaY
+
+      if (Math.abs(deltaAccumRef.current) < DELTA_THRESHOLD) return
+
+      const direction = deltaAccumRef.current > 0 ? 1 : -1
+      deltaAccumRef.current = 0 // reset after firing
 
       const current = activePanelRef.current
-
-      if (e.deltaY > 0) {
-        // Scrolling down
-        if (current < 2) {
-          e.preventDefault()
-          goToPanel(current + 1)
-        }
-        // current === 2: allow natural page scroll downward
-      } else if (e.deltaY < 0) {
-        // Scrolling up
-        if (current > 0) {
-          e.preventDefault()
-          goToPanel(current - 1)
-        }
-        // current === 0: allow natural page scroll upward
+      if (direction > 0) {
+        if (current < 2) goToPanel(current + 1)
+        else exitHero()
+      } else {
+        if (current > 0) goToPanel(current - 1)
+        // At panel 0 scrolling up: do nothing (nothing above hero)
       }
     }
 
-    // capture: true so we run before Lenis / other listeners
+    // capture:true — runs before Lenis and other passive listeners
     window.addEventListener('wheel', onWheel, { passive: false, capture: true })
     return () => window.removeEventListener('wheel', onWheel, true)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Search logic ────────────────────────────────────────────────────────────
+  // ── Search logic ──────────────────────────────────────────────────────────
   const normalizedSearch = normalizeSearchText(searchValue)
   const showSuggestions = searchFocused
 
@@ -127,33 +132,29 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
   const searchGroups = [
     {
       title: 'Miasta',
-      icon: 'location_on',
       items: CITY_OPTIONS.filter((item) =>
-        !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((value) => normalizeSearchText(value).includes(normalizedSearch))
+        !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
       ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
     },
     {
       title: 'Biura',
-      icon: 'apartment',
       items: featuredListingSuggestions.filter((item) => !normalizedSearch || normalizeSearchText(item.label).includes(normalizedSearch)).slice(0, 3),
     },
     {
       title: 'Linie metra',
-      icon: 'alt_route',
       items: METRO_OPTIONS.filter((item) =>
-        !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((value) => normalizeSearchText(value).includes(normalizedSearch))
+        !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
       ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
     },
     {
       title: 'Dzielnice',
-      icon: 'map',
       items: DISTRICT_OPTIONS.filter((item) =>
-        !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((value) => normalizeSearchText(value).includes(normalizedSearch))
+        !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
       ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
     },
   ]
 
-  const hasSuggestions = searchGroups.some((group) => group.items.length > 0)
+  const hasSuggestions = searchGroups.some((g) => g.items.length > 0)
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -167,26 +168,46 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
     router.push(`/biura-serwisowane/${slug}`)
   }
 
-  // Panel transform helper
+  // Panel overlay transform: panel slides in from below when active
   const panelTransform = (panelIndex: number) =>
     activePanel >= panelIndex ? 'translateY(0%)' : 'translateY(100%)'
 
+  // Hero exit transform applied to the whole fixed wrapper
+  const heroWrapperTransform = heroPhase === 'exiting' ? 'translateY(-100%)' : 'translateY(0%)'
+  const heroWrapperTransition = heroPhase === 'exiting'
+    ? `transform ${TRANSITION_MS}ms ${TRANSITION_EASING}`
+    : 'none'
+
   return (
     <>
-      <Header onOpenForm={() => setFormOpen(true)} transparent={heroOverlay} />
+      {/*
+        Header: transparent while hero is visible (active or mid-exit).
+        Hero sits at z-30; header at z-40 (sticky) sits on top, showing
+        the dark blue hero background through the transparent header.
+      */}
+      <Header onOpenForm={() => setFormOpen(true)} transparent={heroPhase !== 'dismissed'} />
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          HERO — 3-panel overlay stack
-          300vh wrapper in page flow; sticky stage holds panels.
-          Panels slide ON TOP of each other (overlay effect).
-          Wheel handler intercepts scroll while hero is visible.
+          HERO — fixed fullscreen overlay, 3-panel overlay stack.
+
+          Architecture:
+          • position:fixed covers entire viewport, z-index 30 (below header z-40).
+          • heroPhase drives lifecycle: active → exiting → dismissed.
+          • Wheel handler accumulates delta and prevents browser scroll while active.
+          • Panel 2 slides over Panel 1 (z20), Panel 3 over Panel 2 (z30).
+          • On dismiss: whole wrapper slides up (-100%), then unmounts.
       ════════════════════════════════════════════════════════════════════════ */}
-      <div ref={heroWrapperRef} style={{ height: '300vh', position: 'relative' }}>
-
-        {/* Sticky stage — always 100vh, clips all 3 panels */}
-        <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
-
-          {/* ── Panel 1: Wyszukiwarka — z-index 10, always below ─────────── */}
+      {heroPhase !== 'dismissed' && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 30,
+            transform: heroWrapperTransform,
+            transition: heroWrapperTransition,
+          }}
+        >
+          {/* ── Panel 1: Wyszukiwarka — always below, z-index 10 ─────────── */}
           <section
             style={{ position: 'absolute', inset: 0, zIndex: 10 }}
             className="relative overflow-hidden bg-[#000759] text-white"
@@ -195,13 +216,11 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
             <div className="absolute inset-0 z-0">
               <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,7,89,0.85) 0%, rgba(0,7,89,0.55) 50%, rgba(0,7,89,0.92) 100%)' }} />
               <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '56px 56px' }} />
-              {/* Blue radial glow */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] h-[55%] opacity-30" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1C54F4 0%, transparent 70%)' }} />
             </div>
-            {/* Keyline top */}
             <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ background: 'linear-gradient(90deg, #000759 0%, #1C54F4 40%, #4D93FF 70%, #000759 100%)' }} />
 
-            {/* Content — pushed high so autocomplete dropdown fits below */}
+            {/* Content — high position so autocomplete dropdown fits below */}
             <div className="relative z-10 w-full px-8 lg:px-16" style={{ paddingTop: 'clamp(4rem, 16vh, 9rem)' }}>
               <div className="max-w-4xl mx-auto text-center">
 
@@ -342,7 +361,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
             </div>
           </section>
 
-          {/* ── Panel 2: Narzędzia — slides OVER panel 1 ─────────────────── */}
+          {/* ── Panel 2: Narzędzia — slides OVER Panel 1 ─────────────────── */}
           <section
             style={{
               position: 'absolute',
@@ -355,7 +374,6 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
           >
             <div className="absolute inset-0 z-0">
               <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,7,89,0.75) 0%, rgba(10,20,100,0.65) 100%)' }} />
-              {/* Blue glow bottom-right */}
               <div className="absolute bottom-0 right-0 w-[55%] h-[55%] opacity-25" style={{ background: 'radial-gradient(ellipse at 100% 100%, #1C54F4 0%, transparent 65%)' }} />
               <div className="absolute top-0 left-0 w-[40%] h-[40%] opacity-15" style={{ background: 'radial-gradient(ellipse at 0% 0%, #4D93FF 0%, transparent 65%)' }} />
             </div>
@@ -363,10 +381,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
             <div className="relative z-10 w-full px-8 lg:px-16">
               <div className="max-w-4xl mx-auto text-center">
-                <h2
-                  className="font-light leading-tight mb-5"
-                  style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}
-                >
+                <h2 className="font-light leading-tight mb-5" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
                   Porównaj modele i oszacuj koszty
                 </h2>
                 <p className="text-white/65 text-lg font-light mb-14 max-w-2xl mx-auto leading-relaxed">
@@ -374,7 +389,6 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                 </p>
 
                 <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-                  {/* Card: Porównywarka */}
                   <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer" onClick={() => router.push('/porownaj')}>
                     <div className="flex justify-center mb-5">
                       <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -388,7 +402,6 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                     </div>
                   </div>
 
-                  {/* Card: Kalkulator */}
                   <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer" onClick={() => setFormOpen(true)}>
                     <div className="flex justify-center mb-5">
                       <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -412,7 +425,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
             </div>
           </section>
 
-          {/* ── Panel 3: Doradztwo — slides OVER panel 2 ─────────────────── */}
+          {/* ── Panel 3: Doradztwo — slides OVER Panel 2 ─────────────────── */}
           <section
             style={{
               position: 'absolute',
@@ -433,10 +446,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
             <div className="relative z-10 w-full px-8 lg:px-16">
               <div className="max-w-3xl mx-auto text-center">
-                <h2
-                  className="font-light leading-tight mb-7"
-                  style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}
-                >
+                <h2 className="font-light leading-tight mb-7" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
                   Wolisz porównać rynek z doradcą?
                 </h2>
                 <p className="text-white/65 text-xl font-light mb-12 max-w-xl mx-auto leading-relaxed">
@@ -448,8 +458,6 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                 >
                   Porozmawiaj z doradcą
                 </button>
-
-                {/* Trust badges */}
                 <div className="mt-10 flex flex-wrap justify-center gap-6">
                   {['Bezpośredni kontakt', 'Bezpłatne wsparcie', 'Negocjacja warunków'].map((item) => (
                     <span key={item} className="border border-white/15 px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
@@ -461,7 +469,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
             </div>
           </section>
 
-          {/* ── Dot navigation ────────────────────────────────────────────── */}
+          {/* ── Dot navigation ─────────────────────────────────────────────── */}
           <div className="absolute bottom-8 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3">
             {[0, 1, 2].map((index) => (
               <button
@@ -470,29 +478,29 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                 onClick={() => {
                   if (isTransitioningRef.current) return
                   const diff = Math.abs(index - activePanelRef.current)
-                  // Animate through panels sequentially for multi-step jumps
-                  if (diff <= 1) {
+                  if (diff === 0) return
+                  if (diff === 1) {
                     isTransitioningRef.current = true
                     activePanelRef.current = index
                     setActivePanel(index)
                     setTimeout(() => { isTransitioningRef.current = false }, TRANSITION_MS + 50)
                   } else {
-                    // Step through
+                    // Step through panels sequentially
                     const step = index > activePanelRef.current ? 1 : -1
-                    let current = activePanelRef.current
+                    let cur = activePanelRef.current
+                    isTransitioningRef.current = true
                     const interval = setInterval(() => {
-                      current += step
-                      activePanelRef.current = current
-                      setActivePanel(current)
-                      if (current === index) {
+                      cur += step
+                      activePanelRef.current = cur
+                      setActivePanel(cur)
+                      if (cur === index) {
                         clearInterval(interval)
                         setTimeout(() => { isTransitioningRef.current = false }, TRANSITION_MS + 50)
                       }
                     }, TRANSITION_MS + 60)
-                    isTransitioningRef.current = true
                   }
                 }}
-                className={`h-2.5 w-2.5 rounded-full border transition-all duration-400 ${
+                className={`h-2.5 w-2.5 rounded-full border transition-all duration-300 ${
                   activePanel === index
                     ? 'border-white bg-white scale-110 shadow-[0_0_0_4px_rgba(255,255,255,0.15)]'
                     : 'border-white/40 bg-white/15 hover:bg-white/35'
@@ -502,17 +510,20 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
             ))}
           </div>
 
-        </div>{/* /sticky stage */}
-      </div>{/* /hero wrapper 300vh */}
+        </div>
+      )}{/* /hero fixed overlay */}
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          JAK DZIAŁAMY — 3 kroki
+          PAGE CONTENT — sits behind the fixed hero, becomes visible when
+          hero dismisses (slides up). No spacer needed: hero is fixed, not
+          in document flow.
       ════════════════════════════════════════════════════════════════════════ */}
+
+      {/* JAK DZIAŁAMY */}
       <section className="py-32 bg-[#F8F9FB] border-y border-slate-100" data-reveal>
         <div className="container-colliers">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
 
-            {/* Left: heading */}
             <div className="lg:col-span-1">
               <p className="overline mb-6">Przewodnik</p>
               <h2
@@ -524,7 +535,6 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
               </h2>
             </div>
 
-            {/* Right: steps */}
             <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-24">
               {[
                 {
@@ -544,14 +554,12 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                 },
               ].map(({ num, title, desc }, i) => (
                 <div key={num} data-reveal={`d${i + 1}`}>
-                  {/* Step number */}
                   <p
                     className="font-bold text-[#E8ECFF] mb-5 leading-none select-none"
                     style={{ fontFamily: 'var(--font-sans)', fontSize: '4.5rem', letterSpacing: '-0.02em' }}
                   >
                     {num}
                   </p>
-                  {/* Keyline */}
                   <div className="w-8 h-[2px] bg-[#1C54F4] mb-5" />
                   <h3
                     className="text-[#000759] mb-4 leading-snug"
@@ -568,14 +576,11 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          FEATURED — Portrait cards, magazine layout
-      ════════════════════════════════════════════════════════════════════════ */}
+      {/* FEATURED */}
       {featuredListings.length > 0 && (
         <section className="py-28 bg-white" data-reveal>
           <div className="container-colliers">
 
-            {/* Section header with keyline */}
             <div className="flex flex-col md:flex-row justify-between items-end mb-20" data-reveal>
               <div>
                 <p className="overline mb-5">Wybrane lokalizacje</p>
@@ -595,7 +600,6 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
               </div>
             </div>
 
-            {/* Portrait grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
               {featuredListings.map((listing, index) => {
                 const citySlug = slugify(listing.address_city)
@@ -608,22 +612,13 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                     className="group cursor-pointer block"
                     data-reveal={`d${(index % 3) + 1}`}
                   >
-                    <div
-                      className="relative overflow-hidden bg-[#000759]"
-                      style={{ aspectRatio: '4/5' }}
-                    >
-                      {/* Featured badge */}
+                    <div className="relative overflow-hidden bg-[#000759]" style={{ aspectRatio: '4/5' }}>
                       <div className="absolute top-0 left-0 z-20 badge-featured">Polecane</div>
-
-                      {/* Blue overlay */}
                       <div
                         className="absolute inset-0 z-10 transition-opacity duration-700"
                         style={{ background: 'linear-gradient(to bottom, rgba(0,7,89,0.2) 0%, rgba(0,7,89,0.7) 100%)', opacity: 1 }}
                       />
-                      <div
-                        className="absolute inset-0 z-10 bg-[#1C54F4]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      />
-
+                      <div className="absolute inset-0 z-10 bg-[#1C54F4]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       {listing.main_image_url ? (
                         <Image
                           src={listing.main_image_url}
@@ -638,8 +633,6 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                           <span className="text-white/15 font-light" style={{ fontFamily: 'var(--font-sans)', fontSize: '5rem', fontWeight: 300 }}>CF</span>
                         </div>
                       )}
-
-                      {/* Info overlay */}
                       <div className="absolute bottom-0 left-0 right-0 z-20 p-6">
                         <div className="w-8 h-[2px] bg-[#1C54F4] mb-3 transition-all duration-500 group-hover:w-16" />
                         <p className="overline mb-2 text-white/60">{listing.address_district || listing.address_city}</p>
@@ -670,7 +663,6 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
       )}
 
       <Footer />
-
       {formOpen && <ContactForm onClose={() => setFormOpen(false)} />}
     </>
   )
