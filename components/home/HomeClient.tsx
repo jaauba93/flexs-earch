@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
+import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
+import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { formatPriceShort } from '@/lib/currency/currency'
 import { slugify } from '@/lib/utils/slugify'
 import { CITY_OPTIONS, DISTRICT_OPTIONS, METRO_OPTIONS, findSearchOption, getSearchHref, normalizeSearchText } from '@/lib/search/locations'
 import type { Listing, Operator } from '@/types/database'
@@ -28,96 +31,59 @@ const cities = [
 
 const TRANSITION_MS = 900
 const TRANSITION_EASING = 'cubic-bezier(0.77, 0, 0.175, 1)'
-// Minimum accumulated wheel delta before triggering a panel change.
-// Prevents accidental triggers on trackpads (many small events) while
-// still responding to a single mouse-wheel click (~100 per notch).
-const DELTA_THRESHOLD = 80
-
-type HeroPhase = 'active' | 'exiting' | 'dismissed'
 
 export default function HomeClient({ featuredListings }: HomeClientProps) {
+  const { currency, rates } = useCurrencyContext()
   const [searchValue, setSearchValue] = useState('')
   const [formOpen, setFormOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
-  const [heroLoaded, setHeroLoaded] = useState(false)
-  const [heroPhase, setHeroPhase] = useState<HeroPhase>('active')
+  const [heroLoaded] = useState(true)
   const [activePanel, setActivePanel] = useState(0)
+  const [heroVisible, setHeroVisible] = useState(true)
   const router = useRouter()
 
   // ── Refs (used inside event handlers to avoid stale closures) ─────────────
-  const heroPhaseRef = useRef<HeroPhase>('active')
+  const heroWrapperRef = useRef<HTMLDivElement>(null)
   const activePanelRef = useRef(0)
-  const isTransitioningRef = useRef(false)
-  const deltaAccumRef = useRef(0)
-  const lastWheelTimeRef = useRef(0)
-
-  // Sync heroPhase ref whenever state changes
-  const setHeroPhaseSync = (phase: HeroPhase) => {
-    heroPhaseRef.current = phase
-    setHeroPhase(phase)
-  }
+  const scrollRafRef = useRef<number | null>(null)
 
   useEffect(() => {
-    const t = setTimeout(() => setHeroLoaded(true), 80)
-    return () => clearTimeout(t)
-  }, [])
+    function syncHeroState() {
+      scrollRafRef.current = null
+      const wrapper = heroWrapperRef.current
+      if (!wrapper) return
 
-  // ── Wheel handler — installed once, uses refs for all mutable state ───────
-  useEffect(() => {
-    function goToPanel(next: number) {
-      isTransitioningRef.current = true
-      activePanelRef.current = next
-      setActivePanel(next)
-      setTimeout(() => { isTransitioningRef.current = false }, TRANSITION_MS + 50)
+      const start = wrapper.offsetTop
+      const viewportHeight = window.innerHeight
+      const maxScroll = Math.max(wrapper.offsetHeight - viewportHeight, 0)
+      const scrollY = window.scrollY
+      const relativeScroll = Math.min(Math.max(scrollY - start, 0), maxScroll)
+      const nextPanel = Math.min(2, Math.max(0, Math.round(relativeScroll / viewportHeight)))
+      const inHero = scrollY >= start && scrollY < start + maxScroll
+
+      setHeroVisible(inHero)
+      activePanelRef.current = nextPanel
+      setActivePanel((current) => (current === nextPanel ? current : nextPanel))
     }
 
-    function exitHero() {
-      isTransitioningRef.current = true
-      heroPhaseRef.current = 'exiting'
-      setHeroPhase('exiting')
-      setTimeout(() => {
-        heroPhaseRef.current = 'dismissed'
-        setHeroPhase('dismissed')
-        isTransitioningRef.current = false
-      }, TRANSITION_MS + 50)
+    function onScroll() {
+      if (scrollRafRef.current != null) return
+      scrollRafRef.current = window.requestAnimationFrame(syncHeroState)
     }
 
-    function onWheel(e: WheelEvent) {
-      // Once dismissed, release all interception so page scrolls normally
-      if (heroPhaseRef.current === 'dismissed') return
+    syncHeroState()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
 
-      // Always prevent browser scroll while hero is visible
-      e.preventDefault()
-
-      // Don't trigger panel changes during exit animation or panel transition
-      if (heroPhaseRef.current === 'exiting') return
-      if (isTransitioningRef.current) return
-
-      // Accumulate delta; reset accumulator after 500ms idle
-      const now = Date.now()
-      if (now - lastWheelTimeRef.current > 500) deltaAccumRef.current = 0
-      lastWheelTimeRef.current = now
-      deltaAccumRef.current += e.deltaY
-
-      if (Math.abs(deltaAccumRef.current) < DELTA_THRESHOLD) return
-
-      const direction = deltaAccumRef.current > 0 ? 1 : -1
-      deltaAccumRef.current = 0 // reset after firing
-
-      const current = activePanelRef.current
-      if (direction > 0) {
-        if (current < 2) goToPanel(current + 1)
-        else exitHero()
-      } else {
-        if (current > 0) goToPanel(current - 1)
-        // At panel 0 scrolling up: do nothing (nothing above hero)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (scrollRafRef.current != null) {
+        window.cancelAnimationFrame(scrollRafRef.current)
       }
     }
-
-    // capture:true — runs before Lenis and other passive listeners
-    window.addEventListener('wheel', onWheel, { passive: false, capture: true })
-    return () => window.removeEventListener('wheel', onWheel, true)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Search logic ──────────────────────────────────────────────────────────
   const normalizedSearch = normalizeSearchText(searchValue)
@@ -172,11 +138,15 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
   const panelTransform = (panelIndex: number) =>
     activePanel >= panelIndex ? 'translateY(0%)' : 'translateY(100%)'
 
-  // Hero exit transform applied to the whole fixed wrapper
-  const heroWrapperTransform = heroPhase === 'exiting' ? 'translateY(-100%)' : 'translateY(0%)'
-  const heroWrapperTransition = heroPhase === 'exiting'
-    ? `transform ${TRANSITION_MS}ms ${TRANSITION_EASING}`
-    : 'none'
+  function scrollToPanel(panelIndex: number) {
+    const wrapper = heroWrapperRef.current
+    if (!wrapper) return
+
+    window.scrollTo({
+      top: wrapper.offsetTop + (window.innerHeight * panelIndex),
+      behavior: 'smooth',
+    })
+  }
 
   return (
     <>
@@ -185,26 +155,24 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
         Hero sits at z-30; header at z-40 (sticky) sits on top, showing
         the dark blue hero background through the transparent header.
       */}
-      <Header onOpenForm={() => setFormOpen(true)} transparent={heroPhase !== 'dismissed'} />
+      <Header onOpenForm={() => setFormOpen(true)} onOpenWizard={() => setWizardOpen(true)} transparent={heroVisible} overlay />
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          HERO — fixed fullscreen overlay, 3-panel overlay stack.
+          HERO — sticky fullscreen stack, 3-panel overlay stack.
 
           Architecture:
-          • position:fixed covers entire viewport, z-index 30 (below header z-40).
-          • heroPhase drives lifecycle: active → exiting → dismissed.
-          • Wheel handler accumulates delta and prevents browser scroll while active.
+          • outer wrapper owns the scroll range for all 3 hero screens.
+          • sticky viewport stage keeps the hero locked while the page scrolls.
           • Panel 2 slides over Panel 1 (z20), Panel 3 over Panel 2 (z30).
-          • On dismiss: whole wrapper slides up (-100%), then unmounts.
+          • Once the wrapper ends, the normal page flow continues below.
       ════════════════════════════════════════════════════════════════════════ */}
-      {heroPhase !== 'dismissed' && (
+      <div ref={heroWrapperRef} style={{ position: 'relative', height: '300dvh' }}>
         <div
           style={{
-            position: 'fixed',
-            inset: 0,
+            position: 'sticky',
+            top: 0,
             zIndex: 30,
-            transform: heroWrapperTransform,
-            transition: heroWrapperTransition,
+            height: '100dvh',
           }}
         >
           {/* ── Panel 1: Wyszukiwarka — always below, z-index 10 ─────────── */}
@@ -312,10 +280,13 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                                   <button
                                     key={item.key}
                                     type="button"
-                                    onMouseDown={() => { router.push(item.href); setSearchFocused(false) }}
-                                    className="flex items-center gap-3 py-1.5 text-left text-white/80 hover:text-white transition-colors"
+                                    onMouseDown={(event) => {
+                                      event.preventDefault()
+                                      router.push(item.href)
+                                      setSearchFocused(false)
+                                    }}
+                                    className="flex items-center py-1.5 text-left text-white/80 hover:text-white transition-colors"
                                   >
-                                    <span className="h-1 w-1 rounded-full bg-[#4D93FF] shrink-0" />
                                     <span className="text-sm font-light">{item.label}</span>
                                   </button>
                                 ))}
@@ -382,36 +353,50 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
             <div className="relative z-10 w-full px-8 lg:px-16">
               <div className="max-w-4xl mx-auto text-center">
                 <h2 className="font-light leading-tight mb-5" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
-                  Porównaj modele i oszacuj koszty
+                  Narzędzia i wiedza do lepszej decyzji
                 </h2>
                 <p className="text-white/65 text-lg font-light mb-14 max-w-2xl mx-auto leading-relaxed">
-                  Nie każda firma potrzebuje tego samego typu biura. Skorzystaj z naszych narzędzi, aby sprawdzić, który model będzie najbardziej racjonalny biznesowo.
+                  Nie każda firma potrzebuje tego samego typu biura. Skorzystaj z narzędzi porównawczych i wiedzy eksperckiej, aby szybciej zawęzić wybór i podjąć racjonalną decyzję.
                 </p>
 
-                <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer" onClick={() => router.push('/porownaj')}>
+                <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
+                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col" onClick={() => setWizardOpen(true)}>
                     <div className="flex justify-center mb-5">
                       <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
                       </svg>
                     </div>
                     <h3 className="text-base font-bold uppercase tracking-[0.12em] text-[#000759] group-hover:text-white mb-3 transition-colors">Porównywarka modeli biura</h3>
-                    <p className="text-[#56648F] text-sm font-light group-hover:text-white/80 mb-7 leading-relaxed transition-colors">Sprawdź, czy lepszym wyborem będzie biuro serwisowane, najem tradycyjny czy model hybrydowy.</p>
-                    <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
+                    <p className="text-[#56648F] text-sm font-light group-hover:text-white/80 mb-7 leading-relaxed transition-colors flex-1">Sprawdź, czy lepszym wyborem będzie biuro serwisowane, najem tradycyjny czy model hybrydowy.</p>
+                    <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
                       Porównaj modele
                     </div>
                   </div>
 
-                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer" onClick={() => setFormOpen(true)}>
+                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col" onClick={() => setFormOpen(true)}>
                     <div className="flex justify-center mb-5">
                       <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                         <rect x="4" y="2" width="16" height="20" rx="0"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/>
                       </svg>
                     </div>
                     <h3 className="text-base font-bold uppercase tracking-[0.12em] text-[#000759] group-hover:text-white mb-3 transition-colors">Kalkulator kosztów biura</h3>
-                    <p className="text-[#56648F] text-sm font-light group-hover:text-white/80 mb-7 leading-relaxed transition-colors">Oszacuj orientacyjny koszt biura dla Twojego zespołu i zobacz, jak różne założenia wpływają na budżet.</p>
-                    <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all">
+                    <p className="text-[#56648F] text-sm font-light group-hover:text-white/80 mb-7 leading-relaxed transition-colors flex-1">Oszacuj orientacyjny koszt biura dla Twojego zespołu i zobacz, jak różne założenia wpływają na budżet.</p>
+                    <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
                       Uruchom kalkulator
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col" onClick={() => router.push('/przewodnik-flex')}>
+                    <div className="flex justify-center mb-5">
+                      <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                        <path d="M4 5a2 2 0 0 1 2-2h11a3 3 0 0 1 3 3v13a2 2 0 0 1-2 2H7a3 3 0 0 0-3 3V5z"/>
+                        <path d="M8 7h8M8 11h8M8 15h6"/>
+                      </svg>
+                    </div>
+                    <h3 className="text-base font-bold uppercase tracking-[0.12em] text-[#000759] group-hover:text-white mb-3 transition-colors">Przewodnik Flex</h3>
+                    <p className="text-[#56648F] text-sm font-light group-hover:text-white/80 mb-7 leading-relaxed transition-colors flex-1">Uporządkuj temat od podstaw: modele najmu, scenariusze użycia i raporty miejskie w jednym miejscu.</p>
+                    <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
+                      Otwórz przewodnik
                     </div>
                   </div>
                 </div>
@@ -475,31 +460,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
               <button
                 key={index}
                 type="button"
-                onClick={() => {
-                  if (isTransitioningRef.current) return
-                  const diff = Math.abs(index - activePanelRef.current)
-                  if (diff === 0) return
-                  if (diff === 1) {
-                    isTransitioningRef.current = true
-                    activePanelRef.current = index
-                    setActivePanel(index)
-                    setTimeout(() => { isTransitioningRef.current = false }, TRANSITION_MS + 50)
-                  } else {
-                    // Step through panels sequentially
-                    const step = index > activePanelRef.current ? 1 : -1
-                    let cur = activePanelRef.current
-                    isTransitioningRef.current = true
-                    const interval = setInterval(() => {
-                      cur += step
-                      activePanelRef.current = cur
-                      setActivePanel(cur)
-                      if (cur === index) {
-                        clearInterval(interval)
-                        setTimeout(() => { isTransitioningRef.current = false }, TRANSITION_MS + 50)
-                      }
-                    }, TRANSITION_MS + 60)
-                  }
-                }}
+                onClick={() => scrollToPanel(index)}
                 className={`h-2.5 w-2.5 rounded-full border transition-all duration-300 ${
                   activePanel === index
                     ? 'border-white bg-white scale-110 shadow-[0_0_0_4px_rgba(255,255,255,0.15)]'
@@ -511,12 +472,11 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
           </div>
 
         </div>
-      )}{/* /hero fixed overlay */}
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          PAGE CONTENT — sits behind the fixed hero, becomes visible when
-          hero dismisses (slides up). No spacer needed: hero is fixed, not
-          in document flow.
+          PAGE CONTENT — begins after the 3-screen hero wrapper in normal
+          document flow, so scrolling back up naturally re-enters the hero.
       ════════════════════════════════════════════════════════════════════════ */}
 
       {/* JAK DZIAŁAMY */}
@@ -645,7 +605,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                         <div className="mt-3 flex items-center justify-between">
                           {listing.price_desk_private && (
                             <span className="text-[#4D93FF] font-bold text-sm">
-                              od {listing.price_desk_private.toLocaleString('pl-PL')} PLN
+                              {formatPriceShort(listing.price_desk_private, currency, rates)}
                             </span>
                           )}
                           <span className="text-white/40 text-[10px] uppercase tracking-widest font-bold ml-auto">
@@ -664,6 +624,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
       <Footer />
       {formOpen && <ContactForm onClose={() => setFormOpen(false)} />}
+      {wizardOpen && <OfficeModelWizard onClose={() => setWizardOpen(false)} />}
     </>
   )
 }

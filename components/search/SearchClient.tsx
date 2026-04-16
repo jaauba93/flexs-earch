@@ -1,18 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { SlidersHorizontal, Map as MapIcon, List, X, MapPin } from 'lucide-react'
+import { CircleHelp, SlidersHorizontal, Map as MapIcon, List, X } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Breadcrumbs from '@/components/layout/Breadcrumbs'
 import ListingCard from '@/components/search/ListingCard'
 import MapView, { type MapBounds } from '@/components/search/MapView'
-import ContactForm from '@/components/forms/ContactForm'
+import ContactForm, { type ContactFormPrefill } from '@/components/forms/ContactForm'
+import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
+import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { createClient } from '@/lib/supabase/client'
 import { slugToCity, slugToDistrict, slugify } from '@/lib/utils/slugify'
 import { METRO_LINES, type MetroLineId, isNearMetroLine } from '@/lib/mapbox/metro'
 import { SEARCH_OPTIONS, findSearchOption, normalizeSearchText, type SearchTargetOption } from '@/lib/search/locations'
+import { OFFICE_MODEL_CONTACT_PREFILL_STORAGE_KEY } from '@/lib/recommendation/officeModelRecommendation'
 import type { Listing, Operator, Amenity } from '@/types/database'
 
 const PAGE_SIZE = 25
@@ -26,6 +29,36 @@ interface SearchClientProps {
 }
 
 type ListingWithOperator = Listing & { operator: Operator }
+
+function FilterLabel({
+  children,
+  tooltip,
+}: {
+  children: ReactNode
+  tooltip?: string
+}) {
+  return (
+    <div className="mb-1 flex items-center gap-1.5">
+      <label className="form-label mb-0">{children}</label>
+      {tooltip ? (
+        <span className="group relative inline-flex">
+          <button
+            type="button"
+            tabIndex={0}
+            aria-label={`Wyjaśnienie pola ${children}`}
+            className="inline-flex h-4 w-4 items-center justify-center text-[#7a88b1] transition-colors hover:text-[#1C54F4] focus:text-[#1C54F4]"
+          >
+            <CircleHelp size={14} />
+          </button>
+          <span className="pointer-events-none absolute left-1/2 top-[calc(100%+10px)] z-30 w-56 -translate-x-1/2 rounded-none border border-[#dbe4f8] bg-white px-3 py-2 text-[11px] font-normal leading-relaxed text-[#5a6a95] opacity-0 shadow-[0_12px_30px_rgba(0,7,89,0.12)] transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            {tooltip}
+          </span>
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 export default function SearchClient({
   initialCity,
   initialDistrict,
@@ -36,6 +69,7 @@ export default function SearchClient({
   const router = useRouter()
   const pathname = usePathname()
   const didMountRef = useRef(false)
+  const filterBarRef = useRef<HTMLDivElement>(null)
   const initialSearchTarget = useMemo<SearchTargetOption | null>(() => {
     if (initialDistrict) {
       return findSearchOption(`${slugToCity(initialCity ?? '')} — ${slugToDistrict(initialDistrict)}`)
@@ -77,6 +111,7 @@ export default function SearchClient({
   )
   const [showDistrictGrid, setShowDistrictGrid] = useState(true)
   const [showMetroLines, setShowMetroLines] = useState(true)
+  const { currency, rates } = useCurrencyContext()
 
   useEffect(() => {
     setSearchTarget(initialSearchTarget)
@@ -93,6 +128,26 @@ export default function SearchClient({
     searchParams.search,
   ])
 
+  useEffect(() => {
+    if (!filtersOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFiltersOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [filtersOpen])
+
   // ── Map bbox filter (client-side) ────────────────────────────────────────────
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
 
@@ -106,11 +161,31 @@ export default function SearchClient({
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [contactPrefill, setContactPrefill] = useState<ContactFormPrefill | null>(null)
+  const [availableAmenitySlugs, setAvailableAmenitySlugs] = useState<string[]>([])
 
   const resolvedCitySlug = initialCity ?? searchTarget?.citySlug
   const resolvedDistrictSlug = initialDistrict ?? (searchTarget?.type === 'district' ? searchTarget.districtSlug : undefined)
   const city = resolvedCitySlug ? slugToCity(resolvedCitySlug) : undefined
   const district = resolvedDistrictSlug ? slugToDistrict(resolvedDistrictSlug) : undefined
+  const parsedStanowiskaOd = stanowiskaOd ? parseInt(stanowiskaOd, 10) : null
+  const parsedStanowiskaDo = stanowiskaDo ? parseInt(stanowiskaDo, 10) : null
+  const workstationCapacityThreshold = useMemo(() => {
+    const values = [parsedStanowiskaOd, parsedStanowiskaDo].filter(
+      (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
+    )
+    if (values.length === 0) return null
+    return Math.min(...values)
+  }, [parsedStanowiskaDo, parsedStanowiskaOd])
+  const budgetThresholdPln = useMemo(() => {
+    if (!ceniaDo) return null
+    const amount = Number.parseInt(ceniaDo, 10)
+    if (!Number.isFinite(amount)) return null
+    if (currency === 'PLN') return amount
+    if (!rates) return null
+    return Math.round(amount * rates[currency])
+  }, [ceniaDo, currency, rates])
 
   const filteredSearchOptions = useMemo(() => {
     const query = normalizeSearchText(searchInput)
@@ -147,9 +222,8 @@ export default function SearchClient({
 
     if (city) query = query.ilike('address_city', city)
     // District filtered client-side — handles Polish diacritics in slugs
-    if (stanowiskaOd) query = query.gte('total_workstations', parseInt(stanowiskaOd))
-    if (stanowiskaDo) query = query.lte('total_workstations', parseInt(stanowiskaDo))
-    if (ceniaDo) query = query.lte('price_desk_private', parseInt(ceniaDo))
+    if (workstationCapacityThreshold !== null) query = query.gte('total_workstations', workstationCapacityThreshold)
+    if (budgetThresholdPln !== null) query = query.lte('price_desk_private', budgetThresholdPln)
     if (selectedOperator) {
       const op = operators.find((o) => o.slug === selectedOperator)
       if (op) query = query.eq('operator_id', op.id)
@@ -185,8 +259,30 @@ export default function SearchClient({
 
     setAllFetched(results)
     setTotal(shouldFetchAll ? results.length : (count || 0))
+    const listingIds = results.map((listing) => listing.id)
+    if (listingIds.length > 0) {
+      const { data: listingAmenityRows } = await supabase
+        .from('listing_amenities')
+        .select('listing_id, amenity:amenities(id, name, slug, category)')
+        .in('listing_id', listingIds)
+
+      const nextAmenitySlugs = new Set<string>()
+      const typedAmenityRows = listingAmenityRows as
+        | Array<{ listing_id: string; amenity: Pick<Amenity, 'slug' | 'category'> | null }>
+        | null
+      typedAmenityRows?.forEach((row) => {
+        const amenity = row.amenity
+        if (amenity?.slug) {
+          nextAmenitySlugs.add(amenity.slug)
+        }
+      })
+      setAvailableAmenitySlugs(Array.from(nextAmenitySlugs))
+    } else {
+      setAvailableAmenitySlugs([])
+    }
+
     setLoading(false)
-  }, [city, initialDistrict, selectedMetroLine, searchTarget, stanowiskaOd, stanowiskaDo, ceniaDo, selectedOperator, sort, operators])
+  }, [city, initialDistrict, selectedMetroLine, searchTarget, workstationCapacityThreshold, budgetThresholdPln, selectedOperator, sort, operators])
 
   useEffect(() => {
     fetchListings(1)
@@ -220,6 +316,28 @@ export default function SearchClient({
     router.replace(url, { scroll: false })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stanowiskaOd, stanowiskaDo, ceniaDo, selectedAmenities, selectedOperator, selectedMetroLine, sort])
+
+  useEffect(() => {
+    if (searchParams.open_contact !== '1' || typeof window === 'undefined') return
+
+    const storedPrefill = window.sessionStorage.getItem(OFFICE_MODEL_CONTACT_PREFILL_STORAGE_KEY)
+    if (!storedPrefill) return
+
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('open_contact')
+
+    try {
+      const parsed = JSON.parse(storedPrefill) as ContactFormPrefill
+      setContactPrefill(parsed)
+      setFormOpen(true)
+      window.sessionStorage.removeItem(OFFICE_MODEL_CONTACT_PREFILL_STORAGE_KEY)
+    } catch {
+      window.sessionStorage.removeItem(OFFICE_MODEL_CONTACT_PREFILL_STORAGE_KEY)
+    }
+
+    const nextUrl = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname
+    router.replace(nextUrl, { scroll: false })
+  }, [pathname, router, searchParams])
 
   // ── Client-side bbox filtering of fetched results ────────────────────────────
   const featureFiltered = allFetched.filter((listing) => {
@@ -258,6 +376,31 @@ export default function SearchClient({
   const visibleRegular = applyBbox(regularListings)
   const allVisible = [...visibleFeatured, ...visibleRegular]
 
+  const availableAmenities = useMemo(
+    () => amenities.filter((amenity) => availableAmenitySlugs.includes(amenity.slug)),
+    [amenities, availableAmenitySlugs]
+  )
+
+  const amenityGroups = useMemo(() => {
+    const officeAmenities = availableAmenities.filter((amenity) => amenity.category !== 'building')
+    const buildingAmenities = availableAmenities.filter((amenity) => amenity.category === 'building')
+
+    return [
+      {
+        key: 'office',
+        title: 'Udogodnienia w biurze',
+        description: 'Elementy związane z komfortem pracy w samej przestrzeni.',
+        items: officeAmenities,
+      },
+      {
+        key: 'building',
+        title: 'Udogodnienia w budynku',
+        description: 'Elementy dostępne w całym obiekcie lub w jego otoczeniu.',
+        items: buildingAmenities,
+      },
+    ].filter((group) => group.items.length > 0)
+  }, [availableAmenities])
+
   const isClientOnlyFilterActive = Boolean(selectedMetroLine || searchTarget)
   const totalPages = isClientOnlyFilterActive ? 1 : Math.ceil(total / PAGE_SIZE)
 
@@ -274,10 +417,10 @@ export default function SearchClient({
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const FilterBar = () => (
-    <div className="flex flex-wrap items-end gap-8 py-4 border-b border-[var(--colliers-border)]">
-      <div className="flex flex-col min-w-[260px] relative">
-        <label className="form-label mb-1">Szukaj (miasto / dzielnica / metro)</label>
+  const filterBar = (
+    <div className="flex flex-wrap items-end gap-x-8 gap-y-5 py-5">
+      <div className="flex flex-col min-w-[260px] relative items-start">
+        <FilterLabel>Szukaj (miasto / dzielnica / metro)</FilterLabel>
         <div className="flex items-center gap-2 border-b border-[var(--colliers-border)] pb-1 pr-1">
           <input
             value={searchInput}
@@ -311,6 +454,7 @@ export default function SearchClient({
               <button
                 key={option.key}
                 type="button"
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
                   setSearchTarget(option)
                   setSearchInput(option.label)
@@ -327,15 +471,18 @@ export default function SearchClient({
       </div>
 
       {/* Workstations */}
-      <div className="flex flex-col">
-        <label className="form-label mb-1">Stanowiska</label>
+      <div className="flex flex-col items-start">
+        <FilterLabel tooltip="Liczba stanowisk pracy oznacza liczbę miejsc do pracy w całym biurze, rozumianych jako biurko plus fotel.">
+          Stanowiska
+        </FilterLabel>
         <div className="flex items-center gap-2">
           <input
             type="number"
             placeholder="od"
             className="w-14 bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
             value={stanowiskaOd}
-            onChange={(e) => setStanowiskaOd(e.target.value)}
+            onChange={(e) => setStanowiskaOd(e.target.value.replace(/\D/g, ''))}
+            inputMode="numeric"
             min={1}
           />
           <span className="text-slate-300">—</span>
@@ -344,32 +491,35 @@ export default function SearchClient({
             placeholder="do"
             className="w-14 bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
             value={stanowiskaDo}
-            onChange={(e) => setStanowiskaDo(e.target.value)}
+            onChange={(e) => setStanowiskaDo(e.target.value.replace(/\D/g, ''))}
+            inputMode="numeric"
             min={1}
           />
         </div>
       </div>
 
       {/* Price */}
-      <div className="flex flex-col">
-        <label className="form-label mb-1">Budżet (PLN)</label>
+      <div className="flex flex-col items-start">
+        <FilterLabel tooltip="Budżet oznacza miesięczny budżet za jedno stanowisko pracy.">
+          Budżet ({currency})
+        </FilterLabel>
         <select
-          className="bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
+          className="w-full min-w-[110px] bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
           value={ceniaDo}
           onChange={(e) => setCeniaDo(e.target.value)}
         >
           <option value="">Dowolny</option>
-          <option value="1500">Do 1 500</option>
-          <option value="2500">Do 2 500</option>
-          <option value="4000">Do 4 000</option>
+          <option value="1500">Do 1 500 {currency}</option>
+          <option value="2500">Do 2 500 {currency}</option>
+          <option value="4000">Do 4 000 {currency}</option>
         </select>
       </div>
 
       {/* Operator */}
-      <div className="flex flex-col">
+      <div className="flex flex-col items-start">
         <label className="form-label mb-1">Operator</label>
         <select
-          className="bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
+          className="w-full min-w-[110px] bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
           value={selectedOperator}
           onChange={(e) => setSelectedOperator(e.target.value)}
         >
@@ -380,10 +530,10 @@ export default function SearchClient({
         </select>
       </div>
 
-      <div className="flex flex-col">
+      <div className="flex flex-col items-start">
         <label className="form-label mb-1">Linia metra</label>
         <select
-          className="bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
+          className="w-full min-w-[110px] bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
           value={selectedMetroLine}
           onChange={(e) => setSelectedMetroLine(e.target.value as MetroLineId | '')}
         >
@@ -395,23 +545,15 @@ export default function SearchClient({
       </div>
 
       {/* Amenities */}
-      <button onClick={() => setFiltersOpen(true)} className="flex items-center gap-2 group">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-[#000759] group-hover:text-[#1C54F4] transition-colors">
-          Więcej filtrów <SlidersHorizontal size={12} className="inline" />
-          {selectedAmenities.length > 0 && ` (${selectedAmenities.length})`}
-        </span>
+      <button
+        type="button"
+        onClick={() => setFiltersOpen(true)}
+        className="inline-flex h-10 items-center gap-2 border border-[#dbe4f8] bg-white px-4 text-[11px] font-bold uppercase tracking-[0.14em] text-[#000759] transition-colors hover:border-[#1C54F4] hover:text-[#1C54F4]"
+      >
+        Więcej filtrów
+        <SlidersHorizontal size={13} />
+        {selectedAmenities.length > 0 && <span className="text-[#1C54F4]">({selectedAmenities.length})</span>}
       </button>
-
-      {/* Bbox active indicator */}
-      {mapBounds && (
-        <button
-          onClick={() => setMapBounds(null)}
-          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#1C54F4] hover:text-red-500 transition-colors"
-        >
-          <MapPin size={11} /> Widok mapy
-          <X size={10} />
-        </button>
-      )}
 
       {/* Sort */}
       <div className="flex flex-col ml-auto items-end">
@@ -432,21 +574,28 @@ export default function SearchClient({
 
   return (
     <>
-      <Header onOpenForm={() => setFormOpen(true)} />
+      <Header
+        onOpenForm={() => {
+          setContactPrefill(null)
+          setFormOpen(true)
+        }}
+        onOpenWizard={() => setWizardOpen(true)}
+      />
 
-      <div className="px-8 lg:px-16">
-        <Breadcrumbs crumbs={crumbs} />
-      </div>
-      <div className="px-8 lg:px-16">
-        <FilterBar />
-      </div>
+      <div className="flex h-[calc(100dvh-80px)] flex-col overflow-hidden">
+        <div className="px-8 lg:px-16">
+          <Breadcrumbs crumbs={crumbs} />
+        </div>
+        <div ref={filterBarRef} className="px-8 lg:px-16">
+          {filterBar}
+        </div>
 
-      {/* Main content: list + map */}
-      <div className="relative">
-        {/* Desktop: side-by-side */}
-        <div className="hidden lg:flex" style={{ height: 'calc(100vh - 80px)' }}>
-          {/* List — 40% */}
-          <div className="w-[40%] overflow-y-auto flex-shrink-0 border-r border-[var(--colliers-border)]" data-lenis-prevent>
+        {/* Main content: list + map */}
+        <div className="relative flex-1 min-h-0">
+          {/* Desktop: side-by-side */}
+          <div className="hidden lg:flex h-full min-h-0">
+            {/* List — 40% */}
+            <div className="w-[40%] overflow-y-auto flex-shrink-0" data-lenis-prevent>
             {loading ? (
               <div className="p-8 flex flex-col items-center gap-3 text-[var(--colliers-gray)]">
                 <div className="w-5 h-5 border-2 border-[#1C54F4] border-t-transparent rounded-full animate-spin" />
@@ -465,7 +614,13 @@ export default function SearchClient({
                     Wyczyść filtr obszaru mapy
                   </button>
                 )}
-                <button onClick={() => setFormOpen(true)} className="btn-primary text-sm">
+                <button
+                  onClick={() => {
+                    setContactPrefill(null)
+                    setFormOpen(true)
+                  }}
+                  className="btn-primary text-sm"
+                >
                   Skontaktuj się z doradcą
                 </button>
               </div>
@@ -524,49 +679,14 @@ export default function SearchClient({
                 )}
               </div>
             )}
-          </div>
-
-          {/* Map — 60% */}
-          <div className="flex-1 overflow-hidden pr-16" data-lenis-prevent>
-            <MapView
-              listings={featureFiltered}
-              highlightedId={highlightedId}
-              onMarkerClick={(id) => setHighlightedId(id)}
-              onBoundsChange={(bounds) => setMapBounds(bounds)}
-              initialCity={resolvedCitySlug}
-              showDistrictGrid={showDistrictGrid}
-              showMetroLines={showMetroLines}
-              onToggleDistrictGrid={() => setShowDistrictGrid((value) => !value)}
-              onToggleMetroLines={() => setShowMetroLines((value) => !value)}
-            />
-          </div>
-        </div>
-
-        {/* Mobile: toggle list/map */}
-        <div className="lg:hidden">
-          {mobileView === 'list' ? (
-            <div className="container-colliers py-4 flex flex-col gap-4 pb-20">
-              {loading ? (
-                <p className="text-center text-[var(--colliers-gray)] py-8">Ładowanie…</p>
-              ) : allVisible.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-[var(--colliers-gray)] mb-4">
-                    Nie znaleźliśmy biur spełniających podane kryteria.
-                  </p>
-                  <button onClick={() => setFormOpen(true)} className="btn-primary text-sm">
-                    Skontaktuj się z doradcą
-                  </button>
-                </div>
-              ) : (
-                allVisible.map((l) => <ListingCard key={l.id} listing={l} />)
-              )}
             </div>
-          ) : (
-            <div style={{ height: 'calc(100vh - 120px)' }}>
+
+            {/* Map — 60% */}
+            <div className="flex-1 min-h-0 overflow-hidden pr-8" data-lenis-prevent>
               <MapView
                 listings={featureFiltered}
-                highlightedId={null}
-                onMarkerClick={() => {}}
+                highlightedId={highlightedId}
+                onMarkerClick={(id) => setHighlightedId(id)}
                 onBoundsChange={(bounds) => setMapBounds(bounds)}
                 initialCity={resolvedCitySlug}
                 showDistrictGrid={showDistrictGrid}
@@ -575,74 +695,203 @@ export default function SearchClient({
                 onToggleMetroLines={() => setShowMetroLines((value) => !value)}
               />
             </div>
-          )}
+          </div>
 
-          {/* Floating toggle bar */}
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex shadow-[var(--shadow-md)] border border-[var(--colliers-border)] bg-white">
-            <button
-              onClick={() => setMobileView('list')}
-              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${
-                mobileView === 'list' ? 'bg-[var(--colliers-navy)] text-white' : 'text-[var(--colliers-navy)]'
-              }`}
-            >
-              <List size={16} /> Lista
-            </button>
-            <button
-              onClick={() => setMobileView('map')}
-              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors border-l border-[var(--colliers-border)] ${
-                mobileView === 'map' ? 'bg-[var(--colliers-navy)] text-white' : 'text-[var(--colliers-navy)]'
-              }`}
-            >
-              <MapIcon size={16} /> Mapa
-            </button>
+          {/* Mobile: toggle list/map */}
+          <div className="lg:hidden">
+            {mobileView === 'list' ? (
+              <div className="container-colliers py-4 flex flex-col gap-4 pb-20">
+                {loading ? (
+                  <p className="text-center text-[var(--colliers-gray)] py-8">Ładowanie…</p>
+                ) : allVisible.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-[var(--colliers-gray)] mb-4">
+                      Nie znaleźliśmy biur spełniających podane kryteria.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setContactPrefill(null)
+                        setFormOpen(true)
+                      }}
+                      className="btn-primary text-sm"
+                    >
+                      Skontaktuj się z doradcą
+                    </button>
+                  </div>
+                ) : (
+                  allVisible.map((l) => <ListingCard key={l.id} listing={l} />)
+                )}
+              </div>
+            ) : (
+              <div style={{ height: 'calc(100vh - 120px)' }}>
+                <MapView
+                  listings={featureFiltered}
+                  highlightedId={null}
+                  onMarkerClick={() => {}}
+                  onBoundsChange={(bounds) => setMapBounds(bounds)}
+                  initialCity={resolvedCitySlug}
+                  showDistrictGrid={showDistrictGrid}
+                  showMetroLines={showMetroLines}
+                  onToggleDistrictGrid={() => setShowDistrictGrid((value) => !value)}
+                  onToggleMetroLines={() => setShowMetroLines((value) => !value)}
+                />
+              </div>
+            )}
+
+            {/* Floating toggle bar */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex shadow-[var(--shadow-md)] border border-[var(--colliers-border)] bg-white">
+              <button
+                onClick={() => setMobileView('list')}
+                className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${
+                  mobileView === 'list' ? 'bg-[var(--colliers-navy)] text-white' : 'text-[var(--colliers-navy)]'
+                }`}
+              >
+                <List size={16} /> Lista
+              </button>
+              <button
+                onClick={() => setMobileView('map')}
+                className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors border-l border-[var(--colliers-border)] ${
+                  mobileView === 'map' ? 'bg-[var(--colliers-navy)] text-white' : 'text-[var(--colliers-navy)]'
+                }`}
+              >
+                <MapIcon size={16} /> Mapa
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <Footer />
 
-      {/* Amenities modal */}
+      {/* Amenities drawer */}
       {filtersOpen && (
-        <div className="modal-backdrop" onClick={() => setFiltersOpen(false)}>
-          <div
-            className="bg-white w-full max-w-lg p-8"
+        <div className="fixed inset-0 z-[120]" data-lenis-prevent>
+          <button
+            type="button"
+            aria-label="Zamknij panel udogodnień"
+            className="absolute inset-0 bg-[rgba(0,7,89,0.34)] backdrop-blur-[10px]"
+            onClick={() => setFiltersOpen(false)}
+          />
+          <aside
+            className="absolute right-0 top-0 flex h-full w-full max-w-[560px] flex-col bg-white shadow-[0_30px_100px_rgba(0,7,89,0.25)]"
             onClick={(e) => e.stopPropagation()}
-            style={{ animation: 'modal-enter 0.2s ease', maxHeight: '80vh', overflowY: 'auto' }}
+            style={{ animation: 'drawer-enter 0.28s cubic-bezier(0.22,1,0.36,1)' }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-[var(--colliers-navy)]">Udogodnienia</h3>
-              <button onClick={() => setFiltersOpen(false)} className="text-[var(--colliers-gray)]">
-                <X size={20} />
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-6 border-b border-[#e9edf6] bg-white px-7 md:px-8 py-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-2">Udogodnienia</p>
+                <h3 className="text-2xl font-light text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
+                  Filtruj po tym, co naprawdę jest dostępne
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#61719a]">
+                  Pokazujemy tylko udogodnienia występujące w aktualnym zestawie biur. Lista wyników reaguje natychmiast.
+                </p>
+              </div>
+              <button onClick={() => setFiltersOpen(false)} className="text-[#7a88b1] hover:text-[#000759] transition-colors mt-1">
+                <X size={22} />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {amenities.map((a) => (
-                <label key={a.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                  <input
-                    type="checkbox"
-                    className="accent-[var(--colliers-navy)]"
-                    checked={selectedAmenities.includes(a.slug)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedAmenities((prev) => [...prev, a.slug])
-                      } else {
-                        setSelectedAmenities((prev) => prev.filter((s) => s !== a.slug))
-                      }
-                    }}
-                  />
-                  {a.name}
-                </label>
+
+            <div className="flex-1 overflow-y-auto overscroll-contain px-7 md:px-8 py-6 space-y-7" data-lenis-prevent>
+              <div className="rounded-none border border-[#dbe4f8] bg-[linear-gradient(180deg,#fbfcff_0%,#f7faff_100%)] px-5 py-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-1">Wyniki na żywo</p>
+                  <p className="text-sm text-[#61719a]">Biura spełniające wybrane warunki</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-light text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
+                    {allVisible.length}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#7a88b1]">ofert</p>
+                </div>
+              </div>
+
+              {amenityGroups.map((group) => (
+                <section key={group.key} className="space-y-4">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-1">{group.title}</p>
+                      <p className="text-sm text-[#61719a]">{group.description}</p>
+                    </div>
+                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7a88b1]">
+                      {group.items.length} pozycji
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {group.items.map((amenity) => {
+                      const checked = selectedAmenities.includes(amenity.slug)
+                      return (
+                        <label
+                          key={amenity.id}
+                          className={`flex items-center gap-3 border px-4 py-3 cursor-pointer transition-all duration-300 ${
+                            checked
+                              ? 'border-[#1C54F4] bg-[#edf3ff] shadow-[0_10px_26px_rgba(28,84,244,0.09)]'
+                              : 'border-[#dbe4f8] bg-white hover:border-[#9dbafc]'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="accent-[var(--colliers-navy)] shrink-0"
+                            checked={checked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedAmenities((prev) => [...prev, amenity.slug])
+                              } else {
+                                setSelectedAmenities((prev) => prev.filter((slug) => slug !== amenity.slug))
+                              }
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-[#000759] leading-snug">{amenity.name}</p>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </section>
               ))}
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setSelectedAmenities([])} className="btn-outline flex-1">Wyczyść</button>
-              <button onClick={() => setFiltersOpen(false)} className="btn-primary flex-1">Zastosuj</button>
+
+            <div className="border-t border-[#e9edf6] bg-white px-7 md:px-8 py-5 sticky bottom-0 z-10 flex items-center gap-3">
+              <button onClick={() => setSelectedAmenities([])} className="btn-outline flex-1 justify-center">
+                Wyczyść
+              </button>
+              <button onClick={() => setFiltersOpen(false)} className="btn-primary flex-1 justify-center">
+                Gotowe
+              </button>
             </div>
-          </div>
+          </aside>
         </div>
       )}
 
-      {formOpen && <ContactForm onClose={() => setFormOpen(false)} />}
+      {formOpen && (
+        <ContactForm
+          prefill={contactPrefill}
+          onClose={() => {
+            setFormOpen(false)
+            setContactPrefill(null)
+          }}
+        />
+      )}
+      {wizardOpen && (
+        <OfficeModelWizard
+          onClose={() => setWizardOpen(false)}
+          onOpenContactForm={(prefill) => {
+            setContactPrefill(prefill)
+            setFormOpen(true)
+            requestAnimationFrame(() => {
+              setWizardOpen(false)
+            })
+          }}
+          onSearchCta={() => {
+            setWizardOpen(false)
+            requestAnimationFrame(() => {
+              filterBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            })
+          }}
+        />
+      )}
     </>
   )
 }

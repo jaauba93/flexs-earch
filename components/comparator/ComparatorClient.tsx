@@ -7,7 +7,11 @@ import { X, Mail, Phone, ArrowUp } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
+import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
+import MapView from '@/components/search/MapView'
 import { useBasketContext } from '@/lib/context/BasketContext'
+import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { formatPriceShort } from '@/lib/currency/currency'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator, Advisor } from '@/types/database'
@@ -16,8 +20,10 @@ type FullListing = Listing & { operator: Operator; advisor: Advisor | null }
 
 export default function ComparatorClient() {
   const { items, removeItem } = useBasketContext()
+  const { currency, rates } = useCurrencyContext()
   const [listings, setListings] = useState<FullListing[]>([])
   const [formOpen, setFormOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,9 +44,9 @@ export default function ComparatorClient() {
 
   return (
     <>
-      <Header onOpenForm={() => setFormOpen(true)} />
+      <Header onOpenForm={() => setFormOpen(true)} onOpenWizard={() => setWizardOpen(true)} />
 
-      <div className="container-colliers py-12">
+      <div className="container-colliers py-12 pb-20 lg:pb-28">
         {/* Page header */}
         <div className="mb-10">
           <p className="overline mb-4">Twoje zestawienie</p>
@@ -66,37 +72,40 @@ export default function ComparatorClient() {
         ) : (
           <>
             {/* Advisor card + CTA */}
-            <div className="flex flex-col md:flex-row gap-0 mb-10 border border-[var(--colliers-border)]">
-              {/* Advisor info */}
-              <div className="flex items-center gap-5 flex-1 p-6">
-                <div className="w-16 h-16 flex-shrink-0 overflow-hidden bg-[var(--colliers-bg-blue-tint)] flex items-center justify-center font-semibold text-[var(--colliers-navy)] text-lg">
-                  {advisor?.photo_url ? (
-                    <Image
-                      src={advisor.photo_url}
-                      alt={advisor.name}
-                      width={64}
-                      height={64}
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <span>
-                      {advisor
-                        ? advisor.name.split(' ').map((n) => n[0]).join('').slice(0, 2)
-                        : 'CF'}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[3px] text-[#1C54F4] mb-1">
+            <div className="mb-10 border border-[#d8e0f3] bg-[linear-gradient(120deg,#ffffff_0%,#f8fbff_50%,#f4f8ff_100%)]">
+              <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.8fr]">
+                <div className="p-7 md:p-8 lg:p-10">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-5">
                     Twój doradca Colliers
                   </p>
-                  <p className="font-semibold text-[var(--colliers-navy)]">
-                    {advisor ? advisor.name : 'Dział biur serwisowanych Colliers'}
-                  </p>
-                  {advisor?.title && (
-                    <p className="text-xs text-[var(--colliers-gray)]">{advisor.title}</p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2">
+                  <div className="flex items-center gap-5">
+                    <div className="w-16 h-16 flex-shrink-0 overflow-hidden bg-[var(--colliers-bg-blue-tint)] flex items-center justify-center font-semibold text-[var(--colliers-navy)] text-lg">
+                      {advisor?.photo_url ? (
+                        <Image
+                          src={advisor.photo_url}
+                          alt={advisor.name}
+                          width={64}
+                          height={64}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <span>
+                          {advisor
+                            ? advisor.name.split(' ').map((n) => n[0]).join('').slice(0, 2)
+                            : 'CF'}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[var(--colliers-navy)] text-lg leading-tight">
+                        {advisor ? advisor.name : 'Dział biur serwisowanych Colliers'}
+                      </p>
+                      {advisor?.title && (
+                        <p className="text-sm text-[var(--colliers-gray)] mt-1">{advisor.title}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-6">
                     <a
                       href={`mailto:${advisor ? advisor.email : 'jakub.bawol@colliers.com'}`}
                       className="text-sm text-[var(--colliers-blue-bright)] hover:underline flex items-center gap-1"
@@ -114,24 +123,18 @@ export default function ComparatorClient() {
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* Divider */}
-              <div className="hidden md:block w-px bg-[var(--colliers-border)]" />
-              <div className="block md:hidden h-px bg-[var(--colliers-border)]" />
-
-              {/* CTA */}
-              <div className="flex flex-col justify-center gap-3 p-6 md:max-w-sm">
-                <p className="text-sm text-[var(--colliers-gray)] leading-relaxed">
-                  Masz pytania? Wyślij zapytanie o wybrane biura — doradca Colliers przygotuje
-                  dla Ciebie indywidualną ofertę.
-                </p>
-                <button
-                  onClick={() => setFormOpen(true)}
-                  className="btn-primary whitespace-nowrap self-start"
-                >
-                  Wyślij zapytanie ofertowe
-                </button>
+                <div className="border-t md:border-t-0 md:border-l border-[#d8e0f3] p-7 md:p-8 lg:p-10 bg-white/65 flex flex-col justify-center">
+                  <p className="text-sm text-[var(--colliers-gray)] leading-relaxed mb-5">
+                    Masz pytania? Wyślij zapytanie o wybrane biura — doradca Colliers przygotuje
+                    dla Ciebie indywidualną ofertę.
+                  </p>
+                  <button
+                    onClick={() => setFormOpen(true)}
+                    className="btn-primary whitespace-nowrap self-start"
+                  >
+                    Wyślij zapytanie ofertowe
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -140,7 +143,7 @@ export default function ComparatorClient() {
               <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
                 <thead>
                   <tr className="border-b-2 border-[var(--colliers-navy)]">
-                    {['Zdjęcie', 'Nazwa biura', 'Adres', 'Operator', 'Stanowiska', 'Cena (biurko)', 'Rok', ''].map((col) => (
+                    {['', 'Nazwa biura', 'Adres', 'Operator', 'Stanowiska', 'Cena (biurko)', 'Rok', ''].map((col) => (
                       <th
                         key={col}
                         className="text-left py-3 pr-5 text-[10px] font-bold uppercase tracking-[3px] text-[#1C54F4] whitespace-nowrap last:pr-0"
@@ -218,7 +221,7 @@ export default function ComparatorClient() {
                           {l.price_desk_private ? (
                             <>
                               <span className="font-bold text-[#1C54F4] text-sm">
-                                od {l.price_desk_private.toLocaleString('pl-PL')} PLN
+                                {formatPriceShort(l.price_desk_private, currency, rates)}
                               </span>
                               <span className="text-[10px] text-[var(--colliers-gray)] block">/ mies.</span>
                             </>
@@ -249,8 +252,36 @@ export default function ComparatorClient() {
               </table>
             </div>
 
+            {/* Map under table */}
+            <div className="mt-16 mb-16">
+              <div className="flex items-end justify-between gap-6 mb-5">
+                <div>
+                  <p className="overline mb-4">Mapa porównywarki</p>
+                  <h2
+                    className="text-2xl md:text-3xl font-light text-[var(--colliers-navy)]"
+                    style={{ fontFamily: 'var(--font-serif)' }}
+                  >
+                    Wybrane biura na mapie
+                  </h2>
+                </div>
+                <p className="text-sm text-[var(--colliers-gray)] max-w-xl text-right">
+                  Kliknij punkt, aby otworzyć etykietę i w tym samym miejscu usunąć lokalizację z porównywarki.
+                </p>
+              </div>
+              <div className="h-[460px] border border-[var(--colliers-border)] overflow-hidden">
+                <MapView
+                  listings={listings}
+                  highlightedId={null}
+                  onMarkerClick={() => {}}
+                  initialCity={listings[0]?.address_city ? slugify(listings[0].address_city) : undefined}
+                  showDistrictGrid
+                  showMetroLines
+                />
+              </div>
+            </div>
+
             {/* Footer actions bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-[var(--colliers-border)]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-12 pt-8 border-t border-[var(--colliers-border)]">
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="text-[11px] font-bold uppercase tracking-widest text-[var(--colliers-gray)] hover:text-[var(--colliers-navy)] flex items-center gap-2 transition-colors"
@@ -281,6 +312,7 @@ export default function ComparatorClient() {
 
       <Footer />
       {formOpen && <ContactForm onClose={() => setFormOpen(false)} />}
+      {wizardOpen && <OfficeModelWizard onClose={() => setWizardOpen(false)} />}
     </>
   )
 }

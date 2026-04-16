@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { BasketProvider } from '@/lib/context/BasketContext'
+import { CurrencyProvider } from '@/lib/context/CurrencyContext'
 import CookieBanner from '@/components/ui/CookieBanner'
 import GoogleAnalytics from '@/components/ui/GoogleAnalytics'
 import SmoothScroll from '@/components/ui/SmoothScroll'
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pl">
       <body>
         <BasketProvider>
-          {children}
+          <CurrencyProvider>
+            {children}
+          </CurrencyProvider>
           <CookieBanner />
         </BasketProvider>
         <GoogleAnalytics />

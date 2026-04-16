@@ -1,15 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X, CheckCircle, Loader2, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import type { BasketItem } from '@/lib/hooks/useBasket'
 
+export interface ContactFormPrefill {
+  message?: string
+  workstations_from?: string
+  workstations_to?: string
+  extraOpen?: boolean
+}
+
 interface ContactFormProps {
   onClose: () => void
   preselectedListing?: BasketItem | null
+  prefill?: ContactFormPrefill | null
 }
 
 interface FormData {
@@ -26,7 +34,7 @@ interface FormErrors {
   consent?: string
 }
 
-export default function ContactForm({ onClose, preselectedListing }: ContactFormProps) {
+export default function ContactForm({ onClose, preselectedListing, prefill }: ContactFormProps) {
   const { items: basketItems } = useBasketContext()
 
   const initialListings: BasketItem[] = preselectedListing
@@ -37,16 +45,33 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
   const [formData, setFormData] = useState<FormData>({
     email: '',
     phone: '',
-    message: '',
-    workstations_from: '',
-    workstations_to: '',
+    message: prefill?.message || '',
+    workstations_from: prefill?.workstations_from || '',
+    workstations_to: prefill?.workstations_to || '',
     consent: false,
   })
   const [errors, setErrors] = useState<FormErrors>({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [apiError, setApiError] = useState('')
-  const [extraOpen, setExtraOpen] = useState(false)
+  const [extraOpen, setExtraOpen] = useState(Boolean(prefill?.extraOpen))
+
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      window.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [onClose])
 
   function validate(): boolean {
     const e: FormErrors = {}
@@ -94,9 +119,10 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
 
   if (success) {
     return (
-      <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-backdrop overflow-y-auto" data-lenis-prevent onClick={onClose}>
         <div
-          className="bg-white p-12 text-center max-w-md mx-auto"
+          data-lenis-prevent
+          className="relative my-auto bg-white p-12 text-center max-w-md mx-auto"
           onClick={(e) => e.stopPropagation()}
           style={{ animation: 'modal-enter 0.2s ease' }}
         >
@@ -116,9 +142,10 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop overflow-y-auto" data-lenis-prevent onClick={onClose}>
       <div
-        className="bg-white w-full max-w-5xl flex flex-col md:flex-row shadow-2xl overflow-hidden"
+        data-lenis-prevent
+        className="relative my-auto bg-white w-full max-w-5xl flex flex-col md:flex-row shadow-2xl overflow-hidden"
         style={{ maxHeight: '90vh', borderRadius: 0, animation: 'modal-enter 0.2s ease' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -131,7 +158,7 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
         </button>
 
         {/* LEFT — form */}
-        <div className="flex-[3] p-8 md:p-12 bg-white overflow-y-auto">
+        <div className="flex-[3] p-8 md:p-12 bg-white overflow-y-auto" data-lenis-prevent>
           <header className="mb-8">
             <p className="overline mb-2">Zapytanie ofertowe</p>
             <h2 className="text-3xl font-light text-[#000759] mb-3">Zapytaj o ofertę</h2>
@@ -179,44 +206,50 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
                 </span>
                 <ChevronRight size={16} className={`transition-transform ${extraOpen ? 'rotate-90' : ''}`} />
               </button>
-              {extraOpen && (
-                <div className="mt-5 space-y-5">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="ghost-border">
-                      <label className="form-label">Stanowisk (od)</label>
-                      <input
-                        type="number"
-                        min={1}
-                        className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
-                        placeholder="np. 10"
-                        value={formData.workstations_from}
-                        onChange={(e) => setFormData((p) => ({ ...p, workstations_from: e.target.value }))}
-                      />
+              <div
+                className={`grid overflow-hidden transition-[grid-template-rows,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  extraOpen ? 'mt-5 grid-rows-[1fr] opacity-100 translate-y-0' : 'mt-0 grid-rows-[0fr] opacity-0 -translate-y-1'
+                }`}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="ghost-border">
+                        <label className="form-label">Stanowisk (od)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                          placeholder="np. 10"
+                          value={formData.workstations_from}
+                          onChange={(e) => setFormData((p) => ({ ...p, workstations_from: e.target.value }))}
+                        />
+                      </div>
+                      <div className="ghost-border">
+                        <label className="form-label">Stanowisk (do)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                          placeholder="np. 25"
+                          value={formData.workstations_to}
+                          onChange={(e) => setFormData((p) => ({ ...p, workstations_to: e.target.value }))}
+                        />
+                      </div>
                     </div>
                     <div className="ghost-border">
-                      <label className="form-label">Stanowisk (do)</label>
-                      <input
-                        type="number"
-                        min={1}
-                        className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
-                        placeholder="np. 25"
-                        value={formData.workstations_to}
-                        onChange={(e) => setFormData((p) => ({ ...p, workstations_to: e.target.value }))}
+                      <label className="form-label">Dodatkowe uwagi</label>
+                      <textarea
+                        rows={6}
+                        className="w-full min-h-[160px] bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm resize-y"
+                        placeholder="Inne wymagania..."
+                        value={formData.message}
+                        onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
                       />
                     </div>
-                  </div>
-                  <div className="ghost-border">
-                    <label className="form-label">Dodatkowe uwagi</label>
-                    <textarea
-                      rows={2}
-                      className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm resize-none"
-                      placeholder="Inne wymagania..."
-                      value={formData.message}
-                      onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
-                    />
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Consent */}
@@ -256,7 +289,7 @@ export default function ContactForm({ onClose, preselectedListing }: ContactForm
         </div>
 
         {/* RIGHT — selected offices */}
-        <div className="flex-[2] bg-[var(--surface-container-low)] p-8 md:p-12 border-l border-[var(--outline-variant)]/10 overflow-hidden flex flex-col">
+        <div className="flex-[2] bg-[var(--surface-container-low)] p-8 md:p-12 border-l border-[var(--outline-variant)]/10 overflow-hidden flex flex-col" data-lenis-prevent>
           <div className="mb-8">
             <p className="overline mb-2">Twój wybór</p>
             <h3 className="text-sm font-bold uppercase tracking-widest text-[#000759]">Wybrane biura</h3>

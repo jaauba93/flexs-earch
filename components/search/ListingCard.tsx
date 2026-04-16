@@ -3,6 +3,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useBasketContext } from '@/lib/context/BasketContext'
+import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { formatPricePreview } from '@/lib/currency/currency'
 import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator } from '@/types/database'
 
@@ -14,6 +16,7 @@ interface ListingCardProps {
 
 export default function ListingCard({ listing, highlighted }: ListingCardProps) {
   const { addItem, removeItem, isInBasket, mounted } = useBasketContext()
+  const { currency, rates } = useCurrencyContext()
   const inBasket = mounted && isInBasket(listing.id)
 
   const citySlug = slugify(listing.address_city)
@@ -120,7 +123,7 @@ export default function ListingCard({ listing, highlighted }: ListingCardProps) 
             <p className="text-[9px] font-bold uppercase text-[#ACBBE8] mb-0.5" style={{ letterSpacing: '0.14em' }}>Cena od</p>
             <p className="font-bold text-[#000759] leading-none" style={{ fontSize: '0.95rem' }}>
               {listing.price_desk_private
-                ? <>{listing.price_desk_private.toLocaleString('pl-PL')} PLN <span className="text-[10px] font-normal text-[#ACBBE8]">/ mies.</span></>
+                ? <>{formatPricePreview(listing.price_desk_private, currency, rates).replace(' / stanowisko / miesiąc', '')} <span className="text-[10px] font-normal text-[#ACBBE8]">/ mies.</span></>
                 : <span className="text-[#ACBBE8] text-sm font-normal">–</span>
               }
             </p>
@@ -134,18 +137,18 @@ export default function ListingCard({ listing, highlighted }: ListingCardProps) 
               }}
               className={`relative z-10 text-[9px] font-bold uppercase transition-colors flex items-center gap-1.5 ${
                 inBasket
-                  ? 'text-[#468254]'
+                  ? 'text-[#ED1B34] hover:text-[#B51227]'
                   : 'text-[#56648F] hover:text-[#1C54F4]'
               }`}
               style={{ letterSpacing: '0.12em' }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 {inBasket
-                  ? <polyline points="20 6 9 17 4 12"/>
+                  ? <><line x1="5" y1="12" x2="19" y2="12"/></>
                   : <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>
                 }
               </svg>
-              {inBasket ? 'Dodano' : 'Porównaj'}
+              {inBasket ? 'Usuń' : 'Porównaj'}
             </button>
 
             <Link

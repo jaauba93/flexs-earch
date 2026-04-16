@@ -8,8 +8,11 @@ import Footer from '@/components/layout/Footer'
 import Breadcrumbs from '@/components/layout/Breadcrumbs'
 import MapView from '@/components/search/MapView'
 import ContactForm from '@/components/forms/ContactForm'
+import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import ListingCard from '@/components/search/ListingCard'
 import { useBasketContext } from '@/lib/context/BasketContext'
+import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { formatPricePreview } from '@/lib/currency/currency'
 import type { Listing, Operator, Advisor, ListingImage, Amenity } from '@/types/database'
 
 interface FullListing extends Listing {
@@ -28,8 +31,10 @@ interface Props {
 
 export default function ListingDetailClient({ listing, relatedListings, citySlug, districtSlug }: Props) {
   const { addItem, removeItem, isInBasket, isFull, mounted } = useBasketContext()
+  const { currency, rates } = useCurrencyContext()
   const inBasket = mounted && isInBasket(listing.id)
   const [formOpen, setFormOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
   const [galleryIdx, setGalleryIdx] = useState(0)
   const [descExpanded, setDescExpanded] = useState(false)
 
@@ -77,7 +82,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <Header onOpenForm={() => setFormOpen(true)} />
+      <Header onOpenForm={() => setFormOpen(true)} onOpenWizard={() => setWizardOpen(true)} />
 
       <div className="container-colliers">
         <Breadcrumbs crumbs={crumbs} />
@@ -149,8 +154,8 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
             {/* Key data */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8 p-6 bg-[var(--colliers-bg-light-blue)]">
               {[
-                { label: 'Cena (biuro prywatne)', value: listing.price_desk_private ? `od ${listing.price_desk_private.toLocaleString('pl-PL')} PLN / st. / mies.` : '–' },
-                { label: 'Hot-desk', value: listing.price_desk_hotdesk ? `od ${listing.price_desk_hotdesk.toLocaleString('pl-PL')} PLN / st. / mies.` : '–' },
+                { label: 'Cena (biuro prywatne)', value: listing.price_desk_private ? formatPricePreview(listing.price_desk_private, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.') : '–' },
+                { label: 'Hot-desk', value: listing.price_desk_hotdesk ? formatPricePreview(listing.price_desk_hotdesk, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.') : '–' },
                 { label: 'Łączna liczba stanowisk', value: listing.total_workstations ? `${listing.total_workstations} stanowisk` : '–' },
                 { label: 'Wielkość gabinetów', value: (listing.min_office_size && listing.max_office_size) ? `od ${listing.min_office_size} do ${listing.max_office_size} stanowisk` : '–' },
                 { label: 'Rok otwarcia', value: listing.year_opened?.toString() || '–' },
@@ -300,6 +305,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
           preselectedListing={basketItem}
         />
       )}
+      {wizardOpen && <OfficeModelWizard onClose={() => setWizardOpen(false)} />}
     </>
   )
 }

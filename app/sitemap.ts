@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/utils/slugify'
+import { BASICS_ORDER } from '@/lib/basics/flexBasics'
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://flex.colliers.pl'
 
@@ -29,7 +30,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: BASE, changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${BASE}/przewodnik-flex`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/podstawy-flex`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/raporty-miejskie`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/biura-serwisowane`, changeFrequency: 'daily', priority: 0.95 },
+    ...CITIES.map((c) => ({
+      url: `${BASE}/raporty-miejskie/${c}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.75,
+    })),
+    ...BASICS_ORDER.map((slug) => ({
+      url: `${BASE}/podstawy-flex/${slug}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.72,
+    })),
     ...cityUrls,
     ...listingUrls,
     { url: `${BASE}/porownaj`, changeFrequency: 'monthly', priority: 0.5 },

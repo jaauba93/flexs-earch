@@ -178,12 +178,34 @@ h1, h2, h3, h4 {
 
 /* ── Overline — Open Sans Bold ALL CAPS, letter-spacing 100-175 ──────────────── */
 .overline {
+  display: inline-block;
+  position: relative;
+  padding-right: 92px;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
+  text-transform: uppercase !important;
+  letter-spacing: 0.22em;
   color: var(--colliers-blue-bright);
+  line-height: 1;
+  text-decoration: none !important;
+  border-top: 0 !important;
+}
+
+.overline::before {
+  display: none !important;
+  content: none !important;
+}
+
+.overline::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 72px;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, currentColor 0%, rgba(28, 84, 244, 0.24) 100%);
 }
 
 /* ── Keyline — the Colliers signature graphic element ────────────────────────── */
@@ -456,6 +478,16 @@ h1, h2, h3, h4 {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+@keyframes wizard-step-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes drawer-enter {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 /* ── Container ────────────────────────────────────────────────────────────── */
 .container-colliers {
   max-width: var(--container-max);
@@ -465,6 +497,22 @@ h1, h2, h3, h4 {
 
 /* ── Mapbox overrides ─────────────────────────────────────────────────────── */
 .mapboxgl-map { border-radius: 0 !important; }
+.city-overview-pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #4D93FF;
+  background: #ffffff;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 0 0 0 rgba(28, 84, 244, 0.24);
+}
+.city-overview-pin[data-active='true'] {
+  background: #1C54F4;
+  border-color: #000759;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 8px rgba(28, 84, 244, 0.14);
+}
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
@@ -500,6 +548,10 @@ h1, h2, h3, h4 {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes mapbox-popup-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* ── Mapbox popup ─────────────────────────────────────────────────────────── */
 .mapboxgl-popup-content {
@@ -507,4 +559,7 @@ h1, h2, h3, h4 {
   padding: 14px 16px !important;
   box-shadow: 0 4px 20px rgba(0,7,89,0.18) !important;
   border: 1px solid rgba(0,7,89,0.08) !important;
+}
+.mapbox-popup-colliers .mapboxgl-popup-content {
+  animation: mapbox-popup-enter 180ms ease-out;
 }

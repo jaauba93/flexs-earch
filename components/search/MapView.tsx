@@ -3,9 +3,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import type { Listing, Operator } from '@/types/database'
+import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { POLAND_CENTER, POLAND_ZOOM, CITY_CENTERS } from '@/lib/mapbox/helpers'
 import { METRO_LINES } from '@/lib/mapbox/metro'
+import { formatPricePreview, type CurrencyCode, type CurrencyRates } from '@/lib/currency/currency'
 import { slugify } from '@/lib/utils/slugify'
+import { useBasketContext } from '@/lib/context/BasketContext'
+import type { BasketItem } from '@/lib/hooks/useBasket'
 
 export interface MapBounds {
   north: number
@@ -24,6 +28,7 @@ interface MapViewProps {
   showMetroLines?: boolean
   onToggleDistrictGrid?: () => void
   onToggleMetroLines?: () => void
+  showOverlayControls?: boolean
 }
 
 const LISTINGS_SOURCE_ID = 'listings-source'
@@ -38,11 +43,8 @@ const DISTRICT_LINE_LAYER_ID = 'district-line-layer'
 const DISTRICT_ADMIN_LAYER_ID = 'district-admin-lines-layer'
 const METRO_LINE_LAYER_ID = 'metro-line-layer'
 
-const BASKET_KEY = 'colliers-flex-basket'
-const MAX_BASKET = 10
-
-function addListingToBasket(listing: Listing & { operator: Operator }) {
-  const nextItem = {
+function toBasketItem(listing: Listing & { operator: Operator }): BasketItem {
+  return {
     id: listing.id,
     name: listing.name,
     address_street: listing.address_street,
@@ -52,23 +54,17 @@ function addListingToBasket(listing: Listing & { operator: Operator }) {
     main_image_url: listing.main_image_url,
     slug: listing.slug,
   }
-
-  try {
-    const stored = window.localStorage.getItem(BASKET_KEY)
-    const parsed = stored ? JSON.parse(stored) : []
-    const items = Array.isArray(parsed) ? parsed : []
-
-    if (items.some((item) => item?.id === listing.id)) return
-    if (items.length >= MAX_BASKET) return
-
-    window.localStorage.setItem(BASKET_KEY, JSON.stringify([...items, nextItem]))
-    window.dispatchEvent(new Event('basket:update'))
-  } catch {
-    // ignore basket persistence issues in popup CTA
-  }
 }
 
-function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivElement {
+function buildPopupContent(
+  listing: Listing & { operator: Operator },
+  options: {
+    inBasket: boolean
+    onToggleBasket: (wasInBasket: boolean) => void
+    currency: CurrencyCode
+    rates: Pick<CurrencyRates, 'EUR' | 'USD' | 'GBP'> | null
+  }
+): HTMLDivElement {
   const citySlug = slugify(listing.address_city)
   const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
   const detailsHref = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
@@ -76,6 +72,7 @@ function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivEl
   root.style.fontFamily = "'Open Sans', sans-serif"
   root.style.minWidth = '180px'
   root.style.padding = '4px 2px'
+  root.style.animation = 'mapbox-popup-enter 180ms ease-out'
 
   const title = document.createElement('p')
   title.textContent = listing.name
@@ -95,7 +92,10 @@ function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivEl
 
   if (listing.price_desk_private) {
     const price = document.createElement('p')
-    price.textContent = `od ${listing.price_desk_private.toLocaleString('pl-PL')} PLN / mies.`
+    price.textContent = formatPricePreview(listing.price_desk_private, options.currency, options.rates).replace(
+      ' / stanowisko / miesiąc',
+      ' / mies.'
+    )
     price.style.color = '#1C54F4'
     price.style.margin = '0 0 10px'
     price.style.fontSize = '12px'
@@ -124,15 +124,15 @@ function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivEl
 
   const compareLink = document.createElement('button')
   compareLink.type = 'button'
-  compareLink.textContent = 'Porównaj →'
+  compareLink.textContent = options.inBasket ? 'Usuń z porównywarki →' : 'Porównaj →'
   compareLink.style.display = 'inline-block'
   compareLink.style.fontSize = '10px'
   compareLink.style.fontWeight = '700'
   compareLink.style.textTransform = 'uppercase'
   compareLink.style.letterSpacing = '0.08em'
-  compareLink.style.color = '#1C54F4'
+  compareLink.style.color = options.inBasket ? '#ED1B34' : '#1C54F4'
   compareLink.style.textDecoration = 'none'
-  compareLink.style.borderBottom = '1px solid #1C54F4'
+  compareLink.style.borderBottom = `1px solid ${options.inBasket ? '#ED1B34' : '#1C54F4'}`
   compareLink.style.paddingBottom = '1px'
   compareLink.style.background = 'transparent'
   compareLink.style.borderLeft = 'none'
@@ -143,10 +143,20 @@ function buildPopupContent(listing: Listing & { operator: Operator }): HTMLDivEl
   compareLink.addEventListener('click', (event) => {
     event.preventDefault()
     event.stopPropagation()
-    addListingToBasket(listing)
+    options.onToggleBasket(options.inBasket)
   })
 
-  actions.append(detailsLink, compareLink)
+  const hint = document.createElement('p')
+  hint.textContent = options.inBasket
+    ? 'Kliknij, aby usunąć z porównywarki.'
+    : 'Kliknij, aby dodać do porównywarki.'
+  hint.style.width = '100%'
+  hint.style.margin = '2px 0 0'
+  hint.style.fontSize = '10px'
+  hint.style.lineHeight = '1.35'
+  hint.style.color = '#7B8BBD'
+
+  actions.append(detailsLink, compareLink, hint)
   root.append(actions)
 
   return root
@@ -215,7 +225,10 @@ export default function MapView({
   showMetroLines = true,
   onToggleDistrictGrid,
   onToggleMetroLines,
+  showOverlayControls = true,
 }: MapViewProps) {
+  const { currency, rates } = useCurrencyContext()
+  const { items, addItem, removeItem, isInBasket, mounted } = useBasketContext()
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const listingsByIdRef = useRef<Map<string, Listing & { operator: Operator }>>(new Map())
@@ -223,8 +236,46 @@ export default function MapView({
   const activePopupRef = useRef<mapboxgl.Popup | null>(null)
   const lockedPopupIdRef = useRef<string | null>(null)
   const onMarkerClickRef = useRef(onMarkerClick)
+  const wheelLockRef = useRef<((event: WheelEvent) => void) | null>(null)
+  const wheelContainerRef = useRef<HTMLElement | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+
+  const renderPopupContent = (
+    listing: Listing & { operator: Operator },
+    inBasket: boolean
+  ): HTMLDivElement =>
+    buildPopupContent(listing, {
+      inBasket,
+      currency,
+      rates,
+      onToggleBasket: (wasInBasket) => {
+        const basketItem = toBasketItem(listing)
+        if (wasInBasket) {
+          removeItem(listing.id)
+        } else {
+          addItem(basketItem)
+        }
+
+        // Optimistic refresh so popup label/state switches immediately.
+        window.requestAnimationFrame(() => {
+          if (lockedPopupIdRef.current !== listing.id) return
+          if (!activePopupRef.current) return
+          activePopupRef.current.setDOMContent(renderPopupContent(listing, !wasInBasket))
+        })
+      },
+    })
+
+  const refreshActivePopup = () => {
+    const popup = activePopupRef.current
+    const popupId = lockedPopupIdRef.current
+    if (!popup || !popupId) return
+
+    const listing = listingsByIdRef.current.get(popupId)
+    if (!listing) return
+
+    popup.setDOMContent(renderPopupContent(listing, mounted ? isInBasket(listing.id) : false))
+  }
 
   // Keep callback ref current so marker closures don't go stale
   useEffect(() => { onMarkerClickRef.current = onMarkerClick }, [onMarkerClick])
@@ -245,7 +296,32 @@ export default function MapView({
       })
       mapRef.current = map
 
+      const wheelContainer = map.getCanvasContainer()
+      const lockWheel = (event: WheelEvent) => {
+        event.stopPropagation()
+        event.preventDefault()
+      }
+      wheelContainer.addEventListener('wheel', lockWheel, { passive: false })
+      wheelContainerRef.current = wheelContainer
+      wheelLockRef.current = lockWheel
+
       map.on('load', () => {
+        map.addSource(METRO_SOURCE_ID, {
+          type: 'geojson',
+          data: buildMetroGeoJson(),
+        })
+
+        map.addLayer({
+          id: METRO_LINE_LAYER_ID,
+          type: 'line',
+          source: METRO_SOURCE_ID,
+          paint: {
+            'line-color': ['coalesce', ['get', 'color'], '#1C54F4'],
+            'line-width': 3,
+            'line-opacity': 0.75,
+          },
+        })
+
         map.addSource(LISTINGS_SOURCE_ID, {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] },
@@ -365,21 +441,12 @@ export default function MapView({
           },
         }, 'road-label')
 
-        map.addSource(METRO_SOURCE_ID, {
-          type: 'geojson',
-          data: buildMetroGeoJson(),
-        })
-
-        map.addLayer({
-          id: METRO_LINE_LAYER_ID,
-          type: 'line',
-          source: METRO_SOURCE_ID,
-          paint: {
-            'line-color': ['coalesce', ['get', 'color'], '#1C54F4'],
-            'line-width': 3,
-            'line-opacity': 0.75,
-          },
-        })
+        // Keep location pins visually above metro and district overlays.
+        ;[CLUSTERS_LAYER_ID, CLUSTER_COUNT_LAYER_ID, POINTS_LAYER_ID, HIGHLIGHTED_LAYER_ID].forEach(
+          (layerId) => {
+            if (map.getLayer(layerId)) map.moveLayer(layerId)
+          }
+        )
 
         map.on('click', CLUSTERS_LAYER_ID, (event) => {
           const feature = event.features?.[0]
@@ -425,7 +492,7 @@ export default function MapView({
             closeButton: false,
             className: 'mapbox-popup-colliers',
           })
-            .setDOMContent(buildPopupContent(listing))
+            .setDOMContent(renderPopupContent(listing, mounted ? isInBasket(listing.id) : false))
             .setLngLat(feature.geometry.coordinates as [number, number])
             .addTo(map)
 
@@ -459,6 +526,11 @@ export default function MapView({
     })
 
     return () => {
+      if (wheelContainerRef.current && wheelLockRef.current) {
+        wheelContainerRef.current.removeEventListener('wheel', wheelLockRef.current)
+      }
+      wheelContainerRef.current = null
+      wheelLockRef.current = null
       if (mapRef.current) {
         mapRef.current.remove()
         mapRef.current = null
@@ -502,6 +574,7 @@ export default function MapView({
         Number.isFinite(listing.latitude) &&
         Number.isFinite(listing.longitude)
     )
+    const cityData = initialCity ? CITY_CENTERS[initialCity] : null
 
     listingsByIdRef.current = new Map(valid.map((listing) => [listing.id, listing]))
 
@@ -511,6 +584,15 @@ export default function MapView({
 
     // Auto-fit bounds on initial load only
     if (!hasUserInteracted.current && valid.length > 0 && valid.length < 100) {
+      if (valid.length === 1) {
+        const only = valid[0]
+        map.easeTo({
+          center: [only.longitude, only.latitude],
+          zoom: Math.max(cityData?.zoom ?? POLAND_ZOOM, 13),
+          duration: 600,
+        })
+        return
+      }
       const minLng = Math.min(...valid.map((item) => item.longitude))
       const maxLng = Math.max(...valid.map((item) => item.longitude))
       const minLat = Math.min(...valid.map((item) => item.latitude))
@@ -526,6 +608,21 @@ export default function MapView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listings, mapLoaded])
 
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return
+
+    const map = mapRef.current
+    const resize = () => map.resize()
+    resize()
+    const raf = window.requestAnimationFrame(resize)
+    window.addEventListener('resize', resize)
+
+    return () => {
+      window.cancelAnimationFrame(raf)
+      window.removeEventListener('resize', resize)
+    }
+  }, [mapLoaded, listings.length, initialCity, showDistrictGrid, showMetroLines])
+
   // ── Update highlighted point ────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return
@@ -534,6 +631,11 @@ export default function MapView({
       : ['==', ['get', 'id'], '']
     mapRef.current.setFilter(HIGHLIGHTED_LAYER_ID, highlightFilter as mapboxgl.FilterSpecification)
   }, [highlightedId, mapLoaded])
+
+  useEffect(() => {
+    refreshActivePopup()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, mounted, mapLoaded])
 
   // ── Toggle map overlays ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -567,31 +669,33 @@ export default function MapView({
   }
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={containerRef} className="w-full h-full" />
-      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-        <div className="flex items-center gap-2 bg-white/95 backdrop-blur border border-[var(--colliers-border)] shadow-[var(--shadow-md)] px-3 py-2 rounded-md">
-          <button
-            type="button"
-            onClick={() => onToggleMetroLines?.()}
-            className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
-              showMetroLines ? 'text-[#1C54F4]' : 'text-[#7B8BBD]'
-            }`}
-          >
-            Linie metra
-          </button>
-          <span className="text-[10px] text-slate-300">|</span>
-          <button
-            type="button"
-            onClick={() => onToggleDistrictGrid?.()}
-            className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
-              showDistrictGrid ? 'text-[#1C54F4]' : 'text-[#7B8BBD]'
-            }`}
-          >
-            Dzielnice
-          </button>
+    <div className="relative w-full h-full overscroll-contain" data-lenis-prevent>
+      <div ref={containerRef} className="w-full h-full overscroll-contain" data-lenis-prevent />
+      {showOverlayControls && (
+        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+          <div className="flex items-center gap-2 bg-white/95 backdrop-blur border border-[var(--colliers-border)] shadow-[var(--shadow-md)] px-3 py-2 rounded-md">
+            <button
+              type="button"
+              onClick={() => onToggleMetroLines?.()}
+              className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                showMetroLines ? 'text-[#1C54F4]' : 'text-[#7B8BBD]'
+              }`}
+            >
+              Linie metra
+            </button>
+            <span className="text-[10px] text-slate-300">|</span>
+            <button
+              type="button"
+              onClick={() => onToggleDistrictGrid?.()}
+              className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                showDistrictGrid ? 'text-[#1C54F4]' : 'text-[#7B8BBD]'
+              }`}
+            >
+              Dzielnice
+            </button>
+          </div>
         </div>
-      </div>
+      )}
       {!mapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-[var(--colliers-bg-light-blue)]">
           <div className="flex flex-col items-center gap-3">

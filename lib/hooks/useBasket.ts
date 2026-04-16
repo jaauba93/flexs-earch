@@ -50,6 +50,7 @@ export function useBasket() {
     setItems(next)
     try {
       localStorage.setItem(BASKET_KEY, JSON.stringify(next))
+      window.dispatchEvent(new Event('basket:update'))
     } catch {
       // ignore
     }
@@ -60,7 +61,10 @@ export function useBasket() {
       if (prev.some((i) => i.id === item.id)) return prev
       if (prev.length >= MAX_BASKET) return prev
       const next = [...prev, item]
-      try { localStorage.setItem(BASKET_KEY, JSON.stringify(next)) } catch { /* */ }
+      try {
+        localStorage.setItem(BASKET_KEY, JSON.stringify(next))
+        window.dispatchEvent(new Event('basket:update'))
+      } catch { /* */ }
       return next
     })
   }, [])
@@ -68,7 +72,10 @@ export function useBasket() {
   const removeItem = useCallback((id: string) => {
     setItems((prev) => {
       const next = prev.filter((i) => i.id !== id)
-      try { localStorage.setItem(BASKET_KEY, JSON.stringify(next)) } catch { /* */ }
+      try {
+        localStorage.setItem(BASKET_KEY, JSON.stringify(next))
+        window.dispatchEvent(new Event('basket:update'))
+      } catch { /* */ }
       return next
     })
   }, [])
