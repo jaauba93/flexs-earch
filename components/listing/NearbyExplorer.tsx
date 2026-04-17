@@ -118,6 +118,7 @@ export default function NearbyExplorer({
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [viewBounds, setViewBounds] = useState<ViewBounds | null>(null)
+  const [mapLoaded, setMapLoaded] = useState(false)
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
   useEffect(() => {
@@ -228,6 +229,7 @@ export default function NearbyExplorer({
       }
 
       map.on('load', () => {
+        setMapLoaded(true)
         const layers = map.getStyle().layers || []
         const labelLayerId = layers.find(
           (layer) => layer.type === 'symbol' && layer.layout && (layer.layout as Record<string, unknown>)['text-field']
@@ -361,6 +363,7 @@ export default function NearbyExplorer({
 
     return () => {
       destroyed = true
+      setMapLoaded(false)
       popupRef.current?.remove()
       mapRef.current?.remove()
       mapRef.current = null
@@ -390,7 +393,7 @@ export default function NearbyExplorer({
     }
 
     ;(map.getSource(MAP_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(nextGeoJson)
-  }, [activeFeatureId, categories, visibleFeatures])
+  }, [activeFeatureId, categories, mapLoaded, visibleFeatures])
 
   useEffect(() => {
     const map = mapRef.current

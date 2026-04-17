@@ -133,7 +133,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
                     <a
                       key={tab.id}
                       href={`#${tab.id}`}
-                      className="inline-flex min-h-[48px] items-center justify-center border border-[#dbe4f8] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] transition-all duration-200 hover:bg-[var(--colliers-navy)] hover:text-white"
+                      className="inline-flex h-[44px] items-center justify-center whitespace-nowrap border border-[#dbe4f8] px-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] transition-all duration-200 hover:bg-[#000759] hover:text-white hover:border-[#000759]"
                     >
                       {tab.label}
                     </a>
