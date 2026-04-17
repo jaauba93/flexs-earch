@@ -127,13 +127,13 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
             </p>
 
             <div className="hidden lg:block">
-              <div className={`pointer-events-none fixed left-1/2 z-30 w-full max-w-[420px] -translate-x-1/2 transition-all duration-300 ${anchorStop ? 'opacity-0' : 'opacity-100'}`} style={{ bottom: '32px' }}>
-                <div className="pointer-events-auto mx-auto inline-flex w-full items-center justify-between gap-2 border border-[rgba(0,7,89,0.1)] bg-white px-4 py-4 shadow-[0_24px_48px_rgba(0,7,89,0.18)]">
+              <div className={`pointer-events-none fixed left-1/2 z-30 w-full max-w-[640px] -translate-x-1/2 transition-all duration-300 ${anchorStop ? 'opacity-0' : 'opacity-100'}`} style={{ bottom: '32px' }}>
+                <div className="pointer-events-auto mx-auto flex w-full items-center justify-between gap-2 border border-[rgba(0,7,89,0.1)] bg-white px-3 py-3 shadow-[0_24px_48px_rgba(0,7,89,0.18)]">
                   {sectionTabs.map((tab) => (
                     <a
                       key={tab.id}
                       href={`#${tab.id}`}
-                      className="inline-flex h-[44px] items-center justify-center whitespace-nowrap border border-[#dbe4f8] px-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] transition-all duration-200 hover:bg-[#000759] hover:text-white hover:border-[#000759]"
+                      className="inline-flex h-[44px] flex-1 items-center justify-center whitespace-nowrap border border-[#dbe4f8] px-4 text-[11px] font-bold uppercase tracking-[0.14em] text-[#000759] transition-all duration-200 hover:bg-[#000759] hover:text-white hover:border-[#000759]"
                     >
                       {tab.label}
                     </a>

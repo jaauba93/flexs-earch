@@ -93,7 +93,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
     closeTimerRef.current = window.setTimeout(() => {
       setActiveMenu(null)
       closeTimerRef.current = null
-    }, 120)
+    }, 300)
   }
 
   return (
@@ -134,7 +134,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
             style={{ marginLeft: 'max(1.75rem, calc(((100vw - var(--container-max)) / 2) - 7.5rem))' }}
           >
             <div
-              className="relative h-full flex items-center"
+              className="relative h-full flex items-center after:absolute after:content-[''] after:left-0 after:right-0 after:top-full after:h-4"
               onMouseEnter={() => openMenu('search')}
               onMouseLeave={scheduleClose}
             >
