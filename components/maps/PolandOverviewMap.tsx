@@ -104,7 +104,7 @@ export default function PolandOverviewMap({
   if (!token) {
     return (
       <div className={`h-full w-full flex items-center justify-center bg-[#f8fbff] border border-[#dbe4f8] ${className}`}>
-        <p className="text-sm text-[#5a6a95]">Mapa niedostępna (brak tokenu Mapbox)</p>
+        <p className="text-sm text-body-muted">Mapa niedostępna (brak tokenu Mapbox)</p>
       </div>
     )
   }

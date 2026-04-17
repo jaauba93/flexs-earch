@@ -132,7 +132,7 @@ export interface SearchFilters {
   cena_do?: number
   udogodnienia?: string[]
   operator?: string
-  sort?: 'cena_asc' | 'cena_desc' | 'data_otwarcia'
+  sort?: 'cena_asc' | 'cena_desc'
   lat?: number
   lng?: number
   radius?: number

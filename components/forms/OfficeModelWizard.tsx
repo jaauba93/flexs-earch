@@ -128,7 +128,7 @@ function ScaleSelector({
             className={`border px-2 py-3 text-center transition-all duration-300 ${
               value === option.key
                 ? 'border-[#1C54F4] bg-[#000759] text-white shadow-[0_12px_28px_rgba(0,7,89,0.2)]'
-                : 'border-[#dbe4f8] bg-white text-[#4f5f88] hover:border-[#9dbafc] hover:text-[#000759]'
+                : 'border-[#dbe4f8] bg-white text-[#5d6d97] hover:border-[#9dbafc] hover:text-[#000759]'
             }`}
           >
             <span className="block text-[11px] font-bold uppercase tracking-[0.16em]">
@@ -152,7 +152,7 @@ function RankingBar({ label, score, active, compact = false }: { label: string; 
   return (
     <div className={`space-y-2 ${compact ? 'min-h-[54px]' : 'min-h-[58px]'}`}>
       <div className="flex items-center justify-between gap-3">
-        <span className={`text-sm ${active ? 'font-semibold text-[#000759]' : 'text-[#53628c]'}`}>{label}</span>
+        <span className={`text-sm ${active ? 'font-semibold text-[#000759]' : 'text-[#5d6d97]'}`}>{label}</span>
         <span className={`text-xs font-bold ${active ? 'text-[#1C54F4]' : 'text-[#7a88b1]'}`}>{score}%</span>
       </div>
       <div className="h-2 overflow-hidden bg-[#e8eefc]">
@@ -209,12 +209,12 @@ function RecommendationPanel({
       <div className="flex h-full flex-col p-6 md:p-7">
         <div className="mb-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-2">Aktualna rekomendacja</p>
-          <h3 className="text-2xl font-light text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
+          <h3 className="text-2xl font-normal text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
             {topLabel || 'Wybierz pierwszą odpowiedź'}
           </h3>
         </div>
 
-        <p className="text-sm leading-relaxed text-[#55648f] mb-6">{explanation}</p>
+        <p className="mb-6 text-sm leading-relaxed text-body-muted">{explanation}</p>
 
         <div className="rounded-none border border-[#dbe4f8] bg-white px-4 py-3 mb-6">
           <div className="flex items-center justify-between gap-4">
@@ -253,7 +253,7 @@ function MobileRecommendationSummary({
         </div>
         <span className="text-sm font-bold text-[#1C54F4]">{topScore}%</span>
       </div>
-      <p className="text-xs leading-relaxed text-[#5d6c95]">{explanation}</p>
+      <p className="text-xs leading-relaxed text-[#5d6d97]">{explanation}</p>
     </div>
   )
 }
@@ -268,7 +268,7 @@ function AdvisorCard() {
         </div>
         <div>
           <p className="text-lg font-semibold text-[#000759]">Zespół Colliers Flex</p>
-          <p className="text-sm text-[#5a6a95]">Doradztwo w zakresie biur serwisowanych</p>
+          <p className="text-sm text-body-muted">Doradztwo w zakresie biur serwisowanych</p>
         </div>
       </div>
       <div className="space-y-2 text-sm">
@@ -518,11 +518,11 @@ export default function OfficeModelWizard({
                       {currentStepMeta.icon}
                     </div>
                     <div>
-                      <h2 id="office-model-wizard-title" className="text-2xl md:text-3xl font-light text-[#000759] mb-2" style={{ fontFamily: 'var(--font-serif)' }}>
+                      <h2 id="office-model-wizard-title" className="text-2xl md:text-3xl font-normal text-[#000759] mb-2" style={{ fontFamily: 'var(--font-serif)' }}>
                         {currentStepMeta.title}
                       </h2>
                       {currentStepMeta.helper && (
-                        <p className="text-sm md:text-base leading-relaxed text-[#5a6a95]">{currentStepMeta.helper}</p>
+                        <p className="text-sm md:text-base leading-relaxed text-body-muted">{currentStepMeta.helper}</p>
                       )}
                     </div>
                   </div>
@@ -580,10 +580,10 @@ export default function OfficeModelWizard({
                 <div className="space-y-8">
                   <div className="max-w-4xl">
                     <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-3">Wynik końcowy</p>
-                    <h2 id="office-model-wizard-title" className="text-3xl md:text-4xl font-light text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)' }}>
+                    <h2 id="office-model-wizard-title" className="text-3xl md:text-4xl font-normal text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)' }}>
                       {recommendation.topModelLabel || 'Brak jednoznacznej rekomendacji'}
                     </h2>
-                    <p className="text-base leading-relaxed text-[#5a6a95]">
+                    <p className="text-base leading-relaxed text-body-muted">
                       {recommendation.tieMessage || recommendation.explanation}
                     </p>
                   </div>
@@ -598,7 +598,7 @@ export default function OfficeModelWizard({
                       {recommendation.topDescription && (
                         <div className="border border-[#dbe4f8] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6">
                           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-4">Najwyżej dopasowany model</p>
-                          <p className="text-base leading-relaxed text-[#4f5f88] mb-5">{recommendation.topDescription.description}</p>
+                          <p className="text-base leading-relaxed text-body-strong mb-5">{recommendation.topDescription.description}</p>
                           <div className="grid gap-5 md:grid-cols-2">
                             <div>
                               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] mb-2">Dla kogo</p>
@@ -616,7 +616,7 @@ export default function OfficeModelWizard({
                     <div className="space-y-6">
                       <div className="border border-[#dbe4f8] bg-white p-6">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-4">Podsumowanie odpowiedzi</p>
-                        <div className="space-y-3 text-sm text-[#4f5f88]">
+                        <div className="space-y-3 text-sm text-body-strong">
                           <SummaryRow label="Liczba osób z dostępem" value={answers.teamAccess ? TEAM_ACCESS_LABELS[answers.teamAccess] : '—'} />
                           <SummaryRow label="Liczba stałych stanowisk" value={answers.deskCount ? DESK_COUNT_LABELS[answers.deskCount] : '—'} />
                           <SummaryRow label="Prywatność" value={answers.privacy ? SCALE_LABELS[answers.privacy] : '—'} />

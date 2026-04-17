@@ -1,15 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { CheckCircle, Mail, Phone, ChevronLeft, ChevronRight, Check, Plus } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Breadcrumbs from '@/components/layout/Breadcrumbs'
-import MapView from '@/components/search/MapView'
 import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import ListingCard from '@/components/search/ListingCard'
+import NearbyExplorer from '@/components/listing/NearbyExplorer'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { formatPricePreview } from '@/lib/currency/currency'
@@ -37,6 +37,8 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
   const [wizardOpen, setWizardOpen] = useState(false)
   const [galleryIdx, setGalleryIdx] = useState(0)
   const [descExpanded, setDescExpanded] = useState(false)
+  const anchorWrapperRef = useRef<HTMLDivElement>(null)
+  const [anchorStop, setAnchorStop] = useState(false)
 
   const images = listing.images.length > 0 ? listing.images : []
   const allImages = listing.main_image_url
@@ -79,31 +81,85 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
     ...(listing.price_desk_private ? { priceRange: `od ${listing.price_desk_private} PLN` } : {}),
   }
 
+  const sectionTabs = [
+    { id: 'o-biurze', label: 'O biurze' },
+    { id: 'galeria', label: 'Galeria' },
+    { id: 'udogodnienia', label: 'Udogodnienia' },
+    { id: 'lokalizacja', label: 'Otoczenie' },
+  ]
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!anchorWrapperRef.current) return
+      const rect = anchorWrapperRef.current.getBoundingClientRect()
+      setAnchorStop(rect.bottom < window.innerHeight - 32)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('resize', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
+    }
+  }, [])
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <Header onOpenForm={() => setFormOpen(true)} onOpenWizard={() => setWizardOpen(true)} />
 
-      <div className="container-colliers">
-        <Breadcrumbs crumbs={crumbs} />
-      </div>
+      <section className="bg-white">
+        <div className="container-colliers pt-12">
+          <div className="max-w-4xl text-sm text-[#7181aa]">
+            <Breadcrumbs crumbs={crumbs} />
+          </div>
+          <div className="relative pt-6">
+            <h1
+              id="o-biurze"
+              className="text-[#000759]"
+              style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.7rem, 4.4vw, 4.6rem)', lineHeight: 1.04 }}
+            >
+              {listing.name}
+            </h1>
+            <p className="text-body-strong mt-4 max-w-3xl text-[20px] font-normal leading-relaxed">
+              {listing.address_street}, {listing.address_postcode}, {listing.address_district ? `${listing.address_district}, ` : ''}{listing.address_city}
+            </p>
 
-      {/* Sticky inner tabs */}
-      <div className="sticky top-[64px] z-30 bg-white border-b border-[var(--colliers-border)] shadow-[var(--shadow-sm)]">
-        <div className="container-colliers flex gap-6 overflow-x-auto">
-          {['O biurze', 'Galeria', 'Lokalizacja', 'Udogodnienia'].map((tab) => (
-            <a key={tab} href={`#${tab.toLowerCase().replace(' ', '-')}`}
-              className="py-3 text-sm font-semibold text-[var(--colliers-gray)] hover:text-[var(--colliers-navy)] whitespace-nowrap border-b-2 border-transparent hover:border-[var(--colliers-navy)] transition-colors">
-              {tab}
-            </a>
-          ))}
+            <div className="hidden lg:block">
+              <div className={`pointer-events-none fixed left-1/2 z-30 w-full max-w-[420px] -translate-x-1/2 transition-all duration-300 ${anchorStop ? 'opacity-0' : 'opacity-100'}`} style={{ bottom: '32px' }}>
+                <div className="pointer-events-auto mx-auto inline-flex w-full items-center justify-between gap-2 border border-[rgba(0,7,89,0.1)] bg-white px-4 py-4 shadow-[0_24px_48px_rgba(0,7,89,0.18)]">
+                  {sectionTabs.map((tab) => (
+                    <a
+                      key={tab.id}
+                      href={`#${tab.id}`}
+                      className="inline-flex min-h-[48px] items-center justify-center border border-[#dbe4f8] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] transition-all duration-200 hover:bg-[var(--colliers-navy)] hover:text-white"
+                    >
+                      {tab.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-8 translate-y-1/2 lg:hidden">
+              <div className="inline-flex flex-wrap items-center gap-2 border border-[rgba(0,7,89,0.1)] bg-white px-3 py-3 shadow-[0_18px_36px_rgba(0,7,89,0.12)]">
+                {sectionTabs.map((tab) => (
+                  <a
+                    key={tab.id}
+                    href={`#${tab.id}`}
+                    className="inline-flex min-h-[44px] items-center justify-center border border-[#dbe4f8] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] transition-all duration-200 hover:bg-[var(--colliers-navy)] hover:text-white"
+                  >
+                    {tab.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="container-colliers py-8">
-        {/* Heading */}
-        <h1 id="o-biurze" className="text-3xl font-semibold text-[var(--colliers-navy)] mb-1">{listing.name}</h1>
-        <p className="text-[var(--colliers-gray)] mb-6">{listing.address_street}, {listing.address_postcode}, {listing.address_district ? `${listing.address_district}, ` : ''}{listing.address_city}</p>
+      <div className="container-colliers py-20" ref={anchorWrapperRef}>
 
         {/* Gallery */}
         <section id="galeria" className="mb-10">
@@ -119,7 +175,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[var(--colliers-navy)] to-[var(--colliers-blue)] flex items-center justify-center">
-                <span className="text-white/30 text-6xl font-light" style={{ fontFamily: 'var(--font-serif)' }}>CF</span>
+                <span className="text-white/30 text-6xl font-normal" style={{ fontFamily: 'var(--font-serif)' }}>CF</span>
               </div>
             )}
             {allImages.length > 1 && (
@@ -148,11 +204,12 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
         </section>
 
         {/* Main grid: 60/40 */}
-        <div className="grid lg:grid-cols-[3fr_2fr] gap-12">
+        <div className="grid gap-12 lg:grid-cols-[3fr_2fr]">
           {/* Left — info */}
           <div>
-            {/* Key data */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8 p-6 bg-[var(--colliers-bg-light-blue)]">
+            <section className="mb-10">
+              <p className="overline mb-5">Warunki komercyjne</p>
+              <div className="surface-shell grid grid-cols-2 gap-4 p-6 sm:grid-cols-3">
               {[
                 { label: 'Cena (biuro prywatne)', value: listing.price_desk_private ? formatPricePreview(listing.price_desk_private, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.') : '–' },
                 { label: 'Hot-desk', value: listing.price_desk_hotdesk ? formatPricePreview(listing.price_desk_hotdesk, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.') : '–' },
@@ -161,17 +218,18 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
                 { label: 'Rok otwarcia', value: listing.year_opened?.toString() || '–' },
                 { label: 'Operator', value: listing.operator.name },
               ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-xs text-[var(--colliers-gray)] mb-1">{label}</p>
-                  <p className="font-semibold text-[var(--colliers-navy)] text-sm">{value}</p>
+                <div key={label} className="surface-panel-soft px-4 py-4">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6879a4]">{label}</p>
+                  <p className="text-sm font-semibold text-[var(--colliers-navy)]">{value}</p>
                 </div>
               ))}
-            </div>
+              </div>
+            </section>
 
-            {/* Description */}
             {listing.description && (
-              <div className="mb-8">
-                <p className={`text-[var(--colliers-gray)] leading-relaxed ${!descExpanded && listing.description.length > 200 ? 'line-clamp-4' : ''}`}>
+              <section className="mb-10">
+                <p className="overline mb-5">Opis biura</p>
+                <p className={`text-body-strong leading-relaxed ${!descExpanded && listing.description.length > 200 ? 'line-clamp-4' : ''}`}>
                   {listing.description}
                 </p>
                 {listing.description.length > 200 && (
@@ -180,13 +238,46 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
                     {descExpanded ? 'Pokaż mniej' : 'Pokaż więcej'}
                   </button>
                 )}
-              </div>
+              </section>
             )}
+
+            {listing.amenities.length > 0 && (
+              <section id="udogodnienia" className="mb-12">
+                <p className="overline mb-5">Udogodnienia</p>
+                {amenitiesSpace.length > 0 && (
+                  <>
+                    <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6d7da7]">Udogodnienia w biurze</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
+                      {amenitiesSpace.map(({ amenity }) => (
+                        <div key={amenity.id} className="surface-panel-soft flex flex-col items-center gap-2 p-3 text-center">
+                          <CheckCircle size={20} style={{ color: 'var(--colliers-blue-bright)' }} />
+                          <p className="text-xs text-[var(--colliers-navy)] leading-snug">{amenity.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {amenitiesBuilding.length > 0 && (
+                  <>
+                    <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6d7da7]">Udogodnienia w budynku</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {amenitiesBuilding.map(({ amenity }) => (
+                        <div key={amenity.id} className="surface-panel-soft flex flex-col items-center gap-2 p-3 text-center">
+                          <CheckCircle size={20} style={{ color: 'var(--colliers-gray)' }} />
+                          <p className="text-xs text-[var(--colliers-navy)] leading-snug">{amenity.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
+
           </div>
 
           {/* Right — sticky contact panel */}
           <div>
-            <div className="sticky top-[120px] border border-[var(--colliers-border)] p-6 flex flex-col gap-4">
+            <div className="surface-panel sticky top-[120px] flex flex-col gap-4 p-6">
               <button onClick={() => setFormOpen(true)} className="btn-primary w-full justify-center py-3 text-base">
                 Otrzymaj ofertę
               </button>
@@ -203,7 +294,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
 
               {/* Advisor */}
               <div className="border-t border-[var(--colliers-border)] pt-4 mt-2">
-                <p className="text-xs text-[var(--colliers-gray)] mb-3 uppercase tracking-wide font-semibold">Twój doradca Colliers</p>
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6c7ca7]">Twój doradca Colliers</p>
                 {listing.advisor ? (
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 flex-shrink-0 bg-[var(--colliers-bg-blue-tint)] flex items-center justify-center font-semibold text-[var(--colliers-navy)] overflow-hidden">
@@ -215,7 +306,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
                     </div>
                     <div>
                       <p className="font-semibold text-[var(--colliers-navy)]">{listing.advisor.name}</p>
-                      {listing.advisor.title && <p className="text-xs text-[var(--colliers-gray)] mb-2">{listing.advisor.title}</p>}
+                      {listing.advisor.title && <p className="mb-2 text-xs text-[#5d6d97]">{listing.advisor.title}</p>}
                       <a href={`mailto:${listing.advisor.email}`} className="text-sm text-[var(--colliers-blue-bright)] hover:underline flex items-center gap-1">
                         <Mail size={13} /> {listing.advisor.email}
                       </a>
@@ -239,51 +330,15 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
           </div>
         </div>
 
-        {/* Map */}
-        <section id="lokalizacja" className="mt-12 mb-12">
-          <h2 className="text-xl font-semibold text-[var(--colliers-navy)] mb-4">Lokalizacja</h2>
-          <div style={{ height: 360, overflow: 'hidden', position: 'relative' }}>
-            <MapView
-              listings={[listing as any]}
-              highlightedId={listing.id}
-              onMarkerClick={() => {}}
-              initialCity={citySlug}
-            />
-          </div>
+        <section id="lokalizacja" className="mb-12">
+          <p className="overline mb-5">Otoczenie biura</p>
+          <NearbyExplorer
+            listingName={listing.name}
+            addressLabel={`${listing.address_street}, ${listing.address_city}`}
+            latitude={listing.latitude}
+            longitude={listing.longitude}
+          />
         </section>
-
-        {/* Amenities */}
-        {listing.amenities.length > 0 && (
-          <section id="udogodnienia" className="mb-12">
-            <h2 className="text-xl font-semibold text-[var(--colliers-navy)] mb-6">Udogodnienia</h2>
-            {amenitiesSpace.length > 0 && (
-              <>
-                <h3 className="text-sm font-semibold text-[var(--colliers-gray)] uppercase tracking-wide mb-4">Udogodnienia w biurze</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-                  {amenitiesSpace.map(({ amenity }) => (
-                    <div key={amenity.id} className="flex flex-col items-center gap-2 p-3 border border-[var(--colliers-border)] text-center">
-                      <CheckCircle size={20} style={{ color: 'var(--colliers-blue-bright)' }} />
-                      <p className="text-xs text-[var(--colliers-navy)] leading-snug">{amenity.name}</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-            {amenitiesBuilding.length > 0 && (
-              <>
-                <h3 className="text-sm font-semibold text-[var(--colliers-gray)] uppercase tracking-wide mb-4">Udogodnienia w budynku</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {amenitiesBuilding.map(({ amenity }) => (
-                    <div key={amenity.id} className="flex flex-col items-center gap-2 p-3 border border-[var(--colliers-border)] text-center">
-                      <CheckCircle size={20} style={{ color: 'var(--colliers-gray)' }} />
-                      <p className="text-xs text-[var(--colliers-navy)] leading-snug">{amenity.name}</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </section>
-        )}
 
         {/* Related */}
         {relatedListings.length > 0 && (

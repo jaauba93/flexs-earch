@@ -127,10 +127,10 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
           style={{ animation: 'modal-enter 0.2s ease' }}
         >
           <CheckCircle size={48} className="mx-auto mb-4 text-[#468254]" />
-          <h2 className="text-2xl font-light text-[#000759] mb-3">
+          <h2 className="mb-3 text-2xl font-normal text-[#000759]">
             Zapytanie zostało wysłane
           </h2>
-          <p className="text-slate-500 mb-8 text-sm leading-relaxed">
+          <p className="text-body-muted mb-8 text-sm leading-relaxed">
             Dziękujemy. Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.
           </p>
           <Link href="/biura-serwisowane" onClick={onClose} className="btn-outline">
@@ -158,11 +158,11 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
         </button>
 
         {/* LEFT — form */}
-        <div className="flex-[3] p-8 md:p-12 bg-white overflow-y-auto" data-lenis-prevent>
+        <div className="flex-[3] overflow-y-auto bg-white p-8 md:p-12" data-lenis-prevent>
           <header className="mb-8">
             <p className="overline mb-2">Zapytanie ofertowe</p>
-            <h2 className="text-3xl font-light text-[#000759] mb-3">Zapytaj o ofertę</h2>
-            <p className="text-slate-500 font-light text-sm max-w-md">
+            <h2 className="mb-3 text-3xl font-normal text-[#000759]">Zapytaj o ofertę</h2>
+            <p className="text-body-muted max-w-md text-sm font-normal">
               Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.
             </p>
           </header>
@@ -174,7 +174,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                 <label className="form-label">Email (wymagane)</label>
                 <input
                   type="email"
-                  className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                  className="w-full bg-transparent border-none px-0 py-2 text-sm text-[#000759] placeholder:text-[#9aa7c9] focus:ring-0"
                   placeholder="twoj@email.pl"
                   value={formData.email}
                   onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
@@ -185,7 +185,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                 <label className="form-label">Telefon (opcjonalnie)</label>
                 <input
                   type="tel"
-                  className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                  className="w-full bg-transparent border-none px-0 py-2 text-sm text-[#000759] placeholder:text-[#9aa7c9] focus:ring-0"
                   placeholder="+48 ___ ___ ___"
                   value={formData.phone}
                   onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
@@ -219,7 +219,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                         <input
                           type="number"
                           min={1}
-                          className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                          className="w-full bg-transparent border-none px-0 py-2 text-sm text-[#000759] placeholder:text-[#9aa7c9] focus:ring-0"
                           placeholder="np. 10"
                           value={formData.workstations_from}
                           onChange={(e) => setFormData((p) => ({ ...p, workstations_from: e.target.value }))}
@@ -230,7 +230,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                         <input
                           type="number"
                           min={1}
-                          className="w-full bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm"
+                          className="w-full bg-transparent border-none px-0 py-2 text-sm text-[#000759] placeholder:text-[#9aa7c9] focus:ring-0"
                           placeholder="np. 25"
                           value={formData.workstations_to}
                           onChange={(e) => setFormData((p) => ({ ...p, workstations_to: e.target.value }))}
@@ -241,7 +241,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                       <label className="form-label">Dodatkowe uwagi</label>
                       <textarea
                         rows={6}
-                        className="w-full min-h-[160px] bg-transparent border-none px-0 py-2 focus:ring-0 text-[#000759] placeholder:text-slate-300 text-sm resize-y"
+                        className="w-full min-h-[160px] resize-y bg-transparent border-none px-0 py-2 text-sm text-[#000759] placeholder:text-[#9aa7c9] focus:ring-0"
                         placeholder="Inne wymagania..."
                         value={formData.message}
                         onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
@@ -260,7 +260,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                 checked={formData.consent}
                 onChange={(e) => setFormData((p) => ({ ...p, consent: e.target.checked }))}
               />
-              <label className="text-[11px] text-slate-500 leading-relaxed cursor-pointer select-none">
+              <label className="text-body-muted cursor-pointer select-none text-[11px] leading-relaxed">
                 Wyrażam zgodę na przetwarzanie moich danych osobowych przez Colliers International Poland sp. z o.o.
                 w celu obsługi zapytania oraz przesyłania informacji handlowych.{' '}
                 <Link href="/polityka-prywatnosci" target="_blank" className="text-[#1C54F4] underline">
@@ -296,7 +296,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
           </div>
 
           {listings.length === 0 ? (
-            <p className="text-sm text-slate-400 italic">Brak wybranych biur.</p>
+            <p className="text-body-soft text-sm italic">Brak wybranych biur.</p>
           ) : (
             <div className="flex flex-col gap-3 overflow-y-auto pr-1" style={{ maxHeight: 320 }}>
               {listings.map((item) => (
@@ -310,7 +310,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-[#000759] truncate">{item.name}</p>
-                    <p className="text-[11px] text-slate-500 truncate">{item.address_street}, {item.address_city}</p>
+                    <p className="text-body-muted truncate text-[11px]">{item.address_street}, {item.address_city}</p>
                   </div>
                   <button
                     type="button"
@@ -332,7 +332,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
               </svg>
               <div>
                 <p className="text-xs font-bold text-[#000759] mb-1">Gwarancja jakości Colliers</p>
-                <p className="text-[11px] text-slate-500 leading-relaxed">Wszystkie przestrzenie są weryfikowane przez naszych ekspertów.</p>
+                <p className="text-[11px] text-body-muted leading-relaxed">Wszystkie przestrzenie są weryfikowane przez naszych ekspertów.</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -341,7 +341,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
               </svg>
               <div>
                 <p className="text-xs font-bold text-[#000759] mb-1">Szybka odpowiedź</p>
-                <p className="text-[11px] text-slate-500 leading-relaxed">Otrzymasz propozycje w ciągu jednego dnia roboczego.</p>
+                <p className="text-[11px] text-body-muted leading-relaxed">Otrzymasz propozycje w ciągu jednego dnia roboczego.</p>
               </div>
             </div>
           </div>

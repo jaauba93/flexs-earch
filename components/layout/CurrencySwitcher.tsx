@@ -74,7 +74,7 @@ export default function CurrencySwitcher({ transparent = false }: CurrencySwitch
         <div className="absolute right-0 top-full mt-2 w-[320px] rounded-none border border-[#dbe4f8] bg-white shadow-[0_24px_56px_rgba(0,7,89,0.16)] z-50">
           <div className="px-4 py-3 border-b border-[#edf2fb]">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-1">Waluta</p>
-            <p className="text-[11px] leading-relaxed text-[#5a6a95]">
+            <p className="text-[11px] leading-relaxed text-body-muted">
               {CURRENCY_NOTE}
             </p>
           </div>

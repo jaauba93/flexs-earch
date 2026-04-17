@@ -131,14 +131,14 @@ export default function GuideClient() {
               <p className="overline mb-6">Przewodnik Flex</p>
               <h1
                 className="text-[#000759] leading-[1.05] mb-6"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2.2rem, 5vw, 4.4rem)' }}
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 4.4rem)' }}
               >
                 Przewodnik po biurach elastycznych
               </h1>
-              <p className="text-[#4f5f88] text-lg leading-relaxed mb-6">
+              <p className="text-body-strong text-lg leading-relaxed mb-6">
                 Modele najmu, różnice względem biura tradycyjnego, praktyczne kryteria wyboru i raporty miejskie dla największych rynków w Polsce. Wszystko w jednym miejscu.
               </p>
-              <p className="text-[#62729d] text-[1rem] leading-relaxed mb-10 max-w-2xl">
+              <p className="text-body-muted text-[1rem] leading-relaxed mb-10 max-w-2xl">
                 Biuro flex to dziś nie tylko coworking. To szerokie spektrum rozwiązań — od hot desku po dedykowane moduły z brandingiem, własną recepcją i rozbudowanym zakresem usług. To ważne, bo raport pokazuje, że segment w Polsce przekroczył już 420 tys. m², a na największych rynkach udział flex sięga około 3–4% nowoczesnej podaży biurowej.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -152,7 +152,7 @@ export default function GuideClient() {
             </div>
 
             <div data-reveal="right">
-              <div className="relative border border-[#dce3f4] p-8 lg:p-10 bg-[#fdfefe] shadow-[0_18px_70px_rgba(0,7,89,0.08)] overflow-hidden">
+              <div className="surface-panel-soft relative overflow-hidden p-8 lg:p-10">
                 <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'linear-gradient(rgba(28,84,244,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(28,84,244,0.08) 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
                 <div className="absolute -top-12 -right-16 w-64 h-64 rounded-full bg-[#1C54F4]/10 blur-2xl animate-pulse" />
                 <div className="relative z-10 space-y-6">
@@ -207,13 +207,13 @@ export default function GuideClient() {
                   <Link
                     key={card.title}
                     href={card.href}
-                    className="group relative border border-[#dce3f4] bg-white p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,7,89,0.12)]"
+                    className="surface-panel-soft group relative p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,7,89,0.12)]"
                     data-reveal={`d${idx + 1}`}
                   >
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_top_right,rgba(28,84,244,0.12),transparent_45%)]" />
                     <Icon size={20} className="text-[#1C54F4] mb-5" />
-                    <h3 className="text-[#000759] text-2xl font-light mb-4 group-hover:translate-x-1 transition-transform duration-300">{card.title}</h3>
-                    <p className="text-[#5a6a95] text-sm leading-relaxed mb-6">{card.copy}</p>
+                    <h3 className="text-[#000759] text-2xl font-normal mb-4 group-hover:translate-x-1 transition-transform duration-300">{card.title}</h3>
+                    <p className="text-body-muted text-sm leading-relaxed mb-6">{card.copy}</p>
                     <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
                       Przejdź dalej <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                     </span>
@@ -228,26 +228,26 @@ export default function GuideClient() {
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-12 items-start">
             <div data-reveal="left">
               <p className="overline mb-6">Dlaczego teraz</p>
-              <h2 className="text-[#000759] leading-tight mb-6" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.8rem,3.2vw,3rem)' }}>
+              <h2 className="text-[#000759] leading-tight mb-6" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(1.8rem,3.2vw,3rem)' }}>
                 Rynek flex dojrzał. Decyzja stała się bardziej strategiczna niż doraźna.
               </h2>
-              <p className="text-[#4f5f88] leading-relaxed">
+              <p className="text-body-strong leading-relaxed">
                 Elastyczne biura przestały być formatem kojarzonym wyłącznie z coworkingiem. Dziś są elementem strategii najmu dla firm, które chcą szybciej uruchamiać biura, ograniczać CAPEX, lepiej reagować na zmiany zatrudnienia i korzystać z gotowego środowiska pracy. Raport wskazuje, że w siedmiu największych miastach Polski całkowita podaż flex przekracza 420 tys. m², z najwyższą skalą w Warszawie, Krakowie i Wrocławiu.
               </p>
             </div>
 
             <div className="space-y-4" data-reveal="right">
-              <div className="relative border border-[#d8e2fb] bg-white p-6">
-                <p className="text-[#000759] text-4xl font-light mb-2">{formatNumber(count420)}+</p>
-                <p className="text-[#5b6b96] text-sm">m² elastycznej powierzchni w 7 największych miastach</p>
+              <div className="surface-panel-soft relative p-6">
+                <p className="text-[#000759] text-4xl font-normal mb-2">{formatNumber(count420)}+</p>
+                <p className="text-body-muted text-sm">m² elastycznej powierzchni w 7 największych miastach</p>
               </div>
-              <div className="relative border border-[#d8e2fb] bg-white p-6">
-                <p className="text-[#000759] text-4xl font-light mb-2">{formatNumber(count235)} m²</p>
-                <p className="text-[#5b6b96] text-sm">w Warszawie</p>
+              <div className="surface-panel-soft relative p-6">
+                <p className="text-[#000759] text-4xl font-normal mb-2">{formatNumber(count235)} m²</p>
+                <p className="text-body-muted text-sm">w Warszawie</p>
               </div>
-              <div className="relative border border-[#d8e2fb] bg-white p-6">
-                <p className="text-[#000759] text-4xl font-light mb-2">{formatNumber(count71)} m²</p>
-                <p className="text-[#5b6b96] text-sm">w Krakowie</p>
+              <div className="surface-panel-soft relative p-6">
+                <p className="text-[#000759] text-4xl font-normal mb-2">{formatNumber(count71)} m²</p>
+                <p className="text-body-muted text-sm">w Krakowie</p>
               </div>
             </div>
           </div>
@@ -256,10 +256,10 @@ export default function GuideClient() {
         <section id="podstawy-flex" className="py-24 border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers">
             <p className="overline mb-5">Podstawy flex</p>
-            <h2 className="text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2rem,3.8vw,3.4rem)' }}>
+            <h2 className="text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2rem,3.8vw,3.4rem)' }}>
               Od czego zacząć?
             </h2>
-            <p className="text-[#5a6a95] max-w-3xl mb-10">
+            <p className="text-body-muted max-w-3xl mb-10">
               Jeśli dopiero porządkujesz temat, zacznij od pięciu zagadnień, które najczęściej decydują o wyborze modelu biura.
             </p>
 
@@ -268,13 +268,13 @@ export default function GuideClient() {
                 <article
                   id={item.id}
                   key={item.id}
-                  className="group relative border border-[#dbe4f8] bg-white p-7 min-h-[240px] transition-all duration-500 hover:shadow-[0_22px_64px_rgba(0,7,89,0.11)] hover:-translate-y-1"
+                  className="surface-panel-soft group relative p-7 min-h-[240px] transition-all duration-500 hover:shadow-[0_22px_64px_rgba(0,7,89,0.11)] hover:-translate-y-1"
                   data-reveal={`d${(idx % 3) + 1}`}
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_80%_20%,rgba(28,84,244,0.1),transparent_55%)]" />
                   <p className="text-[#1C54F4] text-[11px] font-bold uppercase tracking-[0.2em] mb-5">{item.number}</p>
-                  <h3 className="text-[#000759] text-[1.45rem] font-light leading-tight mb-4">{item.title}</h3>
-                  <p className="text-[#5d6c95] text-sm leading-relaxed mb-7">{item.copy}</p>
+                  <h3 className="text-[#000759] text-[1.45rem] font-normal leading-tight mb-4">{item.title}</h3>
+                  <p className="text-body-muted text-sm leading-relaxed mb-7">{item.copy}</p>
                   <Link href={`/podstawy-flex/${item.id}`} className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
                     Rozwiń temat <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
@@ -287,10 +287,10 @@ export default function GuideClient() {
         <section id="raporty-miejskie" className="py-24 bg-[#f8faff] border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers">
             <p className="overline mb-5">Raporty miejskie</p>
-            <h2 className="text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2rem,3.8vw,3.4rem)' }}>
+            <h2 className="text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2rem,3.8vw,3.4rem)' }}>
               Najważniejsze rynki miejskie
             </h2>
-            <p className="text-[#5a6a95] max-w-4xl mb-12">
+            <p className="text-body-muted max-w-4xl mb-12">
               Sytuacja na rynku flex nie wygląda tak samo w każdym mieście. Różnią się skala podaży, dostępność modułów, poziom zajętości, struktura operatorów i relacja kosztu do standardu.
             </p>
 
@@ -317,14 +317,14 @@ export default function GuideClient() {
                         : 'border-[#dbe4f8] bg-white hover:border-[#9cb8fa]'
                     }`}
                   >
-                    <p className="text-[#000759] text-lg font-light mb-1">{city.label}</p>
-                    <p className="text-[#5d6c95] text-sm leading-relaxed">{city.teaser}</p>
+                    <p className="text-[#000759] text-lg font-normal mb-1">{city.label}</p>
+                    <p className="text-body-muted text-sm leading-relaxed">{city.teaser}</p>
                   </Link>
                 ))}
               </div>
             </div>
 
-            <p className="text-[#5a6a95] mt-10 max-w-4xl">
+            <p className="text-body-muted mt-10 max-w-4xl">
               Warszawa pozostaje największym i najbardziej dojrzałym rynkiem flex w Polsce, Kraków jest liderem regionalnym, a Wrocław należy do najszybciej rosnących rynków poza stolicą. Raport pokazuje też wyraźne różnice w poziomie podaży i zajętości między miastami.
             </p>
           </div>
@@ -344,15 +344,15 @@ export default function GuideClient() {
                   <Link
                     key={card.title}
                     href={card.href}
-                    className="group border border-[#dbe4f8] bg-white p-7 lg:p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(0,7,89,0.12)]"
+                    className="surface-panel-soft group p-7 lg:p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(0,7,89,0.12)]"
                     data-reveal={`d${index + 1}`}
                   >
                     <div className="flex items-center justify-between mb-7">
                       <Icon size={22} className="text-[#1C54F4]" />
-                      <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#7b8bbd]">Mock UI</span>
+                      <span className="eyebrow-label text-[10px]">Mock UI</span>
                     </div>
-                    <h3 className="text-[#000759] text-2xl font-light mb-4">{card.title}</h3>
-                    <p className="text-[#5c6b95] text-sm leading-relaxed mb-7">{card.copy}</p>
+                    <h3 className="text-[#000759] text-2xl font-normal mb-4">{card.title}</h3>
+                    <p className="text-body-muted text-sm leading-relaxed mb-7">{card.copy}</p>
                     <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
                       {card.cta} <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                     </span>
@@ -362,8 +362,8 @@ export default function GuideClient() {
 
               <div className="border border-[#1C54F4]/35 bg-[linear-gradient(180deg,#0a1175_0%,#000759_100%)] text-white p-7 lg:p-8" data-reveal="d3">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9cb9ff] mb-6">CTA</p>
-                <h3 className="text-2xl font-light mb-4" style={{ fontFamily: 'var(--font-serif)' }}>Porozmawiaj z doradcą</h3>
-                <p className="text-white/75 text-sm leading-relaxed mb-7">
+                <h3 className="text-2xl font-normal mb-4" style={{ fontFamily: 'var(--font-serif)' }}>Porozmawiaj z doradcą</h3>
+                <p className="text-white/84 text-sm leading-relaxed mb-7">
                   Jeśli wolisz przejść przez rynek z ekspertem, pomożemy zawęzić wybór i porównać oferty bez dodatkowego kosztu po Twojej stronie.
                 </p>
                 <button
@@ -382,10 +382,10 @@ export default function GuideClient() {
           <div className="absolute inset-0 opacity-35" style={{ backgroundImage: 'linear-gradient(rgba(77,147,255,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(77,147,255,0.18) 1px, transparent 1px)', backgroundSize: '52px 52px' }} />
           <div className="container-colliers relative z-10">
             <p className="overline mb-5">Kolejny krok</p>
-            <h2 className="text-white mb-5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2rem,3.8vw,3.4rem)' }}>
+            <h2 className="text-white mb-5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2rem,3.8vw,3.4rem)' }}>
               Nie musisz zaczynać od pełnego briefu.
             </h2>
-            <p className="text-white/75 max-w-3xl leading-relaxed mb-10">
+            <p className="text-white/84 max-w-3xl leading-relaxed mb-10">
               Możesz zacząć od podstaw, sprawdzić rynek w wybranym mieście albo od razu porównać modele i koszty. Jeśli wolisz, przeprowadzimy Cię przez ten proces wspólnie.
             </p>
             <div className="flex flex-wrap gap-3">

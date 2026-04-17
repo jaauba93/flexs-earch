@@ -31,11 +31,11 @@ export default function ReportsHubClient() {
               <p className="overline mb-6">Raporty miejskie</p>
               <h1
                 className="text-[#000759] leading-[1.05] mb-6"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2.2rem,4.8vw,4rem)' }}
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.2rem,4.8vw,4rem)' }}
               >
                 Raporty miejskie: biura elastyczne w największych miastach Polski
               </h1>
-              <p className="text-[#4f5f88] text-lg leading-relaxed mb-10">
+              <p className="text-body-strong text-lg leading-relaxed mb-10">
                 Porównaj skalę rynku, strukturę operatorów, poziom cen i dostępność powierzchni flex w kluczowych ośrodkach biurowych.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -48,7 +48,7 @@ export default function ReportsHubClient() {
               </div>
             </div>
 
-            <div className="border border-[#dbe4f8] bg-white p-7 md:p-8 relative overflow-hidden" data-reveal="right">
+            <div className="surface-panel-soft relative overflow-hidden p-7 md:p-8" data-reveal="right">
               <div className="absolute inset-0 opacity-45" style={{ backgroundImage: 'linear-gradient(rgba(28,84,244,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(28,84,244,0.08) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
               <div className="relative z-10">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1C54F4] mb-5">Mapa Polski · rynki raportowe</p>
@@ -71,23 +71,23 @@ export default function ReportsHubClient() {
                     key={slug}
                     href={`/raporty-miejskie/${slug}`}
                     onMouseEnter={() => setActiveCity(slug)}
-                    className="group border border-[#dbe4f8] bg-white p-6 hover:-translate-y-1 transition-all duration-500 hover:shadow-[0_22px_60px_rgba(0,7,89,0.12)]"
+                    className="surface-panel-soft group p-6 hover:-translate-y-1 transition-all duration-500 hover:shadow-[0_22px_60px_rgba(0,7,89,0.12)]"
                     data-reveal={`d${(idx % 3) + 1}`}
                   >
-                    <p className="text-[#000759] text-2xl font-light mb-2">{city.cityName}</p>
-                    <p className="text-[#5d6c95] text-sm mb-5 leading-relaxed">{city.positioningHeadline}</p>
+                    <p className="mb-2 text-2xl font-normal text-[#000759]">{city.cityName}</p>
+                    <p className="text-body-muted mb-5 text-sm leading-relaxed">{city.positioningHeadline}</p>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="border border-[#e2e8f7] py-2 px-1">
                         <p className="text-[#000759] font-semibold text-sm">{city.kpiOffices}</p>
-                        <p className="text-[10px] uppercase tracking-[0.14em] text-[#7b8bbd]">Biura</p>
+                        <p className="eyebrow-label text-[10px]">Biura</p>
                       </div>
                       <div className="border border-[#e2e8f7] py-2 px-1">
                         <p className="text-[#000759] font-semibold text-sm">{city.kpiSupply.replace(' m²', '')}</p>
-                        <p className="text-[10px] uppercase tracking-[0.14em] text-[#7b8bbd]">m²</p>
+                        <p className="eyebrow-label text-[10px]">m²</p>
                       </div>
                       <div className="border border-[#e2e8f7] py-2 px-1">
                         <p className="text-[#000759] font-semibold text-sm">{city.kpiOccupancy}</p>
-                        <p className="text-[10px] uppercase tracking-[0.14em] text-[#7b8bbd]">Zajętość</p>
+                        <p className="eyebrow-label text-[10px]">Zajętość</p>
                       </div>
                     </div>
                   </Link>
@@ -121,10 +121,10 @@ export default function ReportsHubClient() {
                             {city.cityName}
                           </Link>
                         </td>
-                        <td className="px-5 py-4 text-[#4f5f88]">{city.kpiSupply}</td>
-                        <td className="px-5 py-4 text-[#4f5f88]">{city.kpiOccupancy}</td>
-                        <td className="px-5 py-4 text-[#4f5f88]">{city.kpiOffices}</td>
-                        <td className="px-5 py-4 text-[#5a6a95] text-sm">{city.marketStructureText}</td>
+                        <td className="text-body-strong px-5 py-4">{city.kpiSupply}</td>
+                        <td className="text-body-strong px-5 py-4">{city.kpiOccupancy}</td>
+                        <td className="text-body-strong px-5 py-4">{city.kpiOffices}</td>
+                        <td className="text-body-muted px-5 py-4 text-sm">{city.marketStructureText}</td>
                       </tr>
                     )
                   })}
@@ -137,10 +137,10 @@ export default function ReportsHubClient() {
         <section className="py-20 bg-[#000759] text-white" data-reveal>
           <div className="container-colliers">
             <p className="overline mb-6">Kolejny krok</p>
-            <h2 className="text-white text-4xl font-light mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
+            <h2 className="mb-5 text-4xl font-normal text-white" style={{ fontFamily: 'var(--font-serif)' }}>
               Przejdź od danych do decyzji
             </h2>
-            <p className="text-white/75 max-w-3xl mb-8">
+            <p className="max-w-3xl mb-8 text-white/84">
               Sprawdź porównanie modeli biura i koszty, a jeśli potrzebujesz, przejdź przez analizę rynku z doradcą Colliers.
             </p>
             <div className="flex flex-wrap gap-3">

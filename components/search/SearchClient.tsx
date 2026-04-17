@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { CircleHelp, SlidersHorizontal, Map as MapIcon, List, X } from 'lucide-react'
+import { CircleHelp, SlidersHorizontal, Map as MapIcon, List, X, ChevronDown, Check } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import Breadcrumbs from '@/components/layout/Breadcrumbs'
 import ListingCard from '@/components/search/ListingCard'
 import MapView, { type MapBounds } from '@/components/search/MapView'
 import ContactForm, { type ContactFormPrefill } from '@/components/forms/ContactForm'
@@ -14,11 +13,12 @@ import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { createClient } from '@/lib/supabase/client'
 import { slugToCity, slugToDistrict, slugify } from '@/lib/utils/slugify'
 import { METRO_LINES, type MetroLineId, isNearMetroLine } from '@/lib/mapbox/metro'
-import { SEARCH_OPTIONS, findSearchOption, normalizeSearchText, type SearchTargetOption } from '@/lib/search/locations'
+import { getCityAreas } from '@/lib/mapbox/city-areas'
 import { OFFICE_MODEL_CONTACT_PREFILL_STORAGE_KEY } from '@/lib/recommendation/officeModelRecommendation'
 import type { Listing, Operator, Amenity } from '@/types/database'
 
 const PAGE_SIZE = 25
+const CITY_AREAS = getCityAreas()
 
 interface SearchClientProps {
   initialCity?: string
@@ -29,28 +29,31 @@ interface SearchClientProps {
 }
 
 type ListingWithOperator = Listing & { operator: Operator }
+type FilterMenuId = 'city' | 'district' | 'budget' | 'operator' | 'metro' | 'sort' | null
 
 function FilterLabel({
   children,
   tooltip,
+  labelClass = '',
 }: {
   children: ReactNode
   tooltip?: string
+  labelClass?: string
 }) {
   return (
     <div className="mb-1 flex items-center gap-1.5">
-      <label className="form-label mb-0">{children}</label>
+      <label className={`form-label mb-0 ${labelClass}`}>{children}</label>
       {tooltip ? (
         <span className="group relative inline-flex">
           <button
             type="button"
             tabIndex={0}
             aria-label={`Wyjaśnienie pola ${children}`}
-            className="inline-flex h-4 w-4 items-center justify-center text-[#7a88b1] transition-colors hover:text-[#1C54F4] focus:text-[#1C54F4]"
+            className="inline-flex h-4 w-4 items-center justify-center text-white/50 transition-colors hover:text-white focus:text-white"
           >
             <CircleHelp size={14} />
           </button>
-          <span className="pointer-events-none absolute left-1/2 top-[calc(100%+10px)] z-30 w-56 -translate-x-1/2 rounded-none border border-[#dbe4f8] bg-white px-3 py-2 text-[11px] font-normal leading-relaxed text-[#5a6a95] opacity-0 shadow-[0_12px_30px_rgba(0,7,89,0.12)] transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+          <span className="pointer-events-none absolute left-1/2 top-[calc(100%+10px)] z-30 w-56 -translate-x-1/2 rounded-none border border-[#dbe4f8] bg-white px-3 py-2 text-[11px] font-normal leading-relaxed text-[#5c6d97] opacity-0 shadow-[0_12px_30px_rgba(0,7,89,0.12)] transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
             {tooltip}
           </span>
         </span>
@@ -70,29 +73,7 @@ export default function SearchClient({
   const pathname = usePathname()
   const didMountRef = useRef(false)
   const filterBarRef = useRef<HTMLDivElement>(null)
-  const initialSearchTarget = useMemo<SearchTargetOption | null>(() => {
-    if (initialDistrict) {
-      return findSearchOption(`${slugToCity(initialCity ?? '')} — ${slugToDistrict(initialDistrict)}`)
-    }
-    if (initialCity) {
-      return findSearchOption(slugToCity(initialCity))
-    }
-    const q = searchParams.q || searchParams.search || ''
-    const type = searchParams.search_type
-    if (type === 'metro' && searchParams.metro_line) {
-      return SEARCH_OPTIONS.find((option) => option.type === 'metro' && option.metroLine === searchParams.metro_line as MetroLineId) ?? null
-    }
-    if (type === 'city' && q) {
-      return findSearchOption(q)
-    }
-    if (type === 'district' && q) {
-      return findSearchOption(q)
-    }
-    if (q) {
-      return findSearchOption(q)
-    }
-    return null
-  }, [initialCity, initialDistrict, searchParams.q, searchParams.search, searchParams.search_type, searchParams.metro_line])
+  const filterMenusRef = useRef<HTMLDivElement>(null)
 
   // ── Filter state (initialised from URL params) ───────────────────────────────
   const [stanowiskaOd, setStanowiskaOd] = useState(searchParams.stanowiska_od || '')
@@ -104,29 +85,24 @@ export default function SearchClient({
   const [selectedOperator, setSelectedOperator] = useState(searchParams.operator || '')
   const [sort, setSort] = useState(searchParams.sort || '')
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [searchInput, setSearchInput] = useState(() => initialSearchTarget?.label || searchParams.q || searchParams.search || '')
-  const [searchTarget, setSearchTarget] = useState<SearchTargetOption | null>(initialSearchTarget)
+  const [openMenu, setOpenMenu] = useState<FilterMenuId>(null)
+  const [selectedCitySlug, setSelectedCitySlug] = useState<string>(() => initialCity || '')
+  const [selectedDistrictSlugs, setSelectedDistrictSlugs] = useState<string[]>(() => {
+    if (searchParams.districts) return searchParams.districts.split(',').filter(Boolean)
+    if (initialDistrict) return [initialDistrict]
+    return []
+  })
+  const [draftDistrictSlugs, setDraftDistrictSlugs] = useState<string[]>(() => {
+    if (searchParams.districts) return searchParams.districts.split(',').filter(Boolean)
+    if (initialDistrict) return [initialDistrict]
+    return []
+  })
   const [selectedMetroLine, setSelectedMetroLine] = useState<MetroLineId | ''>(
-    initialSearchTarget?.type === 'metro' ? (initialSearchTarget.metroLine || '') : ((searchParams.metro_line as MetroLineId | undefined) || '')
+    (searchParams.metro_line as MetroLineId | undefined) || ''
   )
   const [showDistrictGrid, setShowDistrictGrid] = useState(true)
   const [showMetroLines, setShowMetroLines] = useState(true)
   const { currency, rates } = useCurrencyContext()
-
-  useEffect(() => {
-    setSearchTarget(initialSearchTarget)
-    setSearchInput(initialSearchTarget?.label || searchParams.q || searchParams.search || '')
-    setSelectedMetroLine(
-      initialSearchTarget?.type === 'metro'
-        ? (initialSearchTarget.metroLine || '')
-        : ((searchParams.metro_line as MetroLineId | undefined) || '')
-    )
-  }, [
-    initialSearchTarget,
-    searchParams.metro_line,
-    searchParams.q,
-    searchParams.search,
-  ])
 
   useEffect(() => {
     if (!filtersOpen) return
@@ -148,6 +124,76 @@ export default function SearchClient({
     }
   }, [filtersOpen])
 
+  useEffect(() => {
+    if (!openMenu) return
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!filterMenusRef.current?.contains(event.target as Node)) {
+        setOpenMenu(null)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenMenu(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [openMenu])
+
+  useEffect(() => {
+    setSelectedCitySlug(initialCity || '')
+  }, [initialCity])
+
+  useEffect(() => {
+    if (searchParams.districts) {
+      const nextDistricts = searchParams.districts.split(',').filter(Boolean)
+      setSelectedDistrictSlugs(nextDistricts)
+      setDraftDistrictSlugs(nextDistricts)
+      return
+    }
+    const nextDistricts = initialDistrict ? [initialDistrict] : []
+    setSelectedDistrictSlugs(nextDistricts)
+    setDraftDistrictSlugs(nextDistricts)
+  }, [initialDistrict, searchParams.districts])
+
+  useEffect(() => {
+    setSelectedMetroLine((searchParams.metro_line as MetroLineId | undefined) || '')
+  }, [searchParams.metro_line])
+
+  useEffect(() => {
+    if (!selectedCitySlug) {
+      setSelectedDistrictSlugs([])
+      setDraftDistrictSlugs([])
+      setSelectedMetroLine('')
+      setOpenMenu(null)
+      return
+    }
+
+    const nextDistrictOptions =
+      CITY_AREAS.find((area) => area.city === selectedCitySlug)?.districts.map((district) => district.slug) || []
+
+    setSelectedDistrictSlugs((prev) => prev.filter((slug) => nextDistrictOptions.includes(slug)))
+    setDraftDistrictSlugs((prev) => prev.filter((slug) => nextDistrictOptions.includes(slug)))
+
+    if (selectedCitySlug !== 'warszawa') {
+      setSelectedMetroLine('')
+    }
+  }, [selectedCitySlug])
+
+  useEffect(() => {
+    if (openMenu === 'district') {
+      setDraftDistrictSlugs(selectedDistrictSlugs)
+    }
+  }, [openMenu, selectedDistrictSlugs])
+
   // ── Map bbox filter (client-side) ────────────────────────────────────────────
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
 
@@ -165,10 +211,24 @@ export default function SearchClient({
   const [contactPrefill, setContactPrefill] = useState<ContactFormPrefill | null>(null)
   const [availableAmenitySlugs, setAvailableAmenitySlugs] = useState<string[]>([])
 
-  const resolvedCitySlug = initialCity ?? searchTarget?.citySlug
-  const resolvedDistrictSlug = initialDistrict ?? (searchTarget?.type === 'district' ? searchTarget.districtSlug : undefined)
-  const city = resolvedCitySlug ? slugToCity(resolvedCitySlug) : undefined
-  const district = resolvedDistrictSlug ? slugToDistrict(resolvedDistrictSlug) : undefined
+  const city = selectedCitySlug ? slugToCity(selectedCitySlug) : undefined
+  const districtOptions = useMemo(
+    () => CITY_AREAS.find((area) => area.city === selectedCitySlug)?.districts || [],
+    [selectedCitySlug]
+  )
+  const selectedDistrictLabels = useMemo(
+    () =>
+      selectedDistrictSlugs
+        .map((slug) => districtOptions.find((districtItem) => districtItem.slug === slug)?.label || slugToDistrict(slug))
+        .filter(Boolean),
+    [districtOptions, selectedDistrictSlugs]
+  )
+  const districtSummary = useMemo(() => {
+    if (!selectedCitySlug) return 'Najpierw wybierz miasto'
+    if (selectedDistrictLabels.length === 0) return 'Wszystkie dzielnice'
+    if (selectedDistrictLabels.length <= 2) return selectedDistrictLabels.join(', ')
+    return `${selectedDistrictLabels.slice(0, 2).join(', ')} +${selectedDistrictLabels.length - 2}`
+  }, [selectedCitySlug, selectedDistrictLabels])
   const parsedStanowiskaOd = stanowiskaOd ? parseInt(stanowiskaOd, 10) : null
   const parsedStanowiskaDo = stanowiskaDo ? parseInt(stanowiskaDo, 10) : null
   const workstationCapacityThreshold = useMemo(() => {
@@ -187,29 +247,13 @@ export default function SearchClient({
     return Math.round(amount * rates[currency])
   }, [ceniaDo, currency, rates])
 
-  const filteredSearchOptions = useMemo(() => {
-    const query = normalizeSearchText(searchInput)
-    if (!query) return SEARCH_OPTIONS.slice(0, 12)
-    return SEARCH_OPTIONS.filter((option) => {
-      const values = [option.label, ...(option.aliases ?? [])]
-      return values.some((value) => normalizeSearchText(value).includes(query))
-    }).slice(0, 12)
-  }, [searchInput])
-
-  const clearSearchTarget = useCallback(() => {
-    const params = new URLSearchParams()
-    if (stanowiskaOd) params.set('stanowiska_od', stanowiskaOd)
-    if (stanowiskaDo) params.set('stanowiska_do', stanowiskaDo)
-    if (ceniaDo) params.set('cena_do', ceniaDo)
-    if (selectedAmenities.length > 0) params.set('udogodnienia', selectedAmenities.join(','))
-    if (selectedOperator) params.set('operator', selectedOperator)
-    if (sort) params.set('sort', sort)
-
-    setSearchTarget(null)
-    setSearchInput('')
+  const clearCitySelection = useCallback(() => {
+    setSelectedCitySlug('')
+    setSelectedDistrictSlugs([])
+    setDraftDistrictSlugs([])
     setSelectedMetroLine('')
-    router.replace(params.toString() ? `/biura-serwisowane?${params.toString()}` : '/biura-serwisowane', { scroll: false })
-  }, [ceniaDo, router, selectedAmenities, selectedOperator, sort, stanowiskaDo, stanowiskaOd])
+    setOpenMenu(null)
+  }, [])
 
   // ── Fetch from Supabase ──────────────────────────────────────────────────────
   const fetchListings = useCallback(async (pg = 1) => {
@@ -235,13 +279,11 @@ export default function SearchClient({
       query = query.order('price_desk_private', { ascending: true, nullsFirst: false })
     } else if (sort === 'cena_desc') {
       query = query.order('price_desk_private', { ascending: false, nullsFirst: false })
-    } else if (sort === 'data_otwarcia') {
-      query = query.order('year_opened', { ascending: false, nullsFirst: false })
     } else {
-      query = query.order('is_featured', { ascending: false }).order('name')
+      query = query.order('name')
     }
 
-    const shouldFetchAll = Boolean(initialDistrict || selectedMetroLine || searchTarget)
+    const shouldFetchAll = selectedDistrictSlugs.length > 0 || Boolean(selectedMetroLine)
 
     // For map-heavy client filters (metro, district/city autocomplete), fetch all first.
     if (!shouldFetchAll) {
@@ -252,9 +294,8 @@ export default function SearchClient({
     const { data, count } = await query
     let results = (data || []) as ListingWithOperator[]
 
-    // Client-side district filter — slugify comparison handles Polish diacritics
-    if (initialDistrict) {
-      results = results.filter((l) => slugify(l.address_district || '') === initialDistrict)
+    if (selectedDistrictSlugs.length > 0) {
+      results = results.filter((l) => selectedDistrictSlugs.includes(slugify(l.address_district || '')))
     }
 
     setAllFetched(results)
@@ -282,7 +323,7 @@ export default function SearchClient({
     }
 
     setLoading(false)
-  }, [city, initialDistrict, selectedMetroLine, searchTarget, workstationCapacityThreshold, budgetThresholdPln, selectedOperator, sort, operators])
+  }, [budgetThresholdPln, city, selectedDistrictSlugs, selectedMetroLine, selectedOperator, sort, workstationCapacityThreshold, operators])
 
   useEffect(() => {
     fetchListings(1)
@@ -297,25 +338,25 @@ export default function SearchClient({
       return
     }
     const params = new URLSearchParams()
-    if (searchTarget) {
-      params.set('q', searchTarget.label)
-      params.set('search_type', searchTarget.type)
-      if (searchTarget.type === 'metro' && searchTarget.metroLine) {
-        params.set('metro_line', searchTarget.metroLine)
-      }
-    }
     if (stanowiskaOd) params.set('stanowiska_od', stanowiskaOd)
     if (stanowiskaDo) params.set('stanowiska_do', stanowiskaDo)
     if (ceniaDo) params.set('cena_do', ceniaDo)
     if (selectedAmenities.length > 0) params.set('udogodnienia', selectedAmenities.join(','))
     if (selectedOperator) params.set('operator', selectedOperator)
     if (selectedMetroLine) params.set('metro_line', selectedMetroLine)
+    if (selectedDistrictSlugs.length > 1) params.set('districts', selectedDistrictSlugs.join(','))
     if (sort) params.set('sort', sort)
 
-    const url = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    const basePath = selectedCitySlug
+      ? selectedDistrictSlugs.length === 1
+        ? `/biura-serwisowane/${selectedCitySlug}/${selectedDistrictSlugs[0]}`
+        : `/biura-serwisowane/${selectedCitySlug}`
+      : '/biura-serwisowane'
+
+    const url = params.toString() ? `${basePath}?${params.toString()}` : basePath
     router.replace(url, { scroll: false })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stanowiskaOd, stanowiskaDo, ceniaDo, selectedAmenities, selectedOperator, selectedMetroLine, sort])
+  }, [ceniaDo, router, selectedAmenities, selectedCitySlug, selectedDistrictSlugs, selectedMetroLine, selectedOperator, sort, stanowiskaDo, stanowiskaOd])
 
   useEffect(() => {
     if (searchParams.open_contact !== '1' || typeof window === 'undefined') return
@@ -344,22 +385,14 @@ export default function SearchClient({
     if (selectedMetroLine && !isNearMetroLine(listing.latitude, listing.longitude, selectedMetroLine, 1.2)) {
       return false
     }
-    if (searchTarget?.type === 'city') {
-      return slugify(listing.address_city) === slugify(searchTarget.label)
+    if (selectedCitySlug && slugify(listing.address_city) !== selectedCitySlug) {
+      return false
     }
-    if (searchTarget?.type === 'district') {
-      const listingCity = slugify(listing.address_city)
-      const listingDistrict = slugify(listing.address_district || '')
-      return listingCity === searchTarget.citySlug && listingDistrict === searchTarget.districtSlug
-    }
-    if (searchTarget?.type === 'metro') {
-      return isNearMetroLine(listing.latitude, listing.longitude, searchTarget.metroLine as MetroLineId, 1.2)
+    if (selectedDistrictSlugs.length > 0) {
+      return selectedDistrictSlugs.includes(slugify(listing.address_district || ''))
     }
     return true
   })
-
-  const featuredListings = featureFiltered.filter((l) => l.is_featured)
-  const regularListings = featureFiltered.filter((l) => !l.is_featured)
 
   const applyBbox = (list: ListingWithOperator[]) => {
     if (!mapBounds) return list
@@ -372,9 +405,7 @@ export default function SearchClient({
     )
   }
 
-  const visibleFeatured = applyBbox(featuredListings)
-  const visibleRegular = applyBbox(regularListings)
-  const allVisible = [...visibleFeatured, ...visibleRegular]
+  const allVisible = applyBbox(featureFiltered)
 
   const availableAmenities = useMemo(
     () => amenities.filter((amenity) => availableAmenitySlugs.includes(amenity.slug)),
@@ -401,15 +432,8 @@ export default function SearchClient({
     ].filter((group) => group.items.length > 0)
   }, [availableAmenities])
 
-  const isClientOnlyFilterActive = Boolean(selectedMetroLine || searchTarget)
+  const isClientOnlyFilterActive = Boolean(selectedMetroLine || selectedDistrictSlugs.length > 0)
   const totalPages = isClientOnlyFilterActive ? 1 : Math.ceil(total / PAGE_SIZE)
-
-  const crumbs = [
-    { label: 'Strona główna', href: '/' },
-    { label: 'Wyszukaj', href: '/biura-serwisowane' },
-    ...(city && resolvedCitySlug ? [{ label: city, href: `/biura-serwisowane/${resolvedCitySlug}` }] : []),
-    ...(district && resolvedCitySlug && resolvedDistrictSlug ? [{ label: district, href: `/biura-serwisowane/${resolvedCitySlug}/${resolvedDistrictSlug}` }] : []),
-  ]
 
   function handlePage(p: number) {
     setPage(p)
@@ -417,69 +441,191 @@ export default function SearchClient({
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const filterLabelClass =
+    'text-[10px] font-bold uppercase tracking-[0.22em] text-white'
+  const filterLabelItemClass =
+    '!text-white !opacity-100'
+  const filterFieldWrapClass =
+    'flex min-w-[170px] flex-1 flex-col gap-2 xl:max-w-[220px]'
+  const filterTriggerClass =
+    'flex min-h-[58px] w-full items-center justify-between gap-3 bg-white px-4 text-left text-[15px] font-semibold text-[#000759] transition-all duration-200 hover:bg-[#f6f9ff]'
+  const filterMenuClass =
+    'absolute left-0 top-[calc(100%+12px)] z-30 min-w-[340px] border border-[#d8e2fb] bg-white shadow-[0_24px_56px_rgba(0,7,89,0.12)]'
+  const budgetOptions = [
+    { value: '', label: 'Dowolny' },
+    { value: '1500', label: `Do 1 500 ${currency}` },
+    { value: '2500', label: `Do 2 500 ${currency}` },
+    { value: '4000', label: `Do 4 000 ${currency}` },
+  ]
+  const sortOptions = [
+    { value: '', label: 'Domyślne (A–Z)' },
+    { value: 'cena_asc', label: 'Cena: od najniższej' },
+    { value: 'cena_desc', label: 'Cena: od najwyższej' },
+  ]
+  const selectedOperatorLabel = operators.find((op) => op.slug === selectedOperator)?.name || 'Wszyscy'
+  const selectedMetroLabel = METRO_LINES.find((line) => line.id === selectedMetroLine)?.name || 'Wszystkie'
+  const selectedBudgetLabel = budgetOptions.find((option) => option.value === ceniaDo)?.label || 'Dowolny'
+  const selectedSortLabel = sortOptions.find((option) => option.value === sort)?.label || 'Domyślne (A–Z)'
+
   const filterBar = (
-    <div className="flex flex-wrap items-end gap-x-8 gap-y-5 py-5">
-      <div className="flex flex-col min-w-[260px] relative items-start">
-        <FilterLabel>Szukaj (miasto / dzielnica / metro)</FilterLabel>
-        <div className="flex items-center gap-2 border-b border-[var(--colliers-border)] pb-1 pr-1">
-          <input
-            value={searchInput}
-            readOnly={Boolean(searchTarget)}
-            onChange={(e) => {
-              if (searchTarget) return
-              setSearchInput(e.target.value)
-            }}
-            onFocus={() => {
-              if (searchTarget) return
-            }}
-            placeholder={searchTarget ? searchTarget.label : 'np. Warszawa, Wola, M2'}
-            className={`flex-1 bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300 ${
-              searchTarget ? 'cursor-not-allowed' : ''
-            }`}
-          />
-          {searchTarget && (
-            <button
-              type="button"
-              onClick={clearSearchTarget}
-              className="shrink-0 text-[#1C54F4] hover:text-red-500 transition-colors"
-              aria-label="Usuń filtr wyszukiwania"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-        {!searchTarget && filteredSearchOptions.length > 0 && searchInput.trim().length > 0 && (
-          <div className="absolute top-[58px] left-0 right-0 bg-white border border-[var(--colliers-border)] shadow-[var(--shadow-md)] z-30 max-h-60 overflow-auto">
-            {filteredSearchOptions.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  setSearchTarget(option)
-                  setSearchInput(option.label)
-                  setSelectedMetroLine(option.type === 'metro' ? (option.metroLine as MetroLineId) : '')
+    <div
+      ref={filterMenusRef}
+      className="grid items-start gap-5 md:grid-cols-2 xl:flex xl:flex-wrap xl:items-start xl:gap-x-4 xl:gap-y-4"
+    >
+      <div className={`relative ${filterFieldWrapClass} xl:max-w-[228px]`}>
+        <p className={filterLabelClass}>Miasto</p>
+        <button type="button" onClick={() => setOpenMenu((value) => (value === 'city' ? null : 'city'))} className={filterTriggerClass}>
+          <span>{selectedCitySlug ? slugToCity(selectedCitySlug) : 'Cała Polska'}</span>
+          <span className="flex items-center gap-2">
+            {selectedCitySlug ? (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  clearCitySelection()
                 }}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--colliers-bg-light-blue)] text-[#000759] flex items-center justify-between"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    clearCitySelection()
+                  }
+                }}
+                className="text-[#92a1ca] transition-colors hover:text-[#ED1B34]"
               >
-                <span>{option.label}</span>
-                <span className="text-[10px] uppercase tracking-widest text-[#7B8BBD]">{option.type}</span>
+                <X size={15} />
+              </span>
+            ) : null}
+            <ChevronDown size={15} className={`transition-transform ${openMenu === 'city' ? 'rotate-180' : ''}`} />
+          </span>
+        </button>
+        {openMenu === 'city' ? (
+          <div className={`${filterMenuClass} filter-menu-enter`}>
+            <div className="max-h-72 overflow-y-auto overscroll-contain px-3 py-3 space-y-2" data-lenis-prevent>
+              <button
+                type="button"
+                onClick={() => {
+                  clearCitySelection()
+                  setOpenMenu(null)
+                }}
+                className="flex w-full items-center justify-between border border-[#e7edf9] bg-white px-4 py-3 text-left text-[15px] font-medium text-[#000759] transition-all hover:border-[#b7cbff] hover:bg-[#f8fbff]"
+              >
+                <span>Cała Polska</span>
+                {!selectedCitySlug ? <Check size={14} className="text-[#1C54F4]" /> : null}
               </button>
-            ))}
+              {CITY_AREAS.map((cityArea) => {
+                const checked = selectedCitySlug === cityArea.city
+                return (
+                  <button
+                    key={cityArea.city}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCitySlug(cityArea.city)
+                      setOpenMenu(null)
+                    }}
+                    className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                      checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
+                    }`}
+                  >
+                    <span>{cityArea.label}</span>
+                    {checked ? <Check size={14} className="text-[#1C54F4]" /> : null}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
 
-      {/* Workstations */}
-      <div className="flex flex-col items-start">
-        <FilterLabel tooltip="Liczba stanowisk pracy oznacza liczbę miejsc do pracy w całym biurze, rozumianych jako biurko plus fotel.">
+      <div className={`relative ${filterFieldWrapClass} xl:max-w-[280px]`}>
+        <p className={filterLabelClass}>Dzielnice</p>
+        {/* District dropdown is intentionally wider than its trigger via min-w on filterMenuClass */}
+        <button
+          type="button"
+          disabled={!selectedCitySlug}
+          onClick={() => selectedCitySlug && setOpenMenu((value) => (value === 'district' ? null : 'district'))}
+          className={`${filterTriggerClass} ${
+            selectedCitySlug ? '' : 'cursor-not-allowed text-[#acbbe8] bg-[#f8f9fd]'
+          }`}
+        >
+          <span className="truncate">
+            {selectedDistrictLabels.length === 0
+              ? districtSummary
+              : selectedDistrictLabels.length === 1
+                ? selectedDistrictLabels[0]
+                : `Wybrane dzielnice (${selectedDistrictLabels.length})`}
+          </span>
+          <ChevronDown size={15} className={`shrink-0 transition-transform ${openMenu === 'district' ? 'rotate-180' : ''}`} />
+        </button>
+
+        {openMenu === 'district' && selectedCitySlug ? (
+          <div className={`${filterMenuClass} min-w-[420px] filter-menu-enter`}>
+            <div className="flex items-center justify-between border-b border-[#edf2fb] px-4 py-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1C54F4]">Dzielnice</p>
+                <p className="mt-1 text-[11px] text-[#61719a]">Możesz wybrać kilka dzielnic jednocześnie.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDraftDistrictSlugs([])}
+                className="eyebrow-label text-[10px] transition-colors hover:text-[#000759]"
+              >
+                Wyczyść
+              </button>
+            </div>
+            <div className="max-h-72 overflow-y-auto overscroll-contain px-4 py-3 space-y-2" data-lenis-prevent>
+              {districtOptions.map((districtItem) => {
+                const checked = draftDistrictSlugs.includes(districtItem.slug)
+                return (
+                  <label
+                    key={districtItem.slug}
+                    className={`flex cursor-pointer items-center gap-3 border px-3 py-3 transition-all ${
+                      checked ? 'border-[#1C54F4] bg-[#edf3ff]' : 'border-[#e7edf9] bg-white hover:border-[#b7cbff]'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={checked}
+                      onChange={() => {
+                        setDraftDistrictSlugs((prev) =>
+                          checked ? prev.filter((slug) => slug !== districtItem.slug) : [...prev, districtItem.slug]
+                        )
+                      }}
+                    />
+                    <span className={`flex h-5 w-5 items-center justify-center border ${checked ? 'border-[#1C54F4] bg-[#1C54F4] text-white' : 'border-[#c6d5f8] text-transparent'}`}>
+                      <Check size={12} />
+                    </span>
+                    <span className="text-[15px] font-medium text-[#000759]">{districtItem.label}</span>
+                  </label>
+                )
+              })}
+            </div>
+            <div className="border-t border-[#edf2fb] px-4 py-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDistrictSlugs(draftDistrictSlugs)
+                  setOpenMenu(null)
+                }}
+                className="btn-primary w-full justify-center"
+              >
+                Zastosuj
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className={filterFieldWrapClass}>
+        <FilterLabel tooltip="Liczba stanowisk pracy oznacza liczbę miejsc do pracy w całym biurze, rozumianych jako biurko plus fotel." labelClass={filterLabelItemClass}>
           Stanowiska
         </FilterLabel>
-        <div className="flex items-center gap-2">
+        <div className="flex min-h-[58px] items-center gap-2 bg-white px-4">
           <input
             type="number"
             placeholder="od"
-            className="w-14 bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
+            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
             value={stanowiskaOd}
             onChange={(e) => setStanowiskaOd(e.target.value.replace(/\D/g, ''))}
             inputMode="numeric"
@@ -489,7 +635,7 @@ export default function SearchClient({
           <input
             type="number"
             placeholder="do"
-            className="w-14 bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
+            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
             value={stanowiskaDo}
             onChange={(e) => setStanowiskaDo(e.target.value.replace(/\D/g, ''))}
             inputMode="numeric"
@@ -498,76 +644,179 @@ export default function SearchClient({
         </div>
       </div>
 
-      {/* Price */}
-      <div className="flex flex-col items-start">
-        <FilterLabel tooltip="Budżet oznacza miesięczny budżet za jedno stanowisko pracy.">
+      <div className={`relative ${filterFieldWrapClass}`}>
+        <FilterLabel tooltip="Budżet oznacza miesięczny budżet za jedno stanowisko pracy." labelClass={filterLabelItemClass}>
           Budżet ({currency})
         </FilterLabel>
-        <select
-          className="w-full min-w-[110px] bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
-          value={ceniaDo}
-          onChange={(e) => setCeniaDo(e.target.value)}
-        >
-          <option value="">Dowolny</option>
-          <option value="1500">Do 1 500 {currency}</option>
-          <option value="2500">Do 2 500 {currency}</option>
-          <option value="4000">Do 4 000 {currency}</option>
-        </select>
+        <button type="button" onClick={() => setOpenMenu((value) => (value === 'budget' ? null : 'budget'))} className={filterTriggerClass}>
+          <span>{selectedBudgetLabel}</span>
+          <ChevronDown size={15} className={`transition-transform ${openMenu === 'budget' ? 'rotate-180' : ''}`} />
+        </button>
+        {openMenu === 'budget' ? (
+          <div className={`${filterMenuClass} filter-menu-enter`}>
+            <div className="max-h-72 overflow-y-auto overscroll-contain px-3 py-3 space-y-2" data-lenis-prevent>
+              {budgetOptions.map((option) => {
+                const checked = ceniaDo === option.value
+                return (
+                  <button
+                    key={option.value || 'any'}
+                    type="button"
+                    onClick={() => {
+                      setCeniaDo(option.value)
+                      setOpenMenu(null)
+                    }}
+                    className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                      checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                    {checked ? <Check size={14} className="text-[#1C54F4]" /> : null}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      {/* Operator */}
-      <div className="flex flex-col items-start">
-        <label className="form-label mb-1">Operator</label>
-        <select
-          className="w-full min-w-[110px] bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
-          value={selectedOperator}
-          onChange={(e) => setSelectedOperator(e.target.value)}
-        >
-          <option value="">Wszyscy</option>
-          {operators.map((op) => (
-            <option key={op.id} value={op.slug}>{op.name}</option>
-          ))}
-        </select>
+      <div className={`relative ${filterFieldWrapClass}`}>
+        <p className={filterLabelClass}>Operator</p>
+        <button type="button" onClick={() => setOpenMenu((value) => (value === 'operator' ? null : 'operator'))} className={filterTriggerClass}>
+          <span>{selectedOperatorLabel}</span>
+          <ChevronDown size={15} className={`transition-transform ${openMenu === 'operator' ? 'rotate-180' : ''}`} />
+        </button>
+        {openMenu === 'operator' ? (
+          <div className={`${filterMenuClass} filter-menu-enter`}>
+            <div className="max-h-72 overflow-y-auto overscroll-contain px-3 py-3 space-y-2" data-lenis-prevent>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedOperator('')
+                  setOpenMenu(null)
+                }}
+                className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                  !selectedOperator ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
+                }`}
+              >
+                <span>Wszyscy</span>
+                {!selectedOperator ? <Check size={14} className="text-[#1C54F4]" /> : null}
+              </button>
+              {operators.map((op) => {
+                const checked = selectedOperator === op.slug
+                return (
+                  <button
+                    key={op.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedOperator(op.slug)
+                      setOpenMenu(null)
+                    }}
+                    className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                      checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
+                    }`}
+                  >
+                    <span>{op.name}</span>
+                    {checked ? <Check size={14} className="text-[#1C54F4]" /> : null}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <div className="flex flex-col items-start">
-        <label className="form-label mb-1">Linia metra</label>
-        <select
-          className="w-full min-w-[110px] bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
-          value={selectedMetroLine}
-          onChange={(e) => setSelectedMetroLine(e.target.value as MetroLineId | '')}
+      {selectedCitySlug === 'warszawa' ? (
+        <div className={`relative ${filterFieldWrapClass} xl:max-w-[165px]`}>
+          <p className={filterLabelClass}>Linia metra</p>
+          <button type="button" onClick={() => setOpenMenu((value) => (value === 'metro' ? null : 'metro'))} className={filterTriggerClass}>
+            <span>{selectedMetroLabel}</span>
+            <ChevronDown size={15} className={`transition-transform ${openMenu === 'metro' ? 'rotate-180' : ''}`} />
+          </button>
+          {openMenu === 'metro' ? (
+            <div className={`${filterMenuClass} filter-menu-enter`}>
+              <div className="max-h-72 overflow-y-auto overscroll-contain px-3 py-3 space-y-2" data-lenis-prevent>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedMetroLine('')
+                    setOpenMenu(null)
+                  }}
+                  className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                    !selectedMetroLine ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
+                  }`}
+                >
+                  <span>Wszystkie</span>
+                  {!selectedMetroLine ? <Check size={14} className="text-[#1C54F4]" /> : null}
+                </button>
+                {METRO_LINES.map((line) => {
+                  const checked = selectedMetroLine === line.id
+                  return (
+                    <button
+                      key={line.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedMetroLine(line.id)
+                        setOpenMenu(null)
+                      }}
+                      className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                        checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
+                      }`}
+                    >
+                      <span>{line.name}</span>
+                      {checked ? <Check size={14} className="text-[#1C54F4]" /> : null}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className={`${filterFieldWrapClass} xl:max-w-[200px]`}>
+        <p className={`${filterLabelClass} opacity-0`}>Filtry</p>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(true)}
+          className="inline-flex min-h-[58px] items-center justify-center gap-2 bg-[rgba(255,255,255,0.08)] px-5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-white hover:text-[#000759]"
         >
-          <option value="">Wszystkie</option>
-          {METRO_LINES.map((line) => (
-            <option key={line.id} value={line.id}>{line.name}</option>
-          ))}
-        </select>
+          Więcej filtrów
+          <SlidersHorizontal size={13} />
+          {selectedAmenities.length > 0 ? <span className="text-current">({selectedAmenities.length})</span> : null}
+        </button>
       </div>
 
-      {/* Amenities */}
-      <button
-        type="button"
-        onClick={() => setFiltersOpen(true)}
-        className="inline-flex h-10 items-center gap-2 border border-[#dbe4f8] bg-white px-4 text-[11px] font-bold uppercase tracking-[0.14em] text-[#000759] transition-colors hover:border-[#1C54F4] hover:text-[#1C54F4]"
-      >
-        Więcej filtrów
-        <SlidersHorizontal size={13} />
-        {selectedAmenities.length > 0 && <span className="text-[#1C54F4]">({selectedAmenities.length})</span>}
-      </button>
-
-      {/* Sort */}
-      <div className="flex flex-col ml-auto items-end">
-        <label className="form-label mb-1">Sortowanie</label>
-        <select
-          className="bg-transparent border-none p-0 text-sm font-bold text-[#000759] focus:ring-0 cursor-pointer"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
-          <option value="">Rekomendowane</option>
-          <option value="cena_asc">Cena: od najniższej</option>
-          <option value="cena_desc">Cena: od najwyższej</option>
-          <option value="data_otwarcia">Rok otwarcia</option>
-        </select>
+      <div className={`relative ${filterFieldWrapClass} xl:ml-auto xl:max-w-[210px]`}>
+        <p className={filterLabelClass}>Sortowanie</p>
+        <button type="button" onClick={() => setOpenMenu((value) => (value === 'sort' ? null : 'sort'))} className={filterTriggerClass}>
+          <span>{selectedSortLabel}</span>
+          <ChevronDown size={15} className={`transition-transform ${openMenu === 'sort' ? 'rotate-180' : ''}`} />
+        </button>
+        {openMenu === 'sort' ? (
+          <div className={`${filterMenuClass} filter-menu-enter`}>
+            <div className="max-h-72 overflow-y-auto overscroll-contain px-3 py-3 space-y-2" data-lenis-prevent>
+              {sortOptions.map((option) => {
+                const checked = sort === option.value
+                return (
+                  <button
+                    key={option.value || 'recommended'}
+                    type="button"
+                    onClick={() => {
+                      setSort(option.value)
+                      setOpenMenu(null)
+                    }}
+                    className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                      checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                    {checked ? <Check size={14} className="text-[#1C54F4]" /> : null}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )
@@ -582,20 +831,17 @@ export default function SearchClient({
         onOpenWizard={() => setWizardOpen(true)}
       />
 
-      <div className="flex h-[calc(100dvh-80px)] flex-col overflow-hidden">
-        <div className="px-8 lg:px-16">
-          <Breadcrumbs crumbs={crumbs} />
-        </div>
-        <div ref={filterBarRef} className="px-8 lg:px-16">
-          {filterBar}
+      <div className="flex h-[calc(100dvh-80px)] flex-col overflow-hidden bg-white">
+        <div className="px-8 pb-4 pt-6 lg:px-16">
+          <div className="bg-[var(--colliers-navy)] px-8 py-6 shadow-[0_18px_40px_rgba(0,7,89,0.18)]" ref={filterBarRef}>{filterBar}</div>
         </div>
 
         {/* Main content: list + map */}
-        <div className="relative flex-1 min-h-0">
+        <div className="relative min-h-0 flex-1 bg-white px-8 pb-6 lg:px-16">
           {/* Desktop: side-by-side */}
-          <div className="hidden lg:flex h-full min-h-0">
+          <div className="hidden h-full min-h-0 gap-4 lg:flex">
             {/* List — 40% */}
-            <div className="w-[40%] overflow-y-auto flex-shrink-0" data-lenis-prevent>
+            <div className="surface-panel w-[40%] flex-shrink-0 overflow-y-auto" data-lenis-prevent>
             {loading ? (
               <div className="p-8 flex flex-col items-center gap-3 text-[var(--colliers-gray)]">
                 <div className="w-5 h-5 border-2 border-[#1C54F4] border-t-transparent rounded-full animate-spin" />
@@ -625,37 +871,19 @@ export default function SearchClient({
                 </button>
               </div>
             ) : (
-              <div className="pt-4 pb-4 pl-16 pr-4 flex flex-col gap-4">
-                {visibleFeatured.length > 0 && (
-                  <>
-                    <p className="text-xs font-semibold text-[var(--colliers-blue-bright)] uppercase tracking-wide pt-2">
-                      ✦ Polecane
-                    </p>
-                    {visibleFeatured.map((l) => (
-                      <div
-                        key={l.id}
-                        onMouseEnter={() => setHighlightedId(l.id)}
-                        onMouseLeave={() => setHighlightedId(null)}
-                      >
-                        <ListingCard listing={l} highlighted={highlightedId === l.id} />
-                      </div>
-                    ))}
-                    {visibleRegular.length > 0 && (
-                      <div className="flex items-center gap-3 py-2">
-                        <div className="flex-1 border-t border-[var(--colliers-border)]" />
-                        <span className="text-xs text-[var(--colliers-gray)] uppercase tracking-wide">Wszystkie biura</span>
-                        <div className="flex-1 border-t border-[var(--colliers-border)]" />
-                      </div>
-                    )}
-                  </>
-                )}
-                {visibleRegular.map((l) => (
+              <div className="flex flex-col gap-4 px-8 pb-6 pt-6">
+                {allVisible.map((l) => (
                   <div
                     key={l.id}
                     onMouseEnter={() => setHighlightedId(l.id)}
                     onMouseLeave={() => setHighlightedId(null)}
                   >
-                    <ListingCard listing={l} highlighted={highlightedId === l.id} />
+                    <ListingCard
+                      listing={l}
+                      highlighted={highlightedId === l.id}
+                      selectedWorkstationsFrom={stanowiskaOd ? Number(stanowiskaOd) : null}
+                      selectedWorkstationsTo={stanowiskaDo ? Number(stanowiskaDo) : null}
+                    />
                   </div>
                 ))}
 
@@ -682,13 +910,13 @@ export default function SearchClient({
             </div>
 
             {/* Map — 60% */}
-            <div className="flex-1 min-h-0 overflow-hidden pr-8" data-lenis-prevent>
+            <div className="surface-panel min-h-0 flex-1 overflow-hidden" data-lenis-prevent>
               <MapView
                 listings={featureFiltered}
                 highlightedId={highlightedId}
                 onMarkerClick={(id) => setHighlightedId(id)}
                 onBoundsChange={(bounds) => setMapBounds(bounds)}
-                initialCity={resolvedCitySlug}
+                initialCity={selectedCitySlug || undefined}
                 showDistrictGrid={showDistrictGrid}
                 showMetroLines={showMetroLines}
                 onToggleDistrictGrid={() => setShowDistrictGrid((value) => !value)}
@@ -700,7 +928,7 @@ export default function SearchClient({
           {/* Mobile: toggle list/map */}
           <div className="lg:hidden">
             {mobileView === 'list' ? (
-              <div className="container-colliers py-4 flex flex-col gap-4 pb-20">
+              <div className="flex flex-col gap-4 pb-20">
                 {loading ? (
                   <p className="text-center text-[var(--colliers-gray)] py-8">Ładowanie…</p>
                 ) : allVisible.length === 0 ? (
@@ -719,17 +947,24 @@ export default function SearchClient({
                     </button>
                   </div>
                 ) : (
-                  allVisible.map((l) => <ListingCard key={l.id} listing={l} />)
+                  allVisible.map((l) => (
+                    <ListingCard
+                      key={l.id}
+                      listing={l}
+                      selectedWorkstationsFrom={stanowiskaOd ? Number(stanowiskaOd) : null}
+                      selectedWorkstationsTo={stanowiskaDo ? Number(stanowiskaDo) : null}
+                    />
+                  ))
                 )}
               </div>
             ) : (
-              <div style={{ height: 'calc(100vh - 120px)' }}>
+              <div className="overflow-hidden border border-[#e6ebf7] bg-white shadow-[0_16px_44px_rgba(0,7,89,0.05)]" style={{ height: 'calc(100vh - 160px)' }}>
                 <MapView
                   listings={featureFiltered}
                   highlightedId={null}
                   onMarkerClick={() => {}}
                   onBoundsChange={(bounds) => setMapBounds(bounds)}
-                  initialCity={resolvedCitySlug}
+                  initialCity={selectedCitySlug || undefined}
                   showDistrictGrid={showDistrictGrid}
                   showMetroLines={showMetroLines}
                   onToggleDistrictGrid={() => setShowDistrictGrid((value) => !value)}
@@ -780,7 +1015,7 @@ export default function SearchClient({
             <div className="sticky top-0 z-10 flex items-start justify-between gap-6 border-b border-[#e9edf6] bg-white px-7 md:px-8 py-6">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-2">Udogodnienia</p>
-                <h3 className="text-2xl font-light text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
+                <h3 className="text-2xl font-normal text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
                   Filtruj po tym, co naprawdę jest dostępne
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-[#61719a]">
@@ -799,7 +1034,7 @@ export default function SearchClient({
                   <p className="text-sm text-[#61719a]">Biura spełniające wybrane warunki</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-light text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
+                  <p className="text-2xl font-normal text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
                     {allVisible.length}
                   </p>
                   <p className="text-[11px] uppercase tracking-[0.16em] text-[#7a88b1]">ofert</p>

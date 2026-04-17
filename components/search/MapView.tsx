@@ -678,7 +678,7 @@ export default function MapView({
               type="button"
               onClick={() => onToggleMetroLines?.()}
               className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
-                showMetroLines ? 'text-[#1C54F4]' : 'text-[#7B8BBD]'
+                showMetroLines ? 'text-[#1C54F4]' : 'text-[#7c8bb3]'
               }`}
             >
               Linie metra
@@ -688,7 +688,7 @@ export default function MapView({
               type="button"
               onClick={() => onToggleDistrictGrid?.()}
               className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
-                showDistrictGrid ? 'text-[#1C54F4]' : 'text-[#7B8BBD]'
+                showDistrictGrid ? 'text-[#1C54F4]' : 'text-[#7c8bb3]'
               }`}
             >
               Dzielnice

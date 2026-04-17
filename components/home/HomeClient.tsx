@@ -200,7 +200,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                 </p>
 
                 <h1
-                  className="font-light leading-tight mb-6"
+                  className="font-normal leading-tight mb-6 text-white"
                   style={{
                     fontFamily: 'var(--font-serif)',
                     fontSize: 'clamp(2.4rem, 5vw, 5rem)',
@@ -211,11 +211,11 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                 >
                   Znajdź biuro serwisowane{' '}
                   <br className="hidden md:block" />
-                  <span style={{ fontWeight: 700 }}>z pomocą Colliers</span>
+                  <span className="text-white" style={{ fontWeight: 700 }}>z pomocą Colliers</span>
                 </h1>
 
                 <p
-                  className="text-white/60 text-lg md:text-xl font-light mb-10 max-w-2xl mx-auto leading-relaxed"
+                  className="text-white/82 text-lg md:text-xl font-normal mb-10 max-w-2xl mx-auto leading-relaxed"
                   style={{
                     opacity: heroLoaded ? 1 : 0,
                     transform: heroLoaded ? 'translateY(0)' : 'translateY(16px)',
@@ -250,7 +250,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                         onFocus={() => setSearchFocused(true)}
                         onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                         placeholder="Wpisz miasto, dzielnicę lub nazwę biura..."
-                        className="w-full bg-transparent border-none focus:ring-0 text-white placeholder:text-white/40 font-light tracking-wide"
+                        className="w-full bg-transparent border-none focus:ring-0 text-white placeholder:text-white/56 font-normal tracking-wide"
                         style={{ outline: 'none', boxShadow: 'none', fontSize: '1rem' }}
                         autoComplete="off"
                       />
@@ -285,9 +285,9 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                                       router.push(item.href)
                                       setSearchFocused(false)
                                     }}
-                                    className="flex items-center py-1.5 text-left text-white/80 hover:text-white transition-colors"
+                                    className="flex items-center py-1.5 text-left text-white/85 hover:text-white transition-colors"
                                   >
-                                    <span className="text-sm font-light">{item.label}</span>
+                                    <span className="text-sm font-normal">{item.label}</span>
                                   </button>
                                 ))}
                               </div>
@@ -314,7 +314,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                       <button
                         key={c.slug}
                         onClick={() => handleCityClick(c.slug)}
-                        className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/65 hover:text-white transition-colors px-1"
+                        className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/78 hover:text-white transition-colors px-1"
                       >
                         {c.label}
                       </button>
@@ -352,41 +352,41 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
             <div className="relative z-10 w-full px-8 lg:px-16">
               <div className="max-w-4xl mx-auto text-center">
-                <h2 className="font-light leading-tight mb-5" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
+                <h2 className="font-normal leading-tight mb-5" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
                   Narzędzia i wiedza do lepszej decyzji
                 </h2>
-                <p className="text-white/65 text-lg font-light mb-14 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-white/82 text-lg font-normal mb-14 max-w-2xl mx-auto leading-relaxed">
                   Nie każda firma potrzebuje tego samego typu biura. Skorzystaj z narzędzi porównawczych i wiedzy eksperckiej, aby szybciej zawęzić wybór i podjąć racjonalną decyzję.
                 </p>
 
                 <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
-                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col" onClick={() => setWizardOpen(true)}>
+                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col shadow-[0_12px_30px_rgba(0,7,89,0.04)] hover:shadow-[0_28px_60px_rgba(28,84,244,0.25)]" onClick={() => setWizardOpen(true)}>
                     <div className="flex justify-center mb-5">
                       <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
                       </svg>
                     </div>
                     <h3 className="text-base font-bold uppercase tracking-[0.12em] text-[#000759] group-hover:text-white mb-3 transition-colors">Porównywarka modeli biura</h3>
-                    <p className="text-[#56648F] text-sm font-light group-hover:text-white/80 mb-7 leading-relaxed transition-colors flex-1">Sprawdź, czy lepszym wyborem będzie biuro serwisowane, najem tradycyjny czy model hybrydowy.</p>
+                    <p className="text-body-muted text-sm font-normal group-hover:text-white/88 mb-7 leading-relaxed transition-colors flex-1">Sprawdź, czy lepszym wyborem będzie biuro serwisowane, najem tradycyjny czy model hybrydowy.</p>
                     <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
                       Porównaj modele
                     </div>
                   </div>
 
-                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col" onClick={() => setFormOpen(true)}>
+                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col shadow-[0_12px_30px_rgba(0,7,89,0.04)] hover:shadow-[0_28px_60px_rgba(28,84,244,0.25)]" onClick={() => setFormOpen(true)}>
                     <div className="flex justify-center mb-5">
                       <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                         <rect x="4" y="2" width="16" height="20" rx="0"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/>
                       </svg>
                     </div>
                     <h3 className="text-base font-bold uppercase tracking-[0.12em] text-[#000759] group-hover:text-white mb-3 transition-colors">Kalkulator kosztów biura</h3>
-                    <p className="text-[#56648F] text-sm font-light group-hover:text-white/80 mb-7 leading-relaxed transition-colors flex-1">Oszacuj orientacyjny koszt biura dla Twojego zespołu i zobacz, jak różne założenia wpływają na budżet.</p>
+                    <p className="text-body-muted text-sm font-normal group-hover:text-white/88 mb-7 leading-relaxed transition-colors flex-1">Oszacuj orientacyjny koszt biura dla Twojego zespołu i zobacz, jak różne założenia wpływają na budżet.</p>
                     <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
                       Uruchom kalkulator
                     </div>
                   </div>
 
-                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col" onClick={() => router.push('/przewodnik-flex')}>
+                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col shadow-[0_12px_30px_rgba(0,7,89,0.04)] hover:shadow-[0_28px_60px_rgba(28,84,244,0.25)]" onClick={() => router.push('/przewodnik-flex')}>
                     <div className="flex justify-center mb-5">
                       <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                         <path d="M4 5a2 2 0 0 1 2-2h11a3 3 0 0 1 3 3v13a2 2 0 0 1-2 2H7a3 3 0 0 0-3 3V5z"/>
@@ -394,7 +394,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                       </svg>
                     </div>
                     <h3 className="text-base font-bold uppercase tracking-[0.12em] text-[#000759] group-hover:text-white mb-3 transition-colors">Przewodnik Flex</h3>
-                    <p className="text-[#56648F] text-sm font-light group-hover:text-white/80 mb-7 leading-relaxed transition-colors flex-1">Uporządkuj temat od podstaw: modele najmu, scenariusze użycia i raporty miejskie w jednym miejscu.</p>
+                    <p className="text-body-muted text-sm font-normal group-hover:text-white/88 mb-7 leading-relaxed transition-colors flex-1">Uporządkuj temat od podstaw: modele najmu, scenariusze użycia i raporty miejskie w jednym miejscu.</p>
                     <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
                       Otwórz przewodnik
                     </div>
@@ -431,10 +431,10 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
             <div className="relative z-10 w-full px-8 lg:px-16">
               <div className="max-w-3xl mx-auto text-center">
-                <h2 className="font-light leading-tight mb-7" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
+                <h2 className="font-normal leading-tight mb-7" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
                   Wolisz porównać rynek z doradcą?
                 </h2>
-                <p className="text-white/65 text-xl font-light mb-12 max-w-xl mx-auto leading-relaxed">
+                <p className="text-white/82 text-xl font-normal mb-12 max-w-xl mx-auto leading-relaxed">
                   Nasi eksperci pomogą Ci zawęzić wybór, porównać operatorów i wynegocjować lepsze warunki — bez dodatkowego kosztu po Twojej stronie.
                 </p>
                 <button
@@ -445,7 +445,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                 </button>
                 <div className="mt-10 flex flex-wrap justify-center gap-6">
                   {['Bezpośredni kontakt', 'Bezpłatne wsparcie', 'Negocjacja warunków'].map((item) => (
-                    <span key={item} className="border border-white/15 px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+                    <span key={item} className="border border-white/15 px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/78">
                       {item}
                     </span>
                   ))}
@@ -527,7 +527,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                   >
                     {title}
                   </h3>
-                  <p className="text-[#56648F] text-sm font-light leading-relaxed">{desc}</p>
+                  <p className="text-body-muted text-sm font-normal leading-relaxed">{desc}</p>
                 </div>
               ))}
             </div>
@@ -590,12 +590,12 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-[#000759] via-[#25408F] to-[#353E59] flex items-center justify-center">
-                          <span className="text-white/15 font-light" style={{ fontFamily: 'var(--font-sans)', fontSize: '5rem', fontWeight: 300 }}>CF</span>
+                          <span className="text-white/15 font-normal" style={{ fontFamily: 'var(--font-sans)', fontSize: '5rem', fontWeight: 300 }}>CF</span>
                         </div>
                       )}
                       <div className="absolute bottom-0 left-0 right-0 z-20 p-6">
                         <div className="w-8 h-[2px] bg-[#1C54F4] mb-3 transition-all duration-500 group-hover:w-16" />
-                        <p className="overline mb-2 text-white/60">{listing.address_district || listing.address_city}</p>
+                        <p className="overline mb-2 text-white/78">{listing.address_district || listing.address_city}</p>
                         <h3
                           className="text-white leading-snug group-hover:text-[#C3E6FF] transition-colors duration-300"
                           style={{ fontFamily: 'var(--font-sans)', fontWeight: 300, fontSize: '1.25rem' }}

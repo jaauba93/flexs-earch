@@ -94,23 +94,23 @@ export default function CityReportClient({ report, listings }: CityReportClientP
               <p className="overline mb-6">{report.heroEyebrow}</p>
               <h1
                 className="text-[#000759] leading-[1.05] mb-6"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2.2rem,4.7vw,4rem)' }}
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.2rem,4.7vw,4rem)' }}
               >
                 {report.heroH1}
               </h1>
-              <p className="text-[#4f5f88] text-lg leading-relaxed mb-9">{report.heroLead}</p>
+              <p className="text-body-strong text-lg leading-relaxed mb-9">{report.heroLead}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="border border-[#dce4f7] bg-white px-4 py-3">
-                  <p className="text-[#000759] text-2xl font-light">{report.kpiOffices}</p>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#7b8bbd]">Liczba biur</p>
+                  <p className="text-[#000759] text-2xl font-normal">{report.kpiOffices}</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">Liczba biur</p>
                 </div>
                 <div className="border border-[#dce4f7] bg-white px-4 py-3">
-                  <p className="text-[#000759] text-2xl font-light">{report.kpiSupply}</p>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#7b8bbd]">Powierzchnia</p>
+                  <p className="text-[#000759] text-2xl font-normal">{report.kpiSupply}</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">Powierzchnia</p>
                 </div>
                 <div className="border border-[#dce4f7] bg-white px-4 py-3">
-                  <p className="text-[#000759] text-2xl font-light">{report.kpiOccupancy}</p>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#7b8bbd]">Zajętość</p>
+                  <p className="text-[#000759] text-2xl font-normal">{report.kpiOccupancy}</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">Zajętość</p>
                 </div>
               </div>
             </div>
@@ -121,10 +121,10 @@ export default function CityReportClient({ report, listings }: CityReportClientP
               <div className="relative z-10 text-white p-7 md:p-8 flex h-full items-end">
                 <div className="w-full bg-white/12 border border-white/25 backdrop-blur px-5 py-5">
                   <p className="text-[10px] uppercase tracking-[0.18em] text-[#cfe4ff] mb-2">{report.heroImagePlaceholder}</p>
-                  <h3 className="text-2xl font-light mb-3" style={{ fontFamily: 'var(--font-serif)' }}>
+                  <h3 className="text-2xl font-normal mb-3" style={{ fontFamily: 'var(--font-serif)' }}>
                     {report.positioningHeadline}
                   </h3>
-                  <p className="text-white/85 text-sm leading-relaxed">{report.positioningText}</p>
+                  <p className="text-white/88 text-sm leading-relaxed">{report.positioningText}</p>
                 </div>
               </div>
             </div>
@@ -148,9 +148,9 @@ export default function CityReportClient({ report, listings }: CityReportClientP
                   )}`,
                 },
               ].map((item) => (
-                <div key={item.label} className="border border-[#dce5fa] bg-white p-5 hover:shadow-[0_16px_42px_rgba(0,7,89,0.1)] transition-shadow">
-                  <p className="text-[#5c6b95] text-[11px] uppercase tracking-[0.16em] mb-3">{item.label}</p>
-                  <p className="text-[#000759] text-2xl font-light leading-tight">{item.value}</p>
+                <div key={item.label} className="surface-panel-soft p-5 hover:shadow-[0_16px_42px_rgba(0,7,89,0.1)] transition-shadow">
+                  <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-[#5c6b95]">{item.label}</p>
+                  <p className="text-[#000759] text-2xl font-normal leading-tight">{item.value}</p>
                 </div>
               ))}
             </div>
@@ -163,7 +163,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
               ].map((item) => (
                 <div key={item.label} className="border border-[#dce5fa] bg-white p-4">
                   <div className="flex justify-between text-[11px] uppercase tracking-[0.16em] mb-3">
-                    <span className="text-[#5a6a95]">{item.label}</span>
+                    <span className="text-[#5d6d97]">{item.label}</span>
                     <span style={{ color: scorePalette(item.value).text }} className="font-bold">
                       {item.raw}
                     </span>
@@ -187,21 +187,21 @@ export default function CityReportClient({ report, listings }: CityReportClientP
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-[1.45fr_1fr] gap-10">
             <div data-reveal="left">
               <p className="overline mb-5">O rynku</p>
-              <h2 className="text-[#000759] text-4xl font-light mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
+              <h2 className="text-[#000759] text-4xl font-normal mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
                 Charakterystyka rynku {report.cityName}
               </h2>
-              <p className="text-[#4f5f88] leading-relaxed mb-4">{report.heroLead}</p>
-              <p className="text-[#4f5f88] leading-relaxed mb-4">{report.positioningText}</p>
-              <p className="text-[#4f5f88] leading-relaxed">
+              <p className="text-body-strong leading-relaxed mb-4">{report.heroLead}</p>
+              <p className="text-body-strong leading-relaxed mb-4">{report.positioningText}</p>
+              <p className="text-body-strong leading-relaxed">
                 {report.marketStructureText}
               </p>
             </div>
 
-            <aside className="border border-[#dbe4f8] bg-[#f8fbff] p-6" data-reveal="right">
+            <aside className="surface-panel-soft p-6" data-reveal="right">
               <p className="overline mb-5">Kluczowe fakty</p>
               <ul className="space-y-3">
                 {report.keyFacts.map((fact, idx) => (
-                  <li key={fact} className="flex gap-3 text-[#4f5f88] text-sm leading-relaxed" data-reveal={`d${Math.min(idx + 1, 4)}`}>
+                  <li key={fact} className="text-body-strong flex gap-3 text-sm leading-relaxed" data-reveal={`d${Math.min(idx + 1, 4)}`}>
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#1C54F4] shrink-0" />
                     <span>{fact}</span>
                   </li>
@@ -216,7 +216,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
             <div className="flex items-end justify-between mb-6">
               <div>
                 <p className="overline mb-3">Mapa ofert</p>
-                <h2 className="text-[#000759] text-4xl font-light" style={{ fontFamily: 'var(--font-serif)' }}>
+                <h2 className="text-[#000759] text-4xl font-normal" style={{ fontFamily: 'var(--font-serif)' }}>
                   Oferty biur elastycznych w {report.cityName}
                 </h2>
               </div>
@@ -239,7 +239,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
               </div>
               <div className="space-y-4 max-h-[560px] overflow-y-auto pr-1" data-reveal="right" data-lenis-prevent>
                 {topListings.length === 0 && (
-                  <div className="border border-[#dbe4f8] bg-white p-6 text-[#5a6a95] text-sm">
+                  <div className="surface-panel-soft p-6 text-body-muted text-sm">
                     Brak aktywnych ofert z geolokalizacją dla tego rynku.
                   </div>
                 )}
@@ -260,7 +260,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
         <section className="py-20 border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers">
             <p className="overline mb-5">Ceny orientacyjne</p>
-            <h2 className="text-[#000759] text-4xl font-light mb-7" style={{ fontFamily: 'var(--font-serif)' }}>
+            <h2 className="text-[#000759] text-4xl font-normal mb-7" style={{ fontFamily: 'var(--font-serif)' }}>
               Ceny i interpretacja
             </h2>
             <div className="overflow-x-auto border border-[#dbe4f8] bg-white">
@@ -273,17 +273,17 @@ export default function CityReportClient({ report, listings }: CityReportClientP
                     ['Prywatne biuro · poza centrum', formatPriceShort(report.prices.privateNonCenter, currency, rates)],
                   ].map(([label, value]) => (
                     <tr key={label} className="border-b border-[#eef2fb]">
-                      <td className="px-5 py-4 text-[#5a6a95] text-sm">{label}</td>
-                      <td className="px-5 py-4 text-[#000759] text-xl font-light">{compactLabel(value)}</td>
+                      <td className="px-5 py-4 text-body-muted text-sm">{label}</td>
+                      <td className="px-5 py-4 text-[#000759] text-xl font-normal">{compactLabel(value)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p className="text-[#5a6a95] text-sm mt-3">{report.prices.note}</p>
+            <p className="text-body-muted text-sm mt-3">{report.prices.note}</p>
             <div className="mt-6 border border-[#dbe4f8] bg-[#f8fbff] p-5">
               <p className="text-[#000759] font-semibold mb-2">Komentarz rynkowy</p>
-              <p className="text-[#4f5f88] leading-relaxed">{report.prices.commentary}</p>
+              <p className="text-body-strong leading-relaxed">{report.prices.commentary}</p>
             </div>
           </div>
         </section>
@@ -292,10 +292,10 @@ export default function CityReportClient({ report, listings }: CityReportClientP
           <div className="container-colliers">
             <p className="overline mb-5">Komentarz ekspercki</p>
             <blockquote className="border-l-2 border-[#1C54F4] pl-6 md:pl-8">
-              <p className="text-[#000759] text-3xl md:text-4xl font-light leading-tight mb-6" style={{ fontFamily: 'var(--font-serif)' }}>
+              <p className="text-[#000759] text-3xl md:text-4xl font-normal leading-tight mb-6" style={{ fontFamily: 'var(--font-serif)' }}>
                 „{report.expertQuoteWeb}”
               </p>
-              <footer className="text-[#4f5f88]">
+              <footer className="text-body-muted">
                 <p className="font-semibold text-[#000759]">{report.expertName}</p>
                 <p className="text-sm">{report.expertRole}</p>
               </footer>
@@ -306,7 +306,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
         <section className="py-20 bg-[#000759] text-white" data-reveal>
           <div className="container-colliers">
             <p className="overline mb-5">Działaj dalej</p>
-            <h2 className="text-white text-4xl font-light mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
+            <h2 className="text-white text-4xl font-normal mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
               Wybierz kolejny krok dla rynku {report.cityName}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -328,7 +328,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
             </div>
 
             <div className="mt-8 flex flex-wrap gap-2 text-sm">
-              <span className="text-white/65">Pozostałe raporty:</span>
+              <span className="text-white/78">Pozostałe raporty:</span>
               {CITY_REPORT_ORDER.filter((slug) => slug !== report.citySlug).map((slug) => (
                 <Link key={slug} href={`/raporty-miejskie/${slug}`} className="text-[#9ec2ff] hover:text-white transition-colors">
                   {CITY_REPORTS[slug].cityName}

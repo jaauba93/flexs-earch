@@ -267,7 +267,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
             </button>
             {mobileSection === 'search' && (
               <div className="pl-3 pr-1 pb-2">
-                <div className="mb-3 text-[9px] font-bold uppercase text-[#7B8BBD]" style={{ letterSpacing: '0.2em' }}>
+                <div className="eyebrow-label mb-3 text-[9px]">
                   Biura w Polsce
                 </div>
                 <div className="flex flex-col">
@@ -307,7 +307,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
             {mobileSection === 'guide' && (
               <div className="pl-3 pr-1 pb-2 space-y-4">
                 <div>
-                  <p className="mb-3 text-[9px] font-bold uppercase text-[#7B8BBD]" style={{ letterSpacing: '0.2em' }}>
+                  <p className="eyebrow-label mb-3 text-[9px]">
                     Podstawy flex
                   </p>
                   <div className="flex flex-col">
@@ -326,7 +326,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                 </div>
 
                 <div>
-                  <p className="mb-3 text-[9px] font-bold uppercase text-[#7B8BBD]" style={{ letterSpacing: '0.2em' }}>
+                  <p className="eyebrow-label mb-3 text-[9px]">
                     Raporty miejskie
                   </p>
                   <div className="flex flex-col">
@@ -345,7 +345,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                 </div>
 
                 <div>
-                  <p className="mb-3 text-[9px] font-bold uppercase text-[#7B8BBD]" style={{ letterSpacing: '0.2em' }}>
+                  <p className="eyebrow-label mb-3 text-[9px]">
                     Narzędzia
                   </p>
                   <div className="flex flex-col gap-1">
@@ -388,7 +388,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               <ChevronDown size={14} className={`transition-transform ${mobileSection === 'why' ? 'rotate-180' : ''}`} />
             </button>
             {mobileSection === 'why' && (
-              <div className="px-4 py-3 text-sm text-[#4f5f88] leading-relaxed border border-[#e3e9f6] bg-white/80">
+              <div className="px-4 py-3 text-sm text-body-muted leading-relaxed border border-[#e3e9f6] bg-white/80">
                 Colliers łączy wiedzę rynkową, narzędzia decyzyjne i wsparcie doradców, żeby szybciej zawęzić wybór i przygotować realną ofertę.
               </div>
             )}

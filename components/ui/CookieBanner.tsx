@@ -38,13 +38,13 @@ export default function CookieBanner() {
           <Link href="/polityka-cookies" className="underline hover:text-white/80">polityce cookies</Link>.
         </p>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <button onClick={reject} className="text-sm text-white/70 hover:text-white underline whitespace-nowrap">
+          <button onClick={reject} className="text-sm text-white/82 hover:text-white underline whitespace-nowrap">
             Odrzuć niewymagane
           </button>
           <button onClick={accept} className="btn-outline-white text-sm py-2 px-5 whitespace-nowrap">
             Akceptuję wszystkie
           </button>
-          <button onClick={reject} className="text-white/60 hover:text-white" aria-label="Zamknij">
+          <button onClick={reject} className="text-white/78 hover:text-white" aria-label="Zamknij">
             <X size={18} />
           </button>
         </div>

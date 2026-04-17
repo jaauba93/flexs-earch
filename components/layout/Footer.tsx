@@ -18,7 +18,7 @@ export default function Footer() {
               height={120}
               className="h-10 w-auto"
             />
-            <p className="text-white/40 max-w-xs font-light text-xs leading-relaxed uppercase tracking-wider">
+            <p className="max-w-xs text-xs font-normal leading-relaxed uppercase tracking-wider text-white/72">
               Profesjonalne doradztwo w zakresie biur serwisowanych i przestrzeni coworkingowych w całej Polsce.
             </p>
           </div>
@@ -27,24 +27,24 @@ export default function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-12 md:gap-20">
             <div className="flex flex-col gap-5">
               <span className="overline">Platforma</span>
-              <Link href="/biura-serwisowane" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">Szukaj biur</Link>
-              <Link href="/porownaj" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">Porównaj</Link>
+              <Link href="/biura-serwisowane" className="text-[11px] uppercase tracking-widest text-white/78 hover:text-white transition-colors">Szukaj biur</Link>
+              <Link href="/porownaj" className="text-[11px] uppercase tracking-widest text-white/78 hover:text-white transition-colors">Porównaj</Link>
             </div>
             <div className="flex flex-col gap-5">
               <span className="overline">Prywatność</span>
-              <Link href="/polityka-prywatnosci" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">Polityka prywatności</Link>
-              <Link href="/polityka-cookies" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">Pliki cookies</Link>
+              <Link href="/polityka-prywatnosci" className="text-[11px] uppercase tracking-widest text-white/78 hover:text-white transition-colors">Polityka prywatności</Link>
+              <Link href="/polityka-cookies" className="text-[11px] uppercase tracking-widest text-white/78 hover:text-white transition-colors">Pliki cookies</Link>
             </div>
             <div className="flex flex-col gap-5">
               <span className="overline">Kontakt</span>
-              <a href="mailto:flex@colliers.pl" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">flex@colliers.pl</a>
-              <a href="tel:+48223317800" className="text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest">+48 22 331 78 00</a>
+              <a href="mailto:flex@colliers.pl" className="text-[11px] uppercase tracking-widest text-white/78 hover:text-white transition-colors">flex@colliers.pl</a>
+              <a href="tel:+48223317800" className="text-[11px] uppercase tracking-widest text-white/78 hover:text-white transition-colors">+48 22 331 78 00</a>
             </div>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-10 flex flex-col md:flex-row justify-between items-center gap-6 text-white/20 text-[9px] font-bold uppercase tracking-[0.2em]">
+        <div className="pt-10 flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] font-bold uppercase tracking-[0.2em] text-white/36">
           <p>© {year} Colliers Flex. Wszelkie prawa zastrzeżone.</p>
           <span>Polska</span>
         </div>

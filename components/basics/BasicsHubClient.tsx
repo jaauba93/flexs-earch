@@ -70,11 +70,11 @@ export default function BasicsHubClient() {
               <p className="overline mb-6">Podstawy flex</p>
               <h1
                 className="text-[#000759] leading-[1.05] mb-6"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2.2rem, 5vw, 4.2rem)' }}
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 4.2rem)' }}
               >
                 Zrozum biura elastyczne od podstaw
               </h1>
-              <p className="text-[#4f5f88] text-lg leading-relaxed mb-9">
+              <p className="text-body-strong text-lg leading-relaxed mb-9">
                 Poznaj najważniejsze pojęcia, modele najmu i scenariusze, w których biuro flex może być lepszym rozwiązaniem niż najem tradycyjny.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -88,7 +88,7 @@ export default function BasicsHubClient() {
             </div>
 
             <div data-reveal="right">
-              <div className="relative border border-[#dce3f4] p-8 lg:p-10 bg-[#fdfefe] shadow-[0_18px_70px_rgba(0,7,89,0.08)] overflow-hidden min-h-[320px]">
+              <div className="surface-panel-soft relative min-h-[320px] overflow-hidden p-8 lg:p-10">
                 <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'linear-gradient(rgba(28,84,244,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(28,84,244,0.08) 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
                 <div className="absolute -top-12 -right-16 w-64 h-64 rounded-full bg-[#1C54F4]/10 blur-2xl animate-pulse" />
                 <div className="relative z-10 space-y-6">
@@ -111,27 +111,27 @@ export default function BasicsHubClient() {
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-10 items-start">
             <div data-reveal="left">
               <p className="overline mb-6">Kontekst</p>
-              <h2 className="text-[#000759] leading-tight mb-6" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.8rem,3.2vw,3rem)' }}>
+              <h2 className="text-[#000759] leading-tight mb-6" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(1.8rem,3.2vw,3rem)' }}>
                 Flex to nie tylko coworking
               </h2>
-              <p className="text-[#4f5f88] leading-relaxed">
+              <p className="text-body-strong leading-relaxed">
                 Rynek biur elastycznych przestał być niszową alternatywą dla małych firm. Dziś to dojrzały segment rynku biurowego, odpowiadający zarówno na potrzeby start-upów, jak i większych organizacji oczekujących szybkości wdrożenia, przewidywalności kosztów i gotowego środowiska pracy. Raport pokazuje też, że podaż flex w siedmiu największych miastach Polski przekracza 430 tys. m², a cały segment rośnie wraz z potrzebą elastyczności i redukcji ryzyka.
               </p>
             </div>
-            <div className="border border-[#dce5fa] bg-white p-6 space-y-5" data-reveal="right">
+            <div className="surface-panel-soft space-y-5 p-6" data-reveal="right">
               <div>
-                <p className="text-[#000759] text-4xl font-light">{formatNumber(totalSupply)}+ m²</p>
-                <p className="text-[#5a6a95] text-sm">elastycznej powierzchni w 7 największych miastach</p>
+                <p className="text-[#000759] text-4xl font-normal">{formatNumber(totalSupply)}+ m²</p>
+                <p className="text-body-muted text-sm">elastycznej powierzchni w 7 największych miastach</p>
               </div>
               <div className="h-px bg-[#e6ebf8]" />
               <div>
-                <p className="text-[#000759] text-2xl font-light">3%+</p>
-                <p className="text-[#5a6a95] text-sm">udziału w całkowitej podaży biur</p>
+                <p className="text-[#000759] text-2xl font-normal">3%+</p>
+                <p className="text-body-muted text-sm">udziału w całkowitej podaży biur</p>
               </div>
               <div className="h-px bg-[#e6ebf8]" />
               <div>
-                <p className="text-[#000759] text-2xl font-light">3</p>
-                <p className="text-[#5a6a95] text-sm">główne modele opisane w przewodniku</p>
+                <p className="text-[#000759] text-2xl font-normal">3</p>
+                <p className="text-body-muted text-sm">główne modele opisane w przewodniku</p>
               </div>
             </div>
           </div>
@@ -148,13 +148,13 @@ export default function BasicsHubClient() {
                 <Link
                   key={card.slug}
                   href={`/podstawy-flex/${card.slug}`}
-                  className="group relative border border-[#dbe4f8] bg-white p-7 min-h-[240px] transition-all duration-500 hover:shadow-[0_22px_64px_rgba(0,7,89,0.11)] hover:-translate-y-1"
+                  className="surface-panel-soft group relative min-h-[240px] p-7 transition-all duration-500 hover:shadow-[0_22px_64px_rgba(0,7,89,0.11)] hover:-translate-y-1"
                   data-reveal={`d${(idx % 3) + 1}`}
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_80%_20%,rgba(28,84,244,0.1),transparent_55%)]" />
                   <p className="text-[#1C54F4] text-[11px] font-bold uppercase tracking-[0.2em] mb-5">{card.number}</p>
-                  <h3 className="text-[#000759] text-[1.45rem] font-light leading-tight mb-4">{card.title}</h3>
-                  <p className="text-[#5d6c95] text-sm leading-relaxed mb-7">{card.description}</p>
+                  <h3 className="text-[#000759] text-[1.45rem] font-normal leading-tight mb-4">{card.title}</h3>
+                  <p className="text-body-muted text-sm leading-relaxed mb-7">{card.description}</p>
                   <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
                     Zobacz więcej <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </span>
@@ -170,7 +170,7 @@ export default function BasicsHubClient() {
             <h2 className="text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2rem,3.6vw,3.3rem)' }}>
               Przejdź od wiedzy do decyzji
             </h2>
-            <p className="text-[#5a6a95] max-w-3xl mb-10">{BASICS_TOOLS_SECTION.intro}</p>
+            <p className="text-body-muted max-w-3xl mb-10">{BASICS_TOOLS_SECTION.intro}</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {BASICS_TOOLS_SECTION.cards.map((tool, index) => {
                 const Icon = [Calculator, SlidersHorizontal, MapPin][index]
@@ -178,11 +178,11 @@ export default function BasicsHubClient() {
                   <Link
                     key={tool.title}
                     href={tool.href}
-                    className="group border border-[#dbe4f8] bg-white p-7 hover:-translate-y-1 transition-all duration-500 hover:shadow-[0_20px_56px_rgba(0,7,89,0.12)]"
+                    className="surface-panel-soft group p-7 hover:-translate-y-1 transition-all duration-500 hover:shadow-[0_20px_56px_rgba(0,7,89,0.12)]"
                   >
                     <Icon size={20} className="text-[#1C54F4] mb-5" />
-                    <h3 className="text-[#000759] text-xl font-light mb-4">{tool.title}</h3>
-                    <p className="text-[#5a6a95] text-sm leading-relaxed mb-8">{tool.text}</p>
+                    <h3 className="text-[#000759] text-xl font-normal mb-4">{tool.title}</h3>
+                    <p className="text-body-muted text-sm leading-relaxed mb-8">{tool.text}</p>
                     <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
                       {tool.cta} <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                     </span>
@@ -196,10 +196,10 @@ export default function BasicsHubClient() {
         <section className="py-20 bg-[#000759] text-white" data-reveal>
           <div className="container-colliers">
             <p className="overline mb-6">Dalej</p>
-            <h2 className="text-white text-4xl font-light mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
+            <h2 className="text-white text-4xl font-normal mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
               Nie musisz zaczynać od pełnego briefu
             </h2>
-            <p className="text-white/75 max-w-3xl mb-8">
+            <p className="max-w-3xl mb-8 text-white/84">
               Możesz zacząć od definicji, porównać modele albo od razu przejść do narzędzi. Gdy będziesz gotowy, pomożemy przełożyć to na realne opcje rynkowe.
             </p>
             <div className="flex flex-wrap gap-3">

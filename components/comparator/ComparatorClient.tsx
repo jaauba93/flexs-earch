@@ -51,7 +51,7 @@ export default function ComparatorClient() {
         <div className="mb-10">
           <p className="overline mb-4">Twoje zestawienie</p>
           <h1
-            className="text-4xl md:text-5xl font-light text-[var(--colliers-navy)]"
+            className="text-4xl md:text-5xl font-normal text-[var(--colliers-navy)]"
             style={{ fontFamily: 'var(--font-serif)' }}
           >
             Porównaj i uzyskaj ofertę<br />na wybrane biura
@@ -176,7 +176,7 @@ export default function ComparatorClient() {
                               />
                             ) : (
                               <div className="w-full h-full bg-gradient-to-br from-[var(--colliers-navy)] to-[var(--colliers-blue)] flex items-center justify-center">
-                                <span className="text-white/20 text-xl font-light" style={{ fontFamily: 'var(--font-serif)' }}>CF</span>
+                                <span className="text-white/20 text-xl font-normal" style={{ fontFamily: 'var(--font-serif)' }}>CF</span>
                               </div>
                             )}
                           </div>
@@ -258,7 +258,7 @@ export default function ComparatorClient() {
                 <div>
                   <p className="overline mb-4">Mapa porównywarki</p>
                   <h2
-                    className="text-2xl md:text-3xl font-light text-[var(--colliers-navy)]"
+                    className="text-2xl md:text-3xl font-normal text-[var(--colliers-navy)]"
                     style={{ fontFamily: 'var(--font-serif)' }}
                   >
                     Wybrane biura na mapie
