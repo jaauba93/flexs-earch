@@ -43,7 +43,7 @@ const guideCities = [
 ]
 
 const guideTools = [
-  { label: 'Kalkulator kosztów', href: '/porownaj#kalkulator-kosztow' },
+  { label: 'Kalkulator kosztów', href: '/kalkulator-flex' },
   { label: 'Dobierz model biura', href: '/porownaj#porownanie-modeli' },
   { label: 'Baza wiedzy', href: '/podstawy-flex' },
 ]

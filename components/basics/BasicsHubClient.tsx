@@ -203,7 +203,7 @@ export default function BasicsHubClient() {
               Możesz zacząć od definicji, porównać modele albo od razu przejść do narzędzi. Gdy będziesz gotowy, pomożemy przełożyć to na realne opcje rynkowe.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/porownaj#kalkulator-kosztow" className="btn-primary-bright inline-flex items-center gap-2">
+              <Link href="/kalkulator-flex" className="btn-primary-bright inline-flex items-center gap-2">
                 Uruchom kalkulator <ArrowRight size={14} />
               </Link>
               <button onClick={() => setFormOpen(true)} className="btn-outline border-white/35 text-white hover:bg-white hover:text-[#000759]">

@@ -105,6 +105,72 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['enquiries']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['enquiries']['Insert']>
       }
+      flex_calculator_settings: {
+        Row: {
+          id: string
+          intro_eyebrow: string
+          intro_title: string
+          intro_body: string
+          intro_disclaimer_approx: string
+          intro_disclaimer_market: string
+          intro_disclaimer_support: string
+          default_headcount: number
+          default_city_slug: string
+          default_location_type: string
+          default_fitout_standard: string
+          default_density_key: string
+          default_flex_lease_months: number
+          default_conventional_lease_months: number
+          utilities_and_maintenance_eur_per_sqm: number
+          flex_common_area_sqm_per_desk: number
+          add_on_factor: number
+          rent_free_months_per_year: number
+          location_options: Json
+          fitout_options: Json
+          flex_lease_options: Json
+          conventional_lease_options: Json
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['flex_calculator_settings']['Row'], 'updated_at'>
+        Update: Partial<Database['public']['Tables']['flex_calculator_settings']['Insert']>
+      }
+      flex_calculator_density_options: {
+        Row: {
+          key: string
+          label: string
+          sort_order: number
+          flex_office_sqm_per_desk: number
+          conventional_sqm_per_person_min: number
+          conventional_sqm_per_person_max: number
+          conventional_sqm_per_person_avg: number
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['flex_calculator_density_options']['Row'], 'updated_at'>
+        Update: Partial<Database['public']['Tables']['flex_calculator_density_options']['Insert']>
+      }
+      flex_calculator_market_data: {
+        Row: {
+          city_slug: string
+          city_label: string
+          sort_order: number
+          is_active: boolean
+          headline_rent_cbd_eur: number
+          non_cbd_deduction_eur: number
+          service_charge_cbd_pln: number
+          service_charge_non_cbd_pln: number
+          flex_price_cbd_pln: number
+          flex_price_non_cbd_pln: number
+          fitout_contribution_cbd_eur: number
+          fitout_contribution_non_cbd_eur: number
+          fitout_cost_basic_eur: number
+          fitout_cost_enhanced_eur: number
+          fitout_cost_premium_eur: number
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['flex_calculator_market_data']['Row'], 'updated_at'>
+        Update: Partial<Database['public']['Tables']['flex_calculator_market_data']['Insert']>
+      }
     }
   }
 }

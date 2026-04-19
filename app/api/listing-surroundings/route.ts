@@ -85,6 +85,23 @@ function splitLineRefs(value?: string) {
 
 function classifyElement(element: OverpassElement): { category: SurroundingCategory; lines: string[] } | null {
   const tags = element.tags || {}
+  
+  if (
+    tags.proposed === 'yes' ||
+    tags.proposed === 'station' ||
+    tags.construction === 'yes' ||
+    tags.railway === 'proposed' ||
+    tags.railway === 'construction' ||
+    tags.station === 'proposed' ||
+    tags.station === 'construction' ||
+    tags.lifecycle === 'proposed' ||
+    tags.lifecycle === 'construction' ||
+    tags.disused === 'yes' ||
+    tags.abandoned === 'yes'
+  ) {
+    return null
+  }
+
   const refs = splitLineRefs(tags.route_ref || tags.ref || tags.lines)
 
   if (tags.amenity === 'bicycle_rental') {

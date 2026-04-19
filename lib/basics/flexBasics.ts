@@ -295,7 +295,7 @@ export const BASICS_TOOLS_SECTION = {
       title: 'Kalkulator kosztów',
       text: 'Oszacuj orientacyjny koszt biura i sprawdź wpływ głównych parametrów na budżet.',
       cta: 'Uruchom kalkulator',
-      href: '/porownaj#kalkulator-kosztow',
+      href: '/kalkulator-flex',
     },
     {
       title: 'Dobierz model biura',
@@ -326,12 +326,12 @@ const NEXT_LINK_MAP: Record<BasicsSlug, Array<{ title: string; href: string }>> 
   'kiedy-warto-wybrac-flex': [
     { title: 'Modele biur elastycznych', href: '/podstawy-flex/modele-biur-elastycznych' },
     { title: 'Jak wybrać biuro flex', href: '/podstawy-flex/jak-wybrac-biuro-flex' },
-    { title: 'Kalkulator kosztów', href: '/porownaj#kalkulator-kosztow' },
+    { title: 'Kalkulator kosztów', href: '/kalkulator-flex' },
   ],
   'flex-a-najem-tradycyjny': [
     { title: 'Czym są biura elastyczne', href: '/podstawy-flex/czym-sa-biura-elastyczne' },
     { title: 'Jak wybrać biuro flex', href: '/podstawy-flex/jak-wybrac-biuro-flex' },
-    { title: 'Kalkulator kosztów', href: '/porownaj#kalkulator-kosztow' },
+    { title: 'Kalkulator kosztów', href: '/kalkulator-flex' },
   ],
   'jak-wybrac-biuro-flex': [
     { title: 'Flex a najem tradycyjny', href: '/podstawy-flex/flex-a-najem-tradycyjny' },
@@ -358,7 +358,7 @@ export function getBasicsNextLinks(slug: BasicsSlug): BasicsLinkCard[] {
   const fallbackDescriptions: Record<string, string> = {
     '/raporty-miejskie': 'Zobacz, jak różnią się warunki flex między największymi rynkami w Polsce.',
     '/porownaj#porownanie-modeli': 'Sprawdź, który model biura najlepiej pasuje do Twojej sytuacji.',
-    '/porownaj#kalkulator-kosztow': 'Przelicz założenia i oszacuj koszt biura dla swojego zespołu.',
+    '/kalkulator-flex': 'Przelicz założenia i oszacuj koszt biura dla swojego zespołu.',
   }
   return NEXT_LINK_MAP[slug].map((item) => ({
     ...item,

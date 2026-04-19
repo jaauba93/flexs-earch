@@ -373,7 +373,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                     </div>
                   </div>
 
-                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col shadow-[0_12px_30px_rgba(0,7,89,0.04)] hover:shadow-[0_28px_60px_rgba(28,84,244,0.25)]" onClick={() => setFormOpen(true)}>
+                  <div className="bg-white p-10 text-center group hover:bg-[#1C54F4] transition-all duration-500 cursor-pointer h-full flex flex-col shadow-[0_12px_30px_rgba(0,7,89,0.04)] hover:shadow-[0_28px_60px_rgba(28,84,244,0.25)]" onClick={() => router.push('/kalkulator-flex')}>
                     <div className="flex justify-center mb-5">
                       <svg className="text-[#1C54F4] group-hover:text-white transition-colors" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                         <rect x="4" y="2" width="16" height="20" rx="0"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/>

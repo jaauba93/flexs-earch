@@ -56,7 +56,7 @@ const toolCards = [
     title: 'Kalkulator kosztów',
     copy: 'Oszacuj orientacyjny koszt biura dla swojego zespołu i zobacz, jak różne założenia wpływają na budżet.',
     cta: 'Uruchom kalkulator',
-    href: '/porownaj#kalkulator-kosztow',
+    href: '/kalkulator-flex',
     icon: Calculator,
   },
   {
@@ -389,7 +389,7 @@ export default function GuideClient() {
               Możesz zacząć od podstaw, sprawdzić rynek w wybranym mieście albo od razu porównać modele i koszty. Jeśli wolisz, przeprowadzimy Cię przez ten proces wspólnie.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/porownaj#kalkulator-kosztow" className="btn-primary-bright inline-flex items-center gap-2">
+              <Link href="/kalkulator-flex" className="btn-primary-bright inline-flex items-center gap-2">
                 Uruchom kalkulator <ArrowRight size={14} />
               </Link>
               <button type="button" onClick={() => setFormOpen(true)} className="btn-outline border-white/35 text-white hover:bg-white hover:text-[#000759]">

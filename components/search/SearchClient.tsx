@@ -441,16 +441,14 @@ export default function SearchClient({
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const filterLabelClass =
-    'text-[10px] font-bold uppercase tracking-[0.22em] text-white'
-  const filterLabelItemClass =
-    '!text-white !opacity-100'
-  const filterFieldWrapClass =
-    'flex min-w-[170px] flex-1 flex-col gap-2 xl:max-w-[220px]'
+  // Compact inline-label filter style — h-10, matches header button scale
   const filterTriggerClass =
-    'flex min-h-[58px] w-full items-center justify-between gap-3 bg-white px-4 text-left text-[15px] font-semibold text-[#000759] transition-all duration-200 hover:bg-[#f6f9ff]'
+    'flex h-10 w-full items-center justify-between gap-2 bg-white pl-4 pr-3 text-left transition-all duration-200 hover:bg-[#eef3ff]'
   const filterMenuClass =
-    'absolute left-0 top-[calc(100%+12px)] z-30 min-w-[340px] border border-[#d8e2fb] bg-white shadow-[0_24px_56px_rgba(0,7,89,0.12)]'
+    'absolute left-0 top-[calc(100%+6px)] z-30 min-w-[300px] border border-[#d8e2fb] bg-white shadow-[0_24px_56px_rgba(0,7,89,0.12)]'
+  const filterFieldWrapClass = 'flex flex-col xl:flex-1 xl:min-w-0'
+  const filterLabelClass = 'mb-2 block px-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white'
+  const filterLabelItemClass = 'mb-2 block px-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white'
   const budgetOptions = [
     { value: '', label: 'Dowolny' },
     { value: '1500', label: `Do 1 500 ${currency}` },
@@ -470,12 +468,12 @@ export default function SearchClient({
   const filterBar = (
     <div
       ref={filterMenusRef}
-      className="grid items-start gap-5 md:grid-cols-2 xl:flex xl:flex-wrap xl:items-start xl:gap-x-4 xl:gap-y-4"
+      className="grid items-start gap-5 md:grid-cols-2 xl:flex xl:flex-nowrap xl:items-start xl:gap-x-3"
     >
-      <div className={`relative ${filterFieldWrapClass} xl:max-w-[228px]`}>
+      <div className={`relative ${filterFieldWrapClass}`}>
         <p className={filterLabelClass}>Miasto</p>
         <button type="button" onClick={() => setOpenMenu((value) => (value === 'city' ? null : 'city'))} className={filterTriggerClass}>
-          <span>{selectedCitySlug ? slugToCity(selectedCitySlug) : 'Cała Polska'}</span>
+          <span className="truncate">{selectedCitySlug ? slugToCity(selectedCitySlug) : 'Cała Polska'}</span>
           <span className="flex items-center gap-2">
             {selectedCitySlug ? (
               <span
@@ -537,7 +535,7 @@ export default function SearchClient({
         ) : null}
       </div>
 
-      <div className={`relative ${filterFieldWrapClass} xl:max-w-[280px]`}>
+      <div className={`relative ${filterFieldWrapClass}`}>
         <p className={filterLabelClass}>Dzielnice</p>
         {/* District dropdown is intentionally wider than its trigger via min-w on filterMenuClass */}
         <button
@@ -621,7 +619,7 @@ export default function SearchClient({
         <FilterLabel tooltip="Liczba stanowisk pracy oznacza liczbę miejsc do pracy w całym biurze, rozumianych jako biurko plus fotel." labelClass={filterLabelItemClass}>
           Stanowiska
         </FilterLabel>
-        <div className="flex min-h-[58px] items-center gap-2 bg-white px-4">
+        <div className="flex h-10 w-full items-center gap-2 bg-white px-4">
           <input
             type="number"
             placeholder="od"
@@ -649,7 +647,7 @@ export default function SearchClient({
           Budżet ({currency})
         </FilterLabel>
         <button type="button" onClick={() => setOpenMenu((value) => (value === 'budget' ? null : 'budget'))} className={filterTriggerClass}>
-          <span>{selectedBudgetLabel}</span>
+          <span className="truncate">{selectedBudgetLabel}</span>
           <ChevronDown size={15} className={`transition-transform ${openMenu === 'budget' ? 'rotate-180' : ''}`} />
         </button>
         {openMenu === 'budget' ? (
@@ -682,7 +680,7 @@ export default function SearchClient({
       <div className={`relative ${filterFieldWrapClass}`}>
         <p className={filterLabelClass}>Operator</p>
         <button type="button" onClick={() => setOpenMenu((value) => (value === 'operator' ? null : 'operator'))} className={filterTriggerClass}>
-          <span>{selectedOperatorLabel}</span>
+          <span className="truncate">{selectedOperatorLabel}</span>
           <ChevronDown size={15} className={`transition-transform ${openMenu === 'operator' ? 'rotate-180' : ''}`} />
         </button>
         {openMenu === 'operator' ? (
@@ -726,10 +724,10 @@ export default function SearchClient({
       </div>
 
       {selectedCitySlug === 'warszawa' ? (
-        <div className={`relative ${filterFieldWrapClass} xl:max-w-[165px]`}>
+        <div className={`relative ${filterFieldWrapClass}`}>
           <p className={filterLabelClass}>Linia metra</p>
           <button type="button" onClick={() => setOpenMenu((value) => (value === 'metro' ? null : 'metro'))} className={filterTriggerClass}>
-            <span>{selectedMetroLabel}</span>
+            <span className="truncate">{selectedMetroLabel}</span>
             <ChevronDown size={15} className={`transition-transform ${openMenu === 'metro' ? 'rotate-180' : ''}`} />
           </button>
           {openMenu === 'metro' ? (
@@ -773,12 +771,12 @@ export default function SearchClient({
         </div>
       ) : null}
 
-      <div className={`${filterFieldWrapClass} xl:max-w-[200px]`}>
+      <div className={`${filterFieldWrapClass}`}>
         <p className={`${filterLabelClass} opacity-0`}>Filtry</p>
         <button
           type="button"
           onClick={() => setFiltersOpen(true)}
-          className="inline-flex min-h-[58px] items-center justify-center gap-2 bg-[rgba(255,255,255,0.08)] px-5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-white hover:text-[#000759]"
+          className="inline-flex h-10 w-full items-center justify-center gap-2 bg-[rgba(255,255,255,0.08)] px-5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-white hover:text-[#000759]"
         >
           Więcej filtrów
           <SlidersHorizontal size={13} />
@@ -786,10 +784,10 @@ export default function SearchClient({
         </button>
       </div>
 
-      <div className={`relative ${filterFieldWrapClass} xl:ml-auto xl:max-w-[210px]`}>
+      <div className={`relative ${filterFieldWrapClass}`}>
         <p className={filterLabelClass}>Sortowanie</p>
         <button type="button" onClick={() => setOpenMenu((value) => (value === 'sort' ? null : 'sort'))} className={filterTriggerClass}>
-          <span>{selectedSortLabel}</span>
+          <span className="truncate">{selectedSortLabel}</span>
           <ChevronDown size={15} className={`transition-transform ${openMenu === 'sort' ? 'rotate-180' : ''}`} />
         </button>
         {openMenu === 'sort' ? (

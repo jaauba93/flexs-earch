@@ -15,6 +15,20 @@ interface CurrencySwitcherProps {
   transparent?: boolean
 }
 
+function formatEffectiveDate(date: string) {
+  const parsed = new Date(`${date}T00:00:00`)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return date
+  }
+
+  return new Intl.DateTimeFormat('pl-PL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(parsed)
+}
+
 export default function CurrencySwitcher({ transparent = false }: CurrencySwitcherProps) {
   const { currency, setCurrency, rates, ratesLoading, ratesMeta } = useCurrencyContext()
   const [open, setOpen] = useState(false)
@@ -76,6 +90,19 @@ export default function CurrencySwitcher({ transparent = false }: CurrencySwitch
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-1">Waluta</p>
             <p className="text-[11px] leading-relaxed text-body-muted">
               {CURRENCY_NOTE}
+            </p>
+          </div>
+
+          <div className="px-4 py-3 border-b border-[#edf2fb]">
+            <p className="text-[11px] leading-relaxed text-[#5f6f9f]">
+              {ratesMeta ? (
+                <>
+                  Kursy orientacyjne na podstawie tabeli A NBP z dnia{' '}
+                  <span className="font-semibold text-[#000759]">{formatEffectiveDate(ratesMeta.effectiveDate)}</span>.
+                </>
+              ) : (
+                'Pobieramy aktualny kurs orientacyjny na podstawie tabeli A NBP.'
+              )}
             </p>
           </div>
 
