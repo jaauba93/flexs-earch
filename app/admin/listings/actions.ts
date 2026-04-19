@@ -1,6 +1,5 @@
 'use server'
 
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getTranslationSupport } from '@/lib/admin/data'
@@ -9,6 +8,8 @@ import { slugify } from '@/lib/utils/slugify'
 
 export interface SaveListingState {
   error: string | null
+  success: boolean
+  savedListingId: string | null
 }
 
 function readText(formData: FormData, key: string) {
@@ -46,12 +47,12 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
   let district = readText(formData, 'address_district')
 
   if (!name || !slug || !operatorName || !addressStreet || !addressPostcode || !addressCity) {
-    return { error: 'Uzupełnij wymagane pola: nazwa, operator, adres, miasto i kod pocztowy.' }
+    return { error: 'Uzupełnij wymagane pola: nazwa, operator, adres, miasto i kod pocztowy.', success: false, savedListingId: null }
   }
 
   let operatorRecord = await operatorsTable.select('id, name, slug').ilike('name', operatorName).maybeSingle()
   if (operatorRecord.error) {
-    return { error: `Nie udało się sprawdzić operatora: ${operatorRecord.error.message}` }
+    return { error: `Nie udało się sprawdzić operatora: ${operatorRecord.error.message}`, success: false, savedListingId: null }
   }
 
   if (!operatorRecord.data) {
@@ -62,7 +63,7 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
       .single()
 
     if (createOperatorError) {
-      return { error: `Nie udało się utworzyć operatora: ${createOperatorError.message}` }
+      return { error: `Nie udało się utworzyć operatora: ${createOperatorError.message}`, success: false, savedListingId: null }
     }
 
     operatorRecord = { data: createdOperator, error: null }
@@ -81,7 +82,11 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
   }
 
   if (latitude === null || longitude === null) {
-    return { error: 'Nie udało się automatycznie ustalić koordynatów. Uzupełnij latitude i longitude lub popraw adres.' }
+    return {
+      error: 'Nie udało się automatycznie ustalić koordynatów. Uzupełnij latitude i longitude lub popraw adres.',
+      success: false,
+      savedListingId: null,
+    }
   }
 
   const payload: Record<string, unknown> = {
@@ -117,13 +122,17 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
   if (listingId) {
     const { error } = await listingsTable.update(payload).eq('id', listingId)
     if (error) {
-      return { error: `Nie udało się zapisać oferty: ${error.message}` }
+      return { error: `Nie udało się zapisać oferty: ${error.message}`, success: false, savedListingId: null }
     }
     savedListingId = listingId
   } else {
     const { data, error } = await listingsTable.insert(payload).select('id').single()
     if (error || !data?.id) {
-      return { error: `Nie udało się utworzyć oferty: ${error?.message || 'nieznany błąd'}` }
+      return {
+        error: `Nie udało się utworzyć oferty: ${error?.message || 'nieznany błąd'}`,
+        success: false,
+        savedListingId: null,
+      }
     }
     savedListingId = data.id
   }
@@ -131,7 +140,11 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
   if (savedListingId) {
     const { error: deleteAmenitiesError } = await listingAmenitiesTable.delete().eq('listing_id', savedListingId)
     if (deleteAmenitiesError) {
-      return { error: `Nie udało się odświeżyć listy udogodnień: ${deleteAmenitiesError.message}` }
+      return {
+        error: `Nie udało się odświeżyć listy udogodnień: ${deleteAmenitiesError.message}`,
+        success: false,
+        savedListingId: null,
+      }
     }
 
     if (amenityIds.length > 0) {
@@ -140,7 +153,11 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
       )
 
       if (insertAmenitiesError) {
-        return { error: `Nie udało się zapisać udogodnień: ${insertAmenitiesError.message}` }
+        return {
+          error: `Nie udało się zapisać udogodnień: ${insertAmenitiesError.message}`,
+          success: false,
+          savedListingId: null,
+        }
       }
     }
   }
@@ -149,5 +166,9 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
   revalidatePath('/admin/listings')
   revalidatePath('/admin/advisors')
   revalidatePath(`/admin/listings/${savedListingId}`)
-  redirect(`/admin/listings/${savedListingId}${listingId ? '?saved=1' : '?created=1'}`)
+  return {
+    error: null,
+    success: true,
+    savedListingId,
+  }
 }

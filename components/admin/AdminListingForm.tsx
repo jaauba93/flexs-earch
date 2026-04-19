@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -43,10 +43,15 @@ export default function AdminListingForm({
   translationSupport,
 }: AdminListingFormProps) {
   const router = useRouter()
-  const [state, formAction] = useFormState<SaveListingState, FormData>(saveListingAction, { error: null })
+  const [state, formAction] = useFormState<SaveListingState, FormData>(saveListingAction, {
+    error: null,
+    success: false,
+    savedListingId: null,
+  })
   const [uploadStatus, setUploadStatus] = useState<string | null>(null)
   const [uploadPending, setUploadPending] = useState(false)
   const [activeContentTab, setActiveContentTab] = useState<'pl' | 'en' | 'uk'>('pl')
+  const [saveNotice, setSaveNotice] = useState<string | null>(null)
   const [operatorName, setOperatorName] = useState(
     operators.find((operator) => operator.id === listing?.operator_id)?.name ?? ''
   )
@@ -84,6 +89,18 @@ export default function AdminListingForm({
       {} as Record<string, { label: string; items: AdminListingFormProps['amenities'] }>
     )
   }, [amenities])
+
+  useEffect(() => {
+    if (state.error) {
+      setSaveNotice(null)
+      return
+    }
+    if (state.success && state.savedListingId) {
+      setSaveNotice('Zmiany zostały zapisane.')
+      return
+    }
+    setSaveNotice(null)
+  }, [state.error, state.savedListingId, state.success])
 
   async function handleUpload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -211,8 +228,15 @@ export default function AdminListingForm({
 
         <section className="rounded-[24px] border border-[#e4ebf8] bg-[#fbfcff] p-5">
           <div className="mb-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#7c8ab1]">Sekcja 1</p>
-            <h2 className="mt-2 text-xl font-semibold text-[#000759]">Dane podstawowe oferty</h2>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#7c8ab1]">Sekcja 1</p>
+                <h2 className="mt-2 text-xl font-semibold text-[#000759]">Dane podstawowe oferty</h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <SubmitButton isNew={isNew} />
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -499,6 +523,12 @@ export default function AdminListingForm({
         {state.error ? (
           <div className="rounded-[18px] border border-[#ffd1d6] bg-[#fff6f7] px-4 py-3 text-sm text-[#b42318]">
             {state.error}
+          </div>
+        ) : null}
+
+        {saveNotice ? (
+          <div className="rounded-[18px] border border-[#dbe9ff] bg-[#f4f8ff] px-4 py-3 text-sm text-[#1f4fcf]">
+            {saveNotice}
           </div>
         ) : null}
 
