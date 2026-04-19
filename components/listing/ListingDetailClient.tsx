@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { CheckCircle, Mail, Phone, ChevronLeft, ChevronRight, Check, Plus } from 'lucide-react'
+import { CheckCircle, Mail, Phone, ChevronLeft, ChevronRight, ChevronDown, Check, Plus } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Breadcrumbs from '@/components/layout/Breadcrumbs'
@@ -240,6 +240,32 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
                 )}
               </section>
             )}
+
+            {listing.slug === 'mindspace-skyliner' ? (
+              <section className="mb-10">
+                <p className="overline mb-5">Perspektywa doradcza</p>
+                <div className="grid gap-3">
+                  <details className="surface-panel-soft p-5 group">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-[var(--colliers-navy)]">
+                      <span>Dlaczego ta lokalizacja ma sens</span>
+                      <ChevronDown size={16} className="shrink-0 text-[#1C54F4] transition-transform duration-200 group-open:rotate-180" />
+                    </summary>
+                    <p className="mt-4 text-sm leading-relaxed text-body-muted">
+                      Wola łączy dobry dojazd, silne otoczenie biznesowe i szeroką rozpoznawalność po stronie najemców. To lokalizacja, która często wspiera rekrutację oraz pracę zespołów hybrydowych, bo pozostaje czytelna komunikacyjnie dla pracowników i klientów.
+                    </p>
+                  </details>
+                  <details className="surface-panel-soft p-5 group">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-[var(--colliers-navy)]">
+                      <span>Kiedy warto sprawdzić alternatywę</span>
+                      <ChevronDown size={16} className="shrink-0 text-[#1C54F4] transition-transform duration-200 group-open:rotate-180" />
+                    </summary>
+                    <p className="mt-4 text-sm leading-relaxed text-body-muted">
+                      Jeżeli priorytetem jest pełna kontrola nad aranżacją, bardzo niskie TCO w długim horyzoncie albo niestandardowe wymagania techniczne, warto porównać tę ofertę z najmem tradycyjnym. Flex jest tutaj mocnym narzędziem operacyjnym, ale decyzja powinna wynikać z briefu, a nie z samej lokalizacji.
+                    </p>
+                  </details>
+                </div>
+              </section>
+            ) : null}
 
             {listing.amenities.length > 0 && (
               <section id="udogodnienia" className="mb-12">
