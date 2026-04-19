@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
     <AdminShell
       user={user}
       title="Dashboard CMS"
-      subtitle="Panel administracyjny obejmuje teraz oferty, doradców, import oraz konfigurację kalkulatora flex wraz z market data i założeniami obliczeń."
+      subtitle="Panel administracyjny obejmuje zarządzanie ofertami i doradcami, import danych, automatyczne uzupełnianie lokalizacji z adresu oraz konfigurację kalkulatora flex wraz z założeniami i market data."
     >
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {statCards.map(({ label, value, Icon }) => (
@@ -80,8 +80,9 @@ export default async function AdminDashboardPage() {
             <li>Logowanie administratora przez Supabase Auth.</li>
             <li>Edycja danych ofert i flag publikacji z poziomu panelu.</li>
             <li>Upload zdjęć głównych i galerii do Supabase Storage.</li>
+            <li>Automatyczne pobieranie koordynatów i dzielnicy na podstawie adresu oferty.</li>
             <li>Masowy import z pliku CSV / Excel bez Table Editora.</li>
-            <li>Edycja treści, list wyboru i market data kalkulatora flex.</li>
+            <li>Edycja treści, profili zagęszczenia, założeń i market data kalkulatora flex.</li>
             <li>Fundament pod EN / UK dla treści frontu publicznego.</li>
           </ul>
         </div>

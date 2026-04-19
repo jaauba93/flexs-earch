@@ -205,130 +205,138 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
         </section>
 
         <section className="container-colliers py-12 md:py-16">
-          <div className="grid gap-8 xl:grid-cols-[0.92fr_1.08fr]">
-            <div className="space-y-4">
-              <div className="surface-panel-soft p-5">
-                <div className="flex items-center gap-3">
-                  <Calculator size={18} className="text-[#1C54F4]" />
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Założenia klienta</p>
-                    <p className="text-sm text-body-muted">Uzupełnij podstawowe parametry, a narzędzie przeliczy porównywalny scenariusz dla konwencji i flexu.</p>
+          <div className="grid gap-8 xl:grid-cols-[minmax(320px,0.38fr)_minmax(0,0.62fr)] xl:items-start">
+            <div className="xl:sticky xl:top-28">
+              <div className="space-y-4">
+                <div className="surface-panel-soft p-5">
+                  <div className="flex items-center gap-3">
+                    <Calculator size={18} className="text-[#1C54F4]" />
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Założenia klienta</p>
+                      <p className="text-sm text-body-muted">
+                        Uzupełnij podstawowe parametry, a narzędzie przeliczy porównywalny scenariusz dla konwencji i flexu.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className={`calculator-inputs-shell ${hasInputInteracted ? '' : 'is-active'}`}>
-                <div className="grid gap-4 sm:grid-cols-2">
-                <InputShell label="Liczba stanowisk pracy" hint="Zakres orientacyjny: 25–1000.">
-                  <input
-                    type="number"
-                    min={1}
-                    max={1000}
-                    value={inputs.headcount}
-                    onChange={(event) => updateInput('headcount', Number(event.target.value || data.settings.default_headcount))}
-                    className="form-input"
-                  />
-                </InputShell>
+                <div className={`calculator-inputs-shell ${hasInputInteracted ? '' : 'is-active'}`}>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <InputShell label="Liczba stanowisk pracy" hint="Zakres orientacyjny: 25–1000.">
+                      <input
+                        type="number"
+                        min={1}
+                        max={1000}
+                        value={inputs.headcount}
+                        onChange={(event) =>
+                          updateInput('headcount', Number(event.target.value || data.settings.default_headcount))
+                        }
+                        className="form-input"
+                      />
+                    </InputShell>
 
-                <InputShell label="Rynek (miasto)">
-                  <select
-                    value={inputs.citySlug}
-                    onChange={(event) => updateInput('citySlug', event.target.value)}
-                    className="form-input"
-                  >
-                    {data.cityOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </InputShell>
+                    <InputShell label="Rynek (miasto)">
+                      <select
+                        value={inputs.citySlug}
+                        onChange={(event) => updateInput('citySlug', event.target.value)}
+                        className="form-input"
+                      >
+                        {data.cityOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </InputShell>
 
-                <InputShell label="Lokalizacja">
-                  <select
-                    value={inputs.locationType}
-                    onChange={(event) => updateInput('locationType', event.target.value)}
-                    className="form-input"
-                  >
-                    {data.settings.location_options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </InputShell>
+                    <InputShell label="Lokalizacja">
+                      <select
+                        value={inputs.locationType}
+                        onChange={(event) => updateInput('locationType', event.target.value)}
+                        className="form-input"
+                      >
+                        {data.settings.location_options.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </InputShell>
 
-                <InputShell label="Standard wykończenia">
-                  <select
-                    value={inputs.fitoutStandard}
-                    onChange={(event) => updateInput('fitoutStandard', event.target.value)}
-                    className="form-input"
-                  >
-                    {data.settings.fitout_options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </InputShell>
+                    <InputShell label="Standard wykończenia">
+                      <select
+                        value={inputs.fitoutStandard}
+                        onChange={(event) => updateInput('fitoutStandard', event.target.value)}
+                        className="form-input"
+                      >
+                        {data.settings.fitout_options.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </InputShell>
 
-                <InputShell label="Standard zagęszczenia" hint={densityTooltip}>
-                  <select
-                    value={inputs.densityKey}
-                    onChange={(event) => updateInput('densityKey', event.target.value)}
-                    className="form-input"
-                  >
-                    {densityOptions.map((option) => (
-                      <option key={option.key} value={option.key}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </InputShell>
+                    <InputShell label="Standard zagęszczenia" hint={densityTooltip}>
+                      <select
+                        value={inputs.densityKey}
+                        onChange={(event) => updateInput('densityKey', event.target.value)}
+                        className="form-input"
+                      >
+                        {densityOptions.map((option) => (
+                          <option key={option.key} value={option.key}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </InputShell>
 
-                <InputShell label="Okres najmu konwencjonalnego">
-                  <select
-                    value={String(inputs.conventionalLeaseMonths)}
-                    onChange={(event) => updateInput('conventionalLeaseMonths', Number(event.target.value))}
-                    className="form-input"
-                  >
-                    {data.settings.conventional_lease_options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </InputShell>
+                    <InputShell label="Okres najmu konwencjonalnego">
+                      <select
+                        value={String(inputs.conventionalLeaseMonths)}
+                        onChange={(event) => updateInput('conventionalLeaseMonths', Number(event.target.value))}
+                        className="form-input"
+                      >
+                        {data.settings.conventional_lease_options.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </InputShell>
 
-                <InputShell label="Okres flex">
-                  <select
-                    value={String(inputs.flexLeaseMonths)}
-                    onChange={(event) => updateInput('flexLeaseMonths', Number(event.target.value))}
-                    className="form-input"
-                  >
-                    {data.settings.flex_lease_options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </InputShell>
+                    <InputShell label="Okres flex">
+                      <select
+                        value={String(inputs.flexLeaseMonths)}
+                        onChange={(event) => updateInput('flexLeaseMonths', Number(event.target.value))}
+                        className="form-input"
+                      >
+                        {data.settings.flex_lease_options.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </InputShell>
 
-                <div className="surface-panel p-5 sm:col-span-2">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Co dalej?</p>
-                  <p className="mt-3 text-sm leading-relaxed text-body-muted">
-                    Ten kalkulator pokazuje scenariusz referencyjny. Jeśli chcesz porównać go z realnymi ofertami i negocjacjami operatorów lub landlordów, zespół Colliers przygotuje doprecyzowany benchmark dla Twojego briefu.
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <button onClick={() => setFormOpen(true)} className="btn-primary" type="button">
-                      Porozmawiaj z doradcą
-                    </button>
-                    <Link href="/biura-serwisowane" className="btn-outline">
-                      Zobacz oferty <ArrowRight size={14} />
-                    </Link>
+                    <div className="surface-panel p-5 sm:col-span-2">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Co dalej?</p>
+                      <p className="mt-3 text-sm leading-relaxed text-body-muted">
+                        Ten kalkulator pokazuje scenariusz referencyjny. Jeśli chcesz porównać go z realnymi ofertami i
+                        negocjacjami operatorów lub landlordów, zespół Colliers przygotuje doprecyzowany benchmark dla
+                        Twojego briefu.
+                      </p>
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        <button onClick={() => setFormOpen(true)} className="btn-primary" type="button">
+                          Porozmawiaj z doradcą
+                        </button>
+                        <Link href="/biura-serwisowane" className="btn-outline">
+                          Zobacz oferty <ArrowRight size={14} />
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
               </div>
             </div>
 
@@ -337,13 +345,17 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Porównanie kosztów</p>
-                    <h2 className="mt-2 text-3xl font-normal text-[var(--colliers-navy)]" style={{ fontFamily: 'var(--font-serif)' }}>
+                    <h2
+                      className="mt-2 text-3xl font-normal text-[var(--colliers-navy)]"
+                      style={{ fontFamily: 'var(--font-serif)' }}
+                    >
                       Najważniejsze wskaźniki
                     </h2>
                   </div>
                   {result ? (
                     <p className="text-xs text-body-soft">
-                      Kurs NBP: 1 EUR = {formatCompactNumber(result.exchangeRate.eurPln, 4)} PLN, tabela z dnia {result.exchangeRate.effectiveDate}
+                      Kurs NBP: 1 EUR = {formatCompactNumber(result.exchangeRate.eurPln, 4)} PLN, tabela z dnia{' '}
+                      {result.exchangeRate.effectiveDate}
                     </p>
                   ) : null}
                 </div>
@@ -394,9 +406,12 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="surface-panel-soft p-5">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Analogiczny okres porównania</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
+                        Analogiczny okres porównania
+                      </p>
                       <p className="mt-3 text-sm leading-relaxed text-body-muted">
-                        Koszt konwencji liczony jest tylko za okres równy wybranej umowie flex, żeby porównanie dotyczyło tego samego horyzontu czasowego zamiast całego kontraktu konwencjonalnego.
+                        Koszt konwencji liczony jest tylko za okres równy wybranej umowie flex, żeby porównanie
+                        dotyczyło tego samego horyzontu czasowego zamiast całego kontraktu konwencjonalnego.
                       </p>
                     </div>
                     <div className="surface-panel-soft p-5">
@@ -409,9 +424,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                         </div>
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7c8ab1]">Flex</p>
-                          <p className="mt-2 text-lg font-semibold text-[#000759]">
-                            pełne {result.inputs.flexLeaseMonths} mies.
-                          </p>
+                          <p className="mt-2 text-lg font-semibold text-[#000759]">pełne {result.inputs.flexLeaseMonths} mies.</p>
                         </div>
                       </div>
                     </div>
@@ -431,7 +444,10 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                     <div className="border border-[#dbe4f3] bg-white p-5">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Premia za elastyczność</p>
                       <div className="mt-4 space-y-2">
-                        <p className="text-3xl font-normal text-[var(--colliers-navy)]" style={{ fontFamily: 'var(--font-serif)' }}>
+                        <p
+                          className="text-3xl font-normal text-[var(--colliers-navy)]"
+                          style={{ fontFamily: 'var(--font-serif)' }}
+                        >
                           {formatCurrency(result.totals.flexPremiumPerCapitaMonthlyEur, 'EUR')}
                         </p>
                         <p className="text-sm text-body-muted">
@@ -441,40 +457,79 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                     </div>
                   </div>
 
-                  <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+                  <div className="grid gap-6 xl:grid-cols-[minmax(0,0.34fr)_minmax(0,0.66fr)] xl:items-start">
                     <div className="surface-panel p-5">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Powierzchnia</p>
                       <div className="mt-5 space-y-4 text-sm">
-                        <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
-                          <span className="text-body-muted">Konwencja netto</span>
-                          <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.conventionalNetAreaSqm)} mkw.</strong>
+                        <div className="border-b border-[#edf1f7] pb-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-body-muted">Konwencja netto</span>
+                            <strong className="text-[var(--colliers-navy)]">
+                              {formatCompactNumber(result.areas.conventionalNetAreaSqm)} mkw.
+                            </strong>
+                          </div>
+                          <p className="mt-3 text-xs leading-relaxed text-body-soft">
+                            Podstawowa powierzchnia użytkowa zajmowana wyłącznie przez najemcę.
+                          </p>
                         </div>
-                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Podstawowa powierzchnia użytkowa zajmowana wyłącznie przez najemcę.</p>
-                        <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
-                          <span className="text-body-muted">Konwencja brutto</span>
-                          <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.conventionalGrossAreaSqm)} mkw.</strong>
+                        <div className="border-b border-[#edf1f7] pb-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-body-muted">Konwencja brutto</span>
+                            <strong className="text-[var(--colliers-navy)]">
+                              {formatCompactNumber(result.areas.conventionalGrossAreaSqm)} mkw.
+                            </strong>
+                          </div>
+                          <p className="mt-3 text-xs leading-relaxed text-body-soft">
+                            Powierzchnia netto powiększona o udział najemcy w korytarzach, lobby i innych częściach
+                            wspólnych budynku.
+                          </p>
                         </div>
-                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Powierzchnia netto powiększona o udział najemcy w korytarzach, lobby i innych częściach wspólnych budynku.</p>
-                        <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
-                          <span className="text-body-muted">Flex — moduły prywatne</span>
-                          <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.flexPrivateAreaSqm)} mkw.</strong>
+                        <div className="border-b border-[#edf1f7] pb-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-body-muted">Flex — moduły prywatne</span>
+                            <strong className="text-[var(--colliers-navy)]">
+                              {formatCompactNumber(result.areas.flexPrivateAreaSqm)} mkw.
+                            </strong>
+                          </div>
+                          <p className="mt-3 text-xs leading-relaxed text-body-soft">
+                            Powierzchnia wewnątrz prywatnych modułów w biurach serwisowanych.
+                          </p>
                         </div>
-                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Powierzchnia wewnątrz prywatnych modułów w biurach serwisowanych.</p>
-                        <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
-                          <span className="text-body-muted">Flex — moduły z udziałem wspólnym</span>
-                          <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.flexGrossAreaSqm)} mkw.</strong>
+                        <div className="border-b border-[#edf1f7] pb-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-body-muted">Flex — moduły z udziałem wspólnym</span>
+                            <strong className="text-[var(--colliers-navy)]">
+                              {formatCompactNumber(result.areas.flexGrossAreaSqm)} mkw.
+                            </strong>
+                          </div>
+                          <p className="mt-3 text-xs leading-relaxed text-body-soft">
+                            Powierzchnia modułów prywatnych razem z proporcjonalnym udziałem w strefach wspólnych
+                            operatora, choć nie są one na wyłączność klienta.
+                          </p>
                         </div>
-                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Powierzchnia modułów prywatnych razem z proporcjonalnym udziałem w strefach wspólnych operatora, choć nie są one na wyłączność klienta.</p>
-                        <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
-                          <span className="text-body-muted">Konwencja mkw. / osoba</span>
-                          <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.conventionalGrossPerCapitaSqm)} mkw.</strong>
+                        <div className="border-b border-[#edf1f7] pb-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-body-muted">Konwencja mkw. / osoba</span>
+                            <strong className="text-[var(--colliers-navy)]">
+                              {formatCompactNumber(result.areas.conventionalGrossPerCapitaSqm)} mkw.
+                            </strong>
+                          </div>
+                          <p className="mt-3 text-xs leading-relaxed text-body-soft">
+                            Wartość brutto na osobę, czyli z udziałem w częściach wspólnych budynku.
+                          </p>
                         </div>
-                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Wartość brutto na osobę, czyli z udziałem w częściach wspólnych budynku.</p>
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-body-muted">Flex mkw. / stanowisko</span>
-                          <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.flexGrossPerCapitaSqm)} mkw.</strong>
+                        <div>
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-body-muted">Flex mkw. / stanowisko</span>
+                            <strong className="text-[var(--colliers-navy)]">
+                              {formatCompactNumber(result.areas.flexGrossPerCapitaSqm)} mkw.
+                            </strong>
+                          </div>
+                          <p className="mt-3 text-xs leading-relaxed text-body-soft">
+                            Łączna metryka przypisana na stanowisko w modelu flex, razem z udziałem w częściach
+                            wspólnych operatora.
+                          </p>
                         </div>
-                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Łączna metryka przypisana na stanowisko w modelu flex, razem z udziałem w częściach wspólnych operatora.</p>
                       </div>
                     </div>
 
@@ -483,17 +538,28 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                         <BarChart3 size={18} className="text-[#1C54F4]" />
                         <div>
                           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Koszty miesięczne</p>
-                          <p className="text-sm text-body-muted">Źródłowe dane rynkowe pozostają po stronie Colliers, a klient widzi już gotowe wyniki porównawcze.</p>
+                          <p className="text-sm text-body-muted">
+                            Źródłowe dane rynkowe pozostają po stronie Colliers, a klient widzi już gotowe wyniki
+                            porównawcze.
+                          </p>
                         </div>
                       </div>
                       <div className="mt-6 overflow-x-auto">
                         <table className="w-full min-w-[640px] border-collapse text-sm">
                           <thead>
                             <tr className="border-b border-[var(--colliers-navy)]">
-                              <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Pozycja</th>
-                              <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Model</th>
-                              <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">PLN / mies.</th>
-                              <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">EUR / mies.</th>
+                              <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
+                                Pozycja
+                              </th>
+                              <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
+                                Model
+                              </th>
+                              <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
+                                PLN / mies.
+                              </th>
+                              <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
+                                EUR / mies.
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -504,8 +570,12 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                                   {item.note ? <div className="mt-1 text-xs text-body-soft">{item.note}</div> : null}
                                 </td>
                                 <td className="py-3 pr-4 text-body-muted">Konwencja</td>
-                                <td className="py-3 pr-4 text-[var(--colliers-navy)]">{formatCurrency(item.monthlyTotalPln, 'PLN')}</td>
-                                <td className="py-3 text-[var(--colliers-navy)]">{formatCurrency(item.monthlyTotalEur, 'EUR')}</td>
+                                <td className="py-3 pr-4 text-[var(--colliers-navy)]">
+                                  {formatCurrency(item.monthlyTotalPln, 'PLN')}
+                                </td>
+                                <td className="py-3 text-[var(--colliers-navy)]">
+                                  {formatCurrency(item.monthlyTotalEur, 'EUR')}
+                                </td>
                               </tr>
                             ))}
                             {result.flexLineItems.map((item) => (
@@ -515,21 +585,33 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                                   {item.note ? <div className="mt-1 text-xs text-body-soft">{item.note}</div> : null}
                                 </td>
                                 <td className="py-3 pr-4 text-body-muted">Flex</td>
-                                <td className="py-3 pr-4 text-[var(--colliers-navy)]">{formatCurrency(item.monthlyTotalPln, 'PLN')}</td>
-                                <td className="py-3 text-[var(--colliers-navy)]">{formatCurrency(item.monthlyTotalEur, 'EUR')}</td>
+                                <td className="py-3 pr-4 text-[var(--colliers-navy)]">
+                                  {formatCurrency(item.monthlyTotalPln, 'PLN')}
+                                </td>
+                                <td className="py-3 text-[var(--colliers-navy)]">
+                                  {formatCurrency(item.monthlyTotalEur, 'EUR')}
+                                </td>
                               </tr>
                             ))}
                             <tr className="bg-[#f7faff]">
                               <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">Total konwencja / miesiąc</td>
                               <td className="py-3 pr-4 text-body-muted">Konwencja</td>
-                              <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">{formatCurrency(result.totals.conventionalMonthlyTotalPln, 'PLN')}</td>
-                              <td className="py-3 font-semibold text-[var(--colliers-navy)]">{formatCurrency(result.totals.conventionalMonthlyTotalEur, 'EUR')}</td>
+                              <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">
+                                {formatCurrency(result.totals.conventionalMonthlyTotalPln, 'PLN')}
+                              </td>
+                              <td className="py-3 font-semibold text-[var(--colliers-navy)]">
+                                {formatCurrency(result.totals.conventionalMonthlyTotalEur, 'EUR')}
+                              </td>
                             </tr>
                             <tr className="bg-[#f7faff]">
                               <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">Total flex / miesiąc</td>
                               <td className="py-3 pr-4 text-body-muted">Flex</td>
-                              <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">{formatCurrency(result.totals.flexMonthlyTotalPln, 'PLN')}</td>
-                              <td className="py-3 font-semibold text-[var(--colliers-navy)]">{formatCurrency(result.totals.flexMonthlyTotalEur, 'EUR')}</td>
+                              <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">
+                                {formatCurrency(result.totals.flexMonthlyTotalPln, 'PLN')}
+                              </td>
+                              <td className="py-3 font-semibold text-[var(--colliers-navy)]">
+                                {formatCurrency(result.totals.flexMonthlyTotalEur, 'EUR')}
+                              </td>
                             </tr>
                           </tbody>
                         </table>

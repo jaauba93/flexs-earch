@@ -278,23 +278,25 @@ export default function AdminListingForm({
             </label>
             <label className="admin-field">
               <span>Latitude</span>
+              <input type="hidden" name="latitude" value={latitude} />
               <input
-                name="latitude"
                 type="number"
                 step="0.000001"
                 value={latitude}
-                onChange={(event) => setLatitude(event.target.value)}
+                readOnly
+                disabled
                 placeholder="Może uzupełnić się automatycznie"
               />
             </label>
             <label className="admin-field">
               <span>Longitude</span>
+              <input type="hidden" name="longitude" value={longitude} />
               <input
-                name="longitude"
                 type="number"
                 step="0.000001"
                 value={longitude}
-                onChange={(event) => setLongitude(event.target.value)}
+                readOnly
+                disabled
                 placeholder="Może uzupełnić się automatycznie"
               />
             </label>
@@ -316,7 +318,7 @@ export default function AdminListingForm({
                 {geocodePending ? 'Pobieranie...' : 'Uzupełnij z adresu'}
               </button>
               <p className="text-sm text-[#5c6e97]">
-                Po zapisie CMS też spróbuje automatycznie uzupełnić dzielnicę i koordynaty, jeśli pola zostaną puste.
+                Współrzędne są pobierane automatycznie z adresu. Po zapisie CMS spróbuje też uzupełnić dzielnicę i koordynaty, jeśli pola pozostaną puste.
               </p>
             </div>
             {geocodeStatus ? <p className="mt-3 text-sm text-[#41547d]">{geocodeStatus}</p> : null}
