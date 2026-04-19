@@ -8,8 +8,6 @@ export interface FlexCalculatorDensityOption {
   label: string
   sort_order: number
   flex_office_sqm_per_desk: number
-  conventional_sqm_per_person_min: number
-  conventional_sqm_per_person_max: number
   conventional_sqm_per_person_avg: number
   is_active: boolean
 }

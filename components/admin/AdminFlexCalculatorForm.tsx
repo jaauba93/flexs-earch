@@ -8,7 +8,6 @@ import type {
   FlexCalculatorCmsData,
   FlexCalculatorDensityOption,
   FlexCalculatorMarketDataRow,
-  SelectOption,
 } from '@/lib/flex-calculator/types'
 
 function SubmitButton() {
@@ -23,23 +22,6 @@ function SubmitButton() {
       {pending ? 'Zapisywanie...' : 'Zapisz kalkulator'}
     </button>
   )
-}
-
-function parseOptionsTextarea(value: string): SelectOption[] {
-  return value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [rawValue, ...rawLabelParts] = line.split('|')
-      const optionValue = rawValue.trim()
-      const optionLabel = (rawLabelParts.join('|') || rawValue).trim()
-      return { value: optionValue, label: optionLabel }
-    })
-}
-
-function serializeOptions(options: SelectOption[]) {
-  return options.map((option) => `${option.value}|${option.label}`).join('\n')
 }
 
 function FieldRow({
@@ -87,22 +69,8 @@ export default function AdminFlexCalculatorForm({
   })
   const [densityOptions, setDensityOptions] = useState<FlexCalculatorDensityOption[]>(initialDensityOptions)
   const [marketData, setMarketData] = useState<FlexCalculatorMarketDataRow[]>(initialMarketData)
-  const [locationOptionsText, setLocationOptionsText] = useState(serializeOptions(settings.location_options))
-  const [fitoutOptionsText, setFitoutOptionsText] = useState(serializeOptions(settings.fitout_options))
-  const [flexLeaseOptionsText, setFlexLeaseOptionsText] = useState(serializeOptions(settings.flex_lease_options))
-  const [conventionalLeaseOptionsText, setConventionalLeaseOptionsText] = useState(
-    serializeOptions(settings.conventional_lease_options)
-  )
-
   const densityJson = useMemo(() => JSON.stringify(densityOptions), [densityOptions])
   const marketJson = useMemo(() => JSON.stringify(marketData), [marketData])
-  const locationJson = useMemo(() => JSON.stringify(parseOptionsTextarea(locationOptionsText)), [locationOptionsText])
-  const fitoutJson = useMemo(() => JSON.stringify(parseOptionsTextarea(fitoutOptionsText)), [fitoutOptionsText])
-  const flexLeaseJson = useMemo(() => JSON.stringify(parseOptionsTextarea(flexLeaseOptionsText)), [flexLeaseOptionsText])
-  const conventionalLeaseJson = useMemo(
-    () => JSON.stringify(parseOptionsTextarea(conventionalLeaseOptionsText)),
-    [conventionalLeaseOptionsText]
-  )
 
   function updateDensityOption(index: number, patch: Partial<FlexCalculatorDensityOption>) {
     setDensityOptions((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)))
@@ -114,10 +82,6 @@ export default function AdminFlexCalculatorForm({
 
   return (
     <form action={formAction} className="space-y-6">
-      <input type="hidden" name="location_options_json" value={locationJson} />
-      <input type="hidden" name="fitout_options_json" value={fitoutJson} />
-      <input type="hidden" name="flex_lease_options_json" value={flexLeaseJson} />
-      <input type="hidden" name="conventional_lease_options_json" value={conventionalLeaseJson} />
       <input type="hidden" name="density_options_json" value={densityJson} />
       <input type="hidden" name="market_data_json" value={marketJson} />
 
@@ -217,37 +181,9 @@ export default function AdminFlexCalculatorForm({
       </section>
 
       <section className="rounded-[24px] border border-[#e4ebf8] bg-[#fbfcff] p-5">
-        <div className="mb-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#7c8ab1]">Sekcja 3</p>
-          <h2 className="mt-2 text-xl font-semibold text-[#000759]">Lists</h2>
-          <p className="mt-2 max-w-3xl text-sm text-[#51628b]">
-            Każda linia to `wartość|etykieta`. Jeśli podasz tylko jedną wartość, będzie użyta także jako etykieta.
-          </p>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <FieldRow label="Lokalizacja">
-            <textarea value={locationOptionsText} onChange={(event) => setLocationOptionsText(event.target.value)} />
-          </FieldRow>
-          <FieldRow label="Standard wykończenia">
-            <textarea value={fitoutOptionsText} onChange={(event) => setFitoutOptionsText(event.target.value)} />
-          </FieldRow>
-          <FieldRow label="Okres flex">
-            <textarea value={flexLeaseOptionsText} onChange={(event) => setFlexLeaseOptionsText(event.target.value)} />
-          </FieldRow>
-          <FieldRow label="Okres konwencji">
-            <textarea
-              value={conventionalLeaseOptionsText}
-              onChange={(event) => setConventionalLeaseOptionsText(event.target.value)}
-            />
-          </FieldRow>
-        </div>
-      </section>
-
-      <section className="rounded-[24px] border border-[#e4ebf8] bg-[#fbfcff] p-5">
         <div className="mb-5 flex items-center justify-between gap-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#7c8ab1]">Sekcja 4</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#7c8ab1]">Sekcja 3</p>
             <h2 className="mt-2 text-xl font-semibold text-[#000759]">Profile zagęszczenia</h2>
           </div>
           <button
@@ -260,8 +196,6 @@ export default function AdminFlexCalculatorForm({
                   label: 'Nowy profil',
                   sort_order: current.length + 1,
                   flex_office_sqm_per_desk: 4,
-                  conventional_sqm_per_person_min: 10,
-                  conventional_sqm_per_person_max: 12,
                   conventional_sqm_per_person_avg: 11,
                   is_active: true,
                 },
@@ -310,12 +244,6 @@ export default function AdminFlexCalculatorForm({
                 <FieldRow label="Flex gabinety (mkw. / WS)">
                   <NumberInput value={option.flex_office_sqm_per_desk} onChange={(value) => updateDensityOption(index, { flex_office_sqm_per_desk: value })} />
                 </FieldRow>
-                <FieldRow label="Konwencja min">
-                  <NumberInput value={option.conventional_sqm_per_person_min} onChange={(value) => updateDensityOption(index, { conventional_sqm_per_person_min: value })} />
-                </FieldRow>
-                <FieldRow label="Konwencja max">
-                  <NumberInput value={option.conventional_sqm_per_person_max} onChange={(value) => updateDensityOption(index, { conventional_sqm_per_person_max: value })} />
-                </FieldRow>
                 <FieldRow label="Konwencja średnia">
                   <NumberInput value={option.conventional_sqm_per_person_avg} onChange={(value) => updateDensityOption(index, { conventional_sqm_per_person_avg: value })} />
                 </FieldRow>
@@ -328,7 +256,7 @@ export default function AdminFlexCalculatorForm({
       <section className="rounded-[24px] border border-[#e4ebf8] bg-[#fbfcff] p-5">
         <div className="mb-5 flex items-center justify-between gap-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#7c8ab1]">Sekcja 5</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#7c8ab1]">Sekcja 4</p>
             <h2 className="mt-2 text-xl font-semibold text-[#000759]">Market data</h2>
             <p className="mt-2 max-w-3xl text-sm text-[#51628b]">
               Te wartości są niewidoczne na froncie i służą wyłącznie do obliczeń po stronie serwera.

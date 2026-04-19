@@ -83,7 +83,7 @@ export function calculateFlexScenario(params: {
 
   const conventionalLineItems = [
     {
-      label: 'Effective base rent',
+      label: 'Efektywny czynsz bazowy',
       source: 'EUR',
       monthlyPerSqmEur: round(effectiveBaseRentPerSqmEur, 2),
       monthlyPerDeskEur: round(effectiveBaseRentPerSqmEur * conventionalGrossPerCapitaSqm, 2),
@@ -92,7 +92,7 @@ export function calculateFlexScenario(params: {
       note: 'Uwzględnia zachętę rent-free zgodnie z założeniami rynkowymi.',
     },
     {
-      label: 'Service charge',
+      label: 'Opłata eksploatacyjna',
       source: 'PLN',
       monthlyPerSqmEur: round(serviceChargePerSqmEur, 2),
       monthlyPerDeskEur: round(serviceChargePerSqmEur * conventionalGrossPerCapitaSqm, 2),
@@ -101,7 +101,7 @@ export function calculateFlexScenario(params: {
       note: 'Rynkowo rozliczany w PLN, tutaj przeliczony także do EUR po kursie NBP.',
     },
     {
-      label: 'Utilities & maintenance',
+      label: 'Media i utrzymanie',
       source: 'EUR',
       monthlyPerSqmEur: round(utilitiesPerSqmEur, 2),
       monthlyPerDeskEur: round(utilitiesPerSqmEur * conventionalGrossPerCapitaSqm, 2),
@@ -110,7 +110,7 @@ export function calculateFlexScenario(params: {
       note: 'Założenie operacyjne utrzymywane po stronie Colliers.',
     },
     {
-      label: 'Fit-out amortisation (gap)',
+      label: 'Amortyzacja luki fit-out',
       source: 'EUR',
       monthlyPerSqmEur: round(fitoutGapAmortisationPerSqmEur, 2),
       monthlyPerDeskEur: round((fitoutCostEur - fitoutContributionEur) * density.conventional_sqm_per_person_avg / params.inputs.conventionalLeaseMonths, 2),

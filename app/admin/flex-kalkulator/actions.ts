@@ -2,11 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { DEFAULT_FLEX_CALCULATOR_SETTINGS } from '@/lib/flex-calculator/defaults'
 import type {
   FlexCalculatorDensityOption,
   FlexCalculatorMarketDataRow,
   FlexCalculatorSettings,
-  SelectOption,
 } from '@/lib/flex-calculator/types'
 
 export interface SaveFlexCalculatorState {
@@ -34,15 +34,6 @@ function parseJson<T>(formData: FormData, key: string): T {
   return JSON.parse(raw) as T
 }
 
-function sanitizeOptions(options: SelectOption[]) {
-  return options
-    .map((option) => ({
-      value: String(option.value || '').trim(),
-      label: String(option.label || '').trim(),
-    }))
-    .filter((option) => option.value.length > 0 && option.label.length > 0)
-}
-
 function sanitizeDensityOptions(options: FlexCalculatorDensityOption[]) {
   return options
     .map((option, index) => ({
@@ -50,8 +41,6 @@ function sanitizeDensityOptions(options: FlexCalculatorDensityOption[]) {
       label: String(option.label || '').trim(),
       sort_order: Number.isFinite(Number(option.sort_order)) ? Number(option.sort_order) : index + 1,
       flex_office_sqm_per_desk: Number(option.flex_office_sqm_per_desk),
-      conventional_sqm_per_person_min: Number(option.conventional_sqm_per_person_min),
-      conventional_sqm_per_person_max: Number(option.conventional_sqm_per_person_max),
       conventional_sqm_per_person_avg: Number(option.conventional_sqm_per_person_avg),
       is_active: option.is_active !== false,
     }))
@@ -89,12 +78,6 @@ export async function saveFlexCalculatorAction(
     const settingsTable = admin.from('flex_calculator_settings') as any
     const densityTable = admin.from('flex_calculator_density_options') as any
     const marketTable = admin.from('flex_calculator_market_data') as any
-    const locationOptions = sanitizeOptions(parseJson<SelectOption[]>(formData, 'location_options_json'))
-    const fitoutOptions = sanitizeOptions(parseJson<SelectOption[]>(formData, 'fitout_options_json'))
-    const flexLeaseOptions = sanitizeOptions(parseJson<SelectOption[]>(formData, 'flex_lease_options_json'))
-    const conventionalLeaseOptions = sanitizeOptions(
-      parseJson<SelectOption[]>(formData, 'conventional_lease_options_json')
-    )
     const densityOptions = sanitizeDensityOptions(
       parseJson<FlexCalculatorDensityOption[]>(formData, 'density_options_json')
     )
@@ -119,10 +102,10 @@ export async function saveFlexCalculatorAction(
       flex_common_area_sqm_per_desk: readNumber(formData, 'flex_common_area_sqm_per_desk'),
       add_on_factor: readNumber(formData, 'add_on_factor'),
       rent_free_months_per_year: readNumber(formData, 'rent_free_months_per_year'),
-      location_options: locationOptions,
-      fitout_options: fitoutOptions,
-      flex_lease_options: flexLeaseOptions,
-      conventional_lease_options: conventionalLeaseOptions,
+      location_options: DEFAULT_FLEX_CALCULATOR_SETTINGS.location_options,
+      fitout_options: DEFAULT_FLEX_CALCULATOR_SETTINGS.fitout_options,
+      flex_lease_options: DEFAULT_FLEX_CALCULATOR_SETTINGS.flex_lease_options,
+      conventional_lease_options: DEFAULT_FLEX_CALCULATOR_SETTINGS.conventional_lease_options,
     }
 
     const { error: settingsError } = await settingsTable.upsert(settings)

@@ -32,8 +32,6 @@ CREATE TABLE IF NOT EXISTS flex_calculator_density_options (
   label text NOT NULL,
   sort_order integer NOT NULL DEFAULT 0,
   flex_office_sqm_per_desk numeric(10,2) NOT NULL,
-  conventional_sqm_per_person_min numeric(10,2) NOT NULL,
-  conventional_sqm_per_person_max numeric(10,2) NOT NULL,
   conventional_sqm_per_person_avg numeric(10,2) NOT NULL,
   is_active boolean NOT NULL DEFAULT true,
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -117,15 +115,13 @@ INSERT INTO flex_calculator_density_options (
   label,
   sort_order,
   flex_office_sqm_per_desk,
-  conventional_sqm_per_person_min,
-  conventional_sqm_per_person_max,
   conventional_sqm_per_person_avg,
   is_active
 )
 VALUES
-  ('dense', 'Gęsto', 1, 3.5, 8, 10, 9, true),
-  ('standard', 'Standard', 2, 4, 10, 12, 11, true),
-  ('spacious', 'Swobodnie', 3, 4.5, 12, 15, 13.5, true)
+  ('dense', 'Gęsto', 1, 3.5, 9, true),
+  ('standard', 'Standard', 2, 4, 11, true),
+  ('spacious', 'Swobodnie', 3, 4.5, 13.5, true)
 ON CONFLICT (key) DO NOTHING;
 
 INSERT INTO flex_calculator_market_data (

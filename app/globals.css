@@ -239,6 +239,35 @@ h1, h2, h3, h4 {
   box-shadow: 0 12px 30px rgba(0, 7, 89, 0.04);
 }
 
+.calculator-inputs-shell {
+  position: relative;
+  border: 1px solid #dbe4f3;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  padding: 1rem;
+  transition: box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.calculator-inputs-shell.is-active {
+  border-color: rgba(28, 84, 244, 0.7);
+  box-shadow: 0 0 0 1px rgba(28, 84, 244, 0.12), 0 0 0 8px rgba(28, 84, 244, 0.08);
+  animation: calculator-shell-pulse 2.1s ease-in-out infinite;
+}
+
+.calculator-input-card {
+  border: 1px solid #dbe4f3;
+  background: #ffffff;
+  min-width: 0;
+}
+
+@keyframes calculator-shell-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(28, 84, 244, 0.12), 0 0 0 8px rgba(28, 84, 244, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(28, 84, 244, 0.2), 0 0 0 14px rgba(28, 84, 244, 0.04);
+  }
+}
+
 .eyebrow-label {
   font-family: var(--font-sans);
   font-size: 10px;

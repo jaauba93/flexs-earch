@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BarChart3, Calculator, CheckCircle2, Loader2 } from 'lucide-react'
+import { ArrowRight, BarChart3, Calculator, CheckCircle2, CircleHelp, Loader2 } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
@@ -15,6 +15,24 @@ import type {
 
 interface FlexCalculatorClientProps {
   data: FlexCalculatorPublicData
+}
+
+function FilterTooltip({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        tabIndex={0}
+        aria-label="Pokaż wyjaśnienie"
+        className="inline-flex h-4 w-4 items-center justify-center text-[#7d8db5] transition-colors hover:text-[#1C54F4] focus:text-[#1C54F4]"
+      >
+        <CircleHelp size={14} />
+      </button>
+      <span className="pointer-events-none absolute left-1/2 top-[calc(100%+10px)] z-30 w-64 -translate-x-1/2 rounded-none border border-[#dbe4f8] bg-white px-3 py-2 text-[11px] font-normal leading-relaxed text-[#5c6d97] opacity-0 shadow-[0_12px_30px_rgba(0,7,89,0.12)] transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+        {text}
+      </span>
+    </span>
+  )
 }
 
 function formatCurrency(value: number, currency: 'PLN' | 'EUR') {
@@ -54,17 +72,13 @@ function InputShell({
   children: React.ReactNode
 }) {
   return (
-      <div className="border border-[var(--colliers-yellow)] bg-white shadow-[0_10px_26px_rgba(0,7,89,0.04)]">
-      <div
-        className="flex items-center justify-between border-b border-[var(--colliers-yellow)] px-4 py-2"
-        style={{ backgroundColor: 'rgba(255, 212, 0, 0.18)' }}
-      >
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--colliers-navy)]">{label}</p>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--colliers-gray)]">Pole klienta</span>
-      </div>
+    <div className="calculator-input-card">
       <div className="p-4">
-        {children}
-        {hint ? <p className="mt-2 text-xs text-body-soft">{hint}</p> : null}
+        <div className="mb-2 flex items-center gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--colliers-navy)]">{label}</p>
+          {hint ? <FilterTooltip text={hint} /> : null}
+        </div>
+        <div>{children}</div>
       </div>
     </div>
   )
@@ -75,11 +89,13 @@ function ResultCard({
   valuePln,
   valueEur,
   accent = false,
+  detail,
 }: {
   label: string
   valuePln: number
   valueEur: number
   accent?: boolean
+  detail?: string
 }) {
   return (
     <div
@@ -87,6 +103,7 @@ function ResultCard({
       style={accent ? { backgroundColor: 'rgba(219, 229, 255, 0.32)' } : undefined}
     >
       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">{label}</p>
+      {detail ? <p className="mt-2 text-xs leading-relaxed text-body-soft">{detail}</p> : null}
       <div className="mt-4 space-y-2">
         <p className="text-3xl font-normal text-[var(--colliers-navy)]" style={{ fontFamily: 'var(--font-serif)' }}>
           {formatCurrency(valuePln, 'PLN')}
@@ -104,6 +121,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
   const [result, setResult] = useState<FlexCalculatorComputedResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasInputInteracted, setHasInputInteracted] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -146,6 +164,18 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
     () => [...data.densityOptions].sort((a, b) => a.sort_order - b.sort_order),
     [data.densityOptions]
   )
+  const selectedDensity = useMemo(
+    () => densityOptions.find((option) => option.key === inputs.densityKey) ?? densityOptions[0],
+    [densityOptions, inputs.densityKey]
+  )
+  const densityTooltip = selectedDensity
+    ? `${selectedDensity.label}: dla flexu przyjmujemy ${formatCompactNumber(selectedDensity.flex_office_sqm_per_desk, 1)} mkw. w prywatnym module na stanowisko, a dla konwencji ${formatCompactNumber(selectedDensity.conventional_sqm_per_person_avg, 1)} mkw. na osobę.`
+    : undefined
+
+  function updateInput<K extends keyof FlexCalculatorInputs>(key: K, value: FlexCalculatorInputs[K]) {
+    setHasInputInteracted(true)
+    setInputs((current) => ({ ...current, [key]: value }))
+  }
 
   return (
     <>
@@ -182,24 +212,20 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                   <Calculator size={18} className="text-[#1C54F4]" />
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Założenia klienta</p>
-                    <p className="text-sm text-body-muted">Pola zaznaczone na żółto odpowiadają wejściom z arkusza źródłowego.</p>
+                    <p className="text-sm text-body-muted">Uzupełnij podstawowe parametry, a narzędzie przeliczy porównywalny scenariusz dla konwencji i flexu.</p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <InputShell label="Liczba stanowisk pracy" hint="Zakres orientacyjny: 25–1000">
+              <div className={`calculator-inputs-shell ${hasInputInteracted ? '' : 'is-active'}`}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                <InputShell label="Liczba stanowisk pracy" hint="Zakres orientacyjny: 25–1000.">
                   <input
                     type="number"
                     min={1}
                     max={1000}
                     value={inputs.headcount}
-                    onChange={(event) =>
-                      setInputs((current) => ({
-                        ...current,
-                        headcount: Number(event.target.value || data.settings.default_headcount),
-                      }))
-                    }
+                    onChange={(event) => updateInput('headcount', Number(event.target.value || data.settings.default_headcount))}
                     className="form-input"
                   />
                 </InputShell>
@@ -207,7 +233,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                 <InputShell label="Rynek (miasto)">
                   <select
                     value={inputs.citySlug}
-                    onChange={(event) => setInputs((current) => ({ ...current, citySlug: event.target.value }))}
+                    onChange={(event) => updateInput('citySlug', event.target.value)}
                     className="form-input"
                   >
                     {data.cityOptions.map((option) => (
@@ -221,7 +247,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                 <InputShell label="Lokalizacja">
                   <select
                     value={inputs.locationType}
-                    onChange={(event) => setInputs((current) => ({ ...current, locationType: event.target.value }))}
+                    onChange={(event) => updateInput('locationType', event.target.value)}
                     className="form-input"
                   >
                     {data.settings.location_options.map((option) => (
@@ -235,7 +261,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                 <InputShell label="Standard wykończenia">
                   <select
                     value={inputs.fitoutStandard}
-                    onChange={(event) => setInputs((current) => ({ ...current, fitoutStandard: event.target.value }))}
+                    onChange={(event) => updateInput('fitoutStandard', event.target.value)}
                     className="form-input"
                   >
                     {data.settings.fitout_options.map((option) => (
@@ -246,10 +272,10 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                   </select>
                 </InputShell>
 
-                <InputShell label="Standard zagęszczenia">
+                <InputShell label="Standard zagęszczenia" hint={densityTooltip}>
                   <select
                     value={inputs.densityKey}
-                    onChange={(event) => setInputs((current) => ({ ...current, densityKey: event.target.value }))}
+                    onChange={(event) => updateInput('densityKey', event.target.value)}
                     className="form-input"
                   >
                     {densityOptions.map((option) => (
@@ -263,12 +289,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                 <InputShell label="Okres najmu konwencjonalnego">
                   <select
                     value={String(inputs.conventionalLeaseMonths)}
-                    onChange={(event) =>
-                      setInputs((current) => ({
-                        ...current,
-                        conventionalLeaseMonths: Number(event.target.value),
-                      }))
-                    }
+                    onChange={(event) => updateInput('conventionalLeaseMonths', Number(event.target.value))}
                     className="form-input"
                   >
                     {data.settings.conventional_lease_options.map((option) => (
@@ -282,12 +303,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                 <InputShell label="Okres flex">
                   <select
                     value={String(inputs.flexLeaseMonths)}
-                    onChange={(event) =>
-                      setInputs((current) => ({
-                        ...current,
-                        flexLeaseMonths: Number(event.target.value),
-                      }))
-                    }
+                    onChange={(event) => updateInput('flexLeaseMonths', Number(event.target.value))}
                     className="form-input"
                   >
                     {data.settings.flex_lease_options.map((option) => (
@@ -313,13 +329,14 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                   </div>
                 </div>
               </div>
+              </div>
             </div>
 
             <div className="space-y-6">
               <div className="surface-panel-soft p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Cost comparison</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Porównanie kosztów</p>
                     <h2 className="mt-2 text-3xl font-normal text-[var(--colliers-navy)]" style={{ fontFamily: 'var(--font-serif)' }}>
                       Najważniejsze wskaźniki
                     </h2>
@@ -350,25 +367,54 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       valuePln={result.totals.conventionalTotalLiabilityPln}
                       valueEur={result.totals.conventionalTotalLiabilityEur}
                       accent
+                      detail={`Pełne ${result.inputs.conventionalLeaseMonths} miesięcy najmu konwencjonalnego.`}
                     />
                     <ResultCard
                       label="Łączne zobowiązanie — flex"
                       valuePln={result.totals.flexTotalLiabilityPln}
                       valueEur={result.totals.flexTotalLiabilityEur}
                       accent
+                      detail={`Pełne ${result.inputs.flexLeaseMonths} miesięcy umowy flex.`}
                     />
                     <ResultCard
                       label="Koszt konwencji za okres flex"
                       valuePln={result.totals.conventionalCostForFlexPeriodPln}
                       valueEur={result.totals.conventionalCostForFlexPeriodEur}
                       accent
+                      detail={`${result.inputs.flexLeaseMonths} mies. z ${result.inputs.conventionalLeaseMonths} mies. konwencji.`}
                     />
                     <ResultCard
                       label="Koszt flex za ten sam okres"
                       valuePln={result.totals.flexCostForFlexPeriodPln}
                       valueEur={result.totals.flexCostForFlexPeriodEur}
                       accent
+                      detail={`Pełny koszt flex dla ${result.inputs.flexLeaseMonths} miesięcy.`}
                     />
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="surface-panel-soft p-5">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Analogiczny okres porównania</p>
+                      <p className="mt-3 text-sm leading-relaxed text-body-muted">
+                        Koszt konwencji liczony jest tylko za okres równy wybranej umowie flex, żeby porównanie dotyczyło tego samego horyzontu czasowego zamiast całego kontraktu konwencjonalnego.
+                      </p>
+                    </div>
+                    <div className="surface-panel-soft p-5">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7c8ab1]">Konwencja</p>
+                          <p className="mt-2 text-lg font-semibold text-[#000759]">
+                            {result.inputs.flexLeaseMonths} mies. z {result.inputs.conventionalLeaseMonths}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7c8ab1]">Flex</p>
+                          <p className="mt-2 text-lg font-semibold text-[#000759]">
+                            pełne {result.inputs.flexLeaseMonths} mies.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-3">
@@ -395,7 +441,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                     </div>
                   </div>
 
-                  <div className="grid gap-6 xl:grid-cols-[0.84fr_1.16fr]">
+                  <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                     <div className="surface-panel p-5">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Powierzchnia</p>
                       <div className="mt-5 space-y-4 text-sm">
@@ -403,22 +449,32 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                           <span className="text-body-muted">Konwencja netto</span>
                           <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.conventionalNetAreaSqm)} mkw.</strong>
                         </div>
+                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Podstawowa powierzchnia użytkowa zajmowana wyłącznie przez najemcę.</p>
                         <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
                           <span className="text-body-muted">Konwencja brutto</span>
                           <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.conventionalGrossAreaSqm)} mkw.</strong>
                         </div>
+                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Powierzchnia netto powiększona o udział najemcy w korytarzach, lobby i innych częściach wspólnych budynku.</p>
                         <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
-                          <span className="text-body-muted">Flex gabinety</span>
+                          <span className="text-body-muted">Flex — moduły prywatne</span>
                           <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.flexPrivateAreaSqm)} mkw.</strong>
                         </div>
+                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Powierzchnia wewnątrz prywatnych modułów w biurach serwisowanych.</p>
                         <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
-                          <span className="text-body-muted">Flex łącznie</span>
+                          <span className="text-body-muted">Flex — moduły z udziałem wspólnym</span>
                           <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.flexGrossAreaSqm)} mkw.</strong>
                         </div>
+                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Powierzchnia modułów prywatnych razem z proporcjonalnym udziałem w strefach wspólnych operatora, choć nie są one na wyłączność klienta.</p>
+                        <div className="flex items-center justify-between gap-4 border-b border-[#edf1f7] pb-3">
+                          <span className="text-body-muted">Konwencja mkw. / osoba</span>
+                          <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.conventionalGrossPerCapitaSqm)} mkw.</strong>
+                        </div>
+                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Wartość brutto na osobę, czyli z udziałem w częściach wspólnych budynku.</p>
                         <div className="flex items-center justify-between gap-4">
                           <span className="text-body-muted">Flex mkw. / stanowisko</span>
                           <strong className="text-[var(--colliers-navy)]">{formatCompactNumber(result.areas.flexGrossPerCapitaSqm)} mkw.</strong>
                         </div>
+                        <p className="-mt-1 text-xs leading-relaxed text-body-soft">Łączna metryka przypisana na stanowisko w modelu flex, razem z udziałem w częściach wspólnych operatora.</p>
                       </div>
                     </div>
 

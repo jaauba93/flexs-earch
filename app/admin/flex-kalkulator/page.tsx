@@ -12,7 +12,7 @@ export default async function AdminFlexCalculatorPage() {
     <AdminShell
       user={user}
       title="Kalkulator flex"
-      subtitle="Tutaj zarządzasz treścią wstępu, listami wyboru, założeniami oraz niewidocznymi dla klienta market data używanymi do obliczeń kalkulatora."
+      subtitle="Tutaj zarządzasz treścią wstępu, profilami zagęszczenia, założeniami oraz niewidocznymi dla klienta market data używanymi do obliczeń kalkulatora."
     >
       <div className="flex justify-end">
         <Link
