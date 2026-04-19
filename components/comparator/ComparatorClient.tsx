@@ -9,6 +9,7 @@ import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import MapView from '@/components/search/MapView'
+import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { formatPriceShort } from '@/lib/currency/currency'
@@ -41,6 +42,8 @@ export default function ComparatorClient() {
   }, [items])
 
   const advisor = listings.find((l) => l.advisor)?.advisor || null
+  const missingPriceTooltip =
+    'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
 
   return (
     <>
@@ -226,7 +229,7 @@ export default function ComparatorClient() {
                               <span className="text-[10px] text-[var(--colliers-gray)] block">/ mies.</span>
                             </>
                           ) : (
-                            <span className="text-sm text-[var(--colliers-gray)]">–</span>
+                            <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
                           )}
                         </td>
 

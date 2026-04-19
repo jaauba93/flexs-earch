@@ -10,6 +10,7 @@ import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import ListingCard from '@/components/search/ListingCard'
 import NearbyExplorer from '@/components/listing/NearbyExplorer'
+import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { formatPricePreview } from '@/lib/currency/currency'
@@ -32,6 +33,8 @@ interface Props {
 export default function ListingDetailClient({ listing, relatedListings, citySlug, districtSlug }: Props) {
   const { addItem, removeItem, isInBasket, isFull, mounted } = useBasketContext()
   const { currency, rates } = useCurrencyContext()
+  const missingPriceTooltip =
+    'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
   const inBasket = mounted && isInBasket(listing.id)
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -211,8 +214,22 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
               <p className="overline mb-5">Warunki komercyjne</p>
               <div className="surface-shell grid grid-cols-2 gap-4 p-6 sm:grid-cols-3">
               {[
-                { label: 'Cena (biuro prywatne)', value: listing.price_desk_private ? formatPricePreview(listing.price_desk_private, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.') : '–' },
-                { label: 'Hot-desk', value: listing.price_desk_hotdesk ? formatPricePreview(listing.price_desk_hotdesk, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.') : '–' },
+                {
+                  label: 'Cena (biuro prywatne)',
+                  value: listing.price_desk_private ? (
+                    formatPricePreview(listing.price_desk_private, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.')
+                  ) : (
+                    <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+                  ),
+                },
+                {
+                  label: 'Hot-desk',
+                  value: listing.price_desk_hotdesk ? (
+                    formatPricePreview(listing.price_desk_hotdesk, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.')
+                  ) : (
+                    <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+                  ),
+                },
                 { label: 'Łączna liczba stanowisk', value: listing.total_workstations ? `${listing.total_workstations} stanowisk` : '–' },
                 { label: 'Wielkość gabinetów', value: (listing.min_office_size && listing.max_office_size) ? `od ${listing.min_office_size} do ${listing.max_office_size} stanowisk` : '–' },
                 { label: 'Rok otwarcia', value: listing.year_opened?.toString() || '–' },

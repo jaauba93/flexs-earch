@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
+import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { formatPriceShort } from '@/lib/currency/currency'
 import { slugify } from '@/lib/utils/slugify'
@@ -34,6 +35,8 @@ const TRANSITION_EASING = 'cubic-bezier(0.77, 0, 0.175, 1)'
 
 export default function HomeClient({ featuredListings }: HomeClientProps) {
   const { currency, rates } = useCurrencyContext()
+  const missingPriceTooltip =
+    'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
   const [searchValue, setSearchValue] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -607,6 +610,9 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                             <span className="text-[#4D93FF] font-bold text-sm">
                               {formatPriceShort(listing.price_desk_private, currency, rates)}
                             </span>
+                          )}
+                          {!listing.price_desk_private && (
+                            <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
                           )}
                           <span className="text-white/40 text-[10px] uppercase tracking-widest font-bold ml-auto">
                             {listing.operator.name}

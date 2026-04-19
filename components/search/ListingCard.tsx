@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { formatPricePreview } from '@/lib/currency/currency'
+import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
 import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator } from '@/types/database'
 
@@ -20,6 +21,8 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
   const { addItem, removeItem, isInBasket, mounted } = useBasketContext()
   const { currency, rates } = useCurrencyContext()
   const inBasket = mounted && isInBasket(listing.id)
+  const missingPriceTooltip =
+    'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
 
   const citySlug = slugify(listing.address_city)
   const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
@@ -40,22 +43,38 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
     ? formatPricePreview(listing.price_desk_private, currency, rates).replace(' / stanowisko / miesiąc', '')
     : null
 
-  const totalPriceFromLabel = listing.price_desk_private && selectedWorkstationsFrom
-    ? formatPricePreview(listing.price_desk_private * selectedWorkstationsFrom, currency, rates).replace(' / stanowisko / miesiąc', '')
-    : null
+  const totalPriceFromLabel =
+    listing.price_desk_private && selectedWorkstationsFrom
+      ? formatPricePreview(listing.price_desk_private * selectedWorkstationsFrom, currency, rates).replace(' / stanowisko / miesiąc', '')
+      : null
 
-  const totalPriceToLabel = listing.price_desk_private && selectedWorkstationsTo
-    ? formatPricePreview(listing.price_desk_private * selectedWorkstationsTo, currency, rates).replace(' / stanowisko / miesiąc', '')
-    : null
+  const totalPriceToLabel =
+    listing.price_desk_private && selectedWorkstationsTo
+      ? formatPricePreview(listing.price_desk_private * selectedWorkstationsTo, currency, rates).replace(' / stanowisko / miesiąc', '')
+      : null
 
   const totalPriceRows = [
-    selectedWorkstationsFrom && totalPriceFromLabel
-      ? { label: `${selectedWorkstationsFrom} st.`, value: totalPriceFromLabel }
+    selectedWorkstationsFrom
+      ? {
+          label: `${selectedWorkstationsFrom} st.`,
+          value: totalPriceFromLabel ? (
+            totalPriceFromLabel
+          ) : (
+            <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+          ),
+        }
       : null,
-    selectedWorkstationsTo && selectedWorkstationsTo !== selectedWorkstationsFrom && totalPriceToLabel
-      ? { label: `${selectedWorkstationsTo} st.`, value: totalPriceToLabel }
+    selectedWorkstationsTo && selectedWorkstationsTo !== selectedWorkstationsFrom
+      ? {
+          label: `${selectedWorkstationsTo} st.`,
+          value: totalPriceToLabel ? (
+            totalPriceToLabel
+          ) : (
+            <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+          ),
+        }
       : null,
-  ].filter((item): item is { label: string; value: string } => Boolean(item))
+  ].filter(Boolean) as Array<{ label: string; value: string | JSX.Element }>
 
   return (
     <article
@@ -136,10 +155,11 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
           <div className="mb-2">
             <p className="mb-0.5 text-[9px] font-bold uppercase text-[#7d8cb4]" style={{ letterSpacing: '0.14em' }}>Cena od</p>
             <p className="font-bold text-[#000759] leading-none" style={{ fontSize: '0.95rem' }}>
-              {pricePerDeskLabel
-                ? <>{pricePerDeskLabel} <span className="text-[10px] font-normal text-[#7d8cb4]">/ st. / mies.</span></>
-                : <span className="text-sm font-normal text-[#7d8cb4]">–</span>
-              }
+              {pricePerDeskLabel ? (
+                <>{pricePerDeskLabel} <span className="text-[10px] font-normal text-[#7d8cb4]">/ st. / mies.</span></>
+              ) : (
+                <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+              )}
             </p>
             {totalPriceRows.length > 0 ? (
               <div className="mt-2 grid gap-1">

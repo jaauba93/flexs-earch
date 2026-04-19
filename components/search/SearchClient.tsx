@@ -29,7 +29,7 @@ interface SearchClientProps {
 }
 
 type ListingWithOperator = Listing & { operator: Operator }
-type FilterMenuId = 'city' | 'district' | 'budget' | 'operator' | 'metro' | 'sort' | null
+type FilterMenuId = 'city' | 'district' | 'operator' | 'metro' | 'sort' | null
 
 function FilterLabel({
   children,
@@ -42,7 +42,7 @@ function FilterLabel({
 }) {
   return (
     <div className="mb-1 flex items-center gap-1.5">
-      <label className={`form-label mb-0 ${labelClass}`}>{children}</label>
+      <span className={`mb-0 block text-[10px] font-bold uppercase tracking-[0.24em] text-white !opacity-100 ${labelClass}`}>{children}</span>
       {tooltip ? (
         <span className="group relative inline-flex">
           <button
@@ -78,7 +78,7 @@ export default function SearchClient({
   // ── Filter state (initialised from URL params) ───────────────────────────────
   const [stanowiskaOd, setStanowiskaOd] = useState(searchParams.stanowiska_od || '')
   const [stanowiskaDo, setStanowiskaDo] = useState(searchParams.stanowiska_do || '')
-  const [ceniaDo, setCeniaDo] = useState(searchParams.cena_do || '')
+  const [budgetInput, setBudgetInput] = useState(searchParams.cena_do || '')
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(
     searchParams.udogodnienia ? searchParams.udogodnienia.split(',') : []
   )
@@ -239,13 +239,13 @@ export default function SearchClient({
     return Math.min(...values)
   }, [parsedStanowiskaDo, parsedStanowiskaOd])
   const budgetThresholdPln = useMemo(() => {
-    if (!ceniaDo) return null
-    const amount = Number.parseInt(ceniaDo, 10)
+    if (!budgetInput) return null
+    const amount = Number.parseInt(budgetInput, 10)
     if (!Number.isFinite(amount)) return null
     if (currency === 'PLN') return amount
     if (!rates) return null
     return Math.round(amount * rates[currency])
-  }, [ceniaDo, currency, rates])
+  }, [budgetInput, currency, rates])
 
   const clearCitySelection = useCallback(() => {
     setSelectedCitySlug('')
@@ -267,7 +267,9 @@ export default function SearchClient({
     if (city) query = query.ilike('address_city', city)
     // District filtered client-side — handles Polish diacritics in slugs
     if (workstationCapacityThreshold !== null) query = query.gte('total_workstations', workstationCapacityThreshold)
-    if (budgetThresholdPln !== null) query = query.lte('price_desk_private', budgetThresholdPln)
+    if (budgetThresholdPln !== null) {
+      query = query.or(`price_desk_private.is.null,price_desk_private.lte.${budgetThresholdPln}`)
+    }
     if (selectedOperator) {
       const op = operators.find((o) => o.slug === selectedOperator)
       if (op) query = query.eq('operator_id', op.id)
@@ -340,7 +342,7 @@ export default function SearchClient({
     const params = new URLSearchParams()
     if (stanowiskaOd) params.set('stanowiska_od', stanowiskaOd)
     if (stanowiskaDo) params.set('stanowiska_do', stanowiskaDo)
-    if (ceniaDo) params.set('cena_do', ceniaDo)
+    if (budgetInput) params.set('cena_do', budgetInput)
     if (selectedAmenities.length > 0) params.set('udogodnienia', selectedAmenities.join(','))
     if (selectedOperator) params.set('operator', selectedOperator)
     if (selectedMetroLine) params.set('metro_line', selectedMetroLine)
@@ -356,7 +358,7 @@ export default function SearchClient({
     const url = params.toString() ? `${basePath}?${params.toString()}` : basePath
     router.replace(url, { scroll: false })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ceniaDo, router, selectedAmenities, selectedCitySlug, selectedDistrictSlugs, selectedMetroLine, selectedOperator, sort, stanowiskaDo, stanowiskaOd])
+  }, [budgetInput, router, selectedAmenities, selectedCitySlug, selectedDistrictSlugs, selectedMetroLine, selectedOperator, sort, stanowiskaDo, stanowiskaOd])
 
   useEffect(() => {
     if (searchParams.open_contact !== '1' || typeof window === 'undefined') return
@@ -451,12 +453,6 @@ export default function SearchClient({
   const filterLabelItemClass = 'mb-2 block px-1 text-[10px] font-bold uppercase tracking-[0.24em] text-white !opacity-100'
   const filterMenuTextClass =
     'flex w-full items-center justify-between border px-4 py-3 text-left text-[14px] font-normal leading-tight transition-all'
-  const budgetOptions = [
-    { value: '', label: 'Dowolny' },
-    { value: '1500', label: `Do 1 500 ${currency}` },
-    { value: '2500', label: `Do 2 500 ${currency}` },
-    { value: '4000', label: `Do 4 000 ${currency}` },
-  ]
   const sortOptions = [
     { value: '', label: 'Domyślne (A–Z)' },
     { value: 'cena_asc', label: 'Cena: od najniższej' },
@@ -464,7 +460,6 @@ export default function SearchClient({
   ]
   const selectedOperatorLabel = operators.find((op) => op.slug === selectedOperator)?.name || 'Wszyscy'
   const selectedMetroLabel = METRO_LINES.find((line) => line.id === selectedMetroLine)?.name || 'Wszystkie'
-  const selectedBudgetLabel = budgetOptions.find((option) => option.value === ceniaDo)?.label || 'Dowolny'
   const selectedSortLabel = sortOptions.find((option) => option.value === sort)?.label || 'Domyślne (A–Z)'
 
   const filterBar = (
@@ -623,9 +618,9 @@ export default function SearchClient({
         </FilterLabel>
         <div className="flex h-10 w-full items-center gap-2 bg-white px-4">
           <input
-            type="number"
+            type="text"
             placeholder="od"
-            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal text-[#000759] focus:ring-0 placeholder:text-slate-300"
+            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal leading-none text-[#000759] focus:ring-0 focus:outline-none placeholder:text-slate-300 [appearance:textfield]"
             value={stanowiskaOd}
             onChange={(e) => setStanowiskaOd(e.target.value.replace(/\D/g, ''))}
             inputMode="numeric"
@@ -633,9 +628,9 @@ export default function SearchClient({
           />
           <span className="text-slate-300">—</span>
           <input
-            type="number"
+            type="text"
             placeholder="do"
-            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal text-[#000759] focus:ring-0 placeholder:text-slate-300"
+            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal leading-none text-[#000759] focus:ring-0 focus:outline-none placeholder:text-slate-300 [appearance:textfield]"
             value={stanowiskaDo}
             onChange={(e) => setStanowiskaDo(e.target.value.replace(/\D/g, ''))}
             inputMode="numeric"
@@ -644,39 +639,23 @@ export default function SearchClient({
         </div>
       </div>
 
-      <div className={`relative ${filterFieldWrapClass}`}>
-        <FilterLabel tooltip="Budżet oznacza miesięczny budżet za jedno stanowisko pracy." labelClass={filterLabelItemClass}>
+      <div className={filterFieldWrapClass}>
+        <FilterLabel tooltip="Budżet oznacza miesięczny limit za stanowisko pracy. Filtr przelicza się według aktualnie wybranej waluty." labelClass={filterLabelItemClass}>
           Budżet ({currency})
         </FilterLabel>
-        <button type="button" onClick={() => setOpenMenu((value) => (value === 'budget' ? null : 'budget'))} className={filterTriggerClass}>
-          <span className="truncate">{selectedBudgetLabel}</span>
-          <ChevronDown size={15} className={`transition-transform ${openMenu === 'budget' ? 'rotate-180' : ''}`} />
-        </button>
-        {openMenu === 'budget' ? (
-          <div className={`${filterMenuClass} filter-menu-enter`}>
-            <div className="max-h-72 overflow-y-auto overscroll-contain px-3 py-3 space-y-2" data-lenis-prevent>
-              {budgetOptions.map((option) => {
-                const checked = ceniaDo === option.value
-                return (
-                  <button
-                    key={option.value || 'any'}
-                    type="button"
-                    onClick={() => {
-                      setCeniaDo(option.value)
-                      setOpenMenu(null)
-                    }}
-                    className={`${filterMenuTextClass} ${
-                      checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
-                    }`}
-                  >
-                    <span>{option.label}</span>
-                    {checked ? <Check size={14} className="text-[#1C54F4]" /> : null}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ) : null}
+        <div className="flex h-10 w-full items-center gap-3 bg-white px-4">
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="dowolny"
+            value={budgetInput}
+            onChange={(e) => setBudgetInput(e.target.value.replace(/\D/g, ''))}
+            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal leading-none text-[#000759] focus:ring-0 focus:outline-none placeholder:text-slate-300 [appearance:textfield]"
+          />
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.18em] text-[#7b8bb2]">
+            {currency}
+          </span>
+        </div>
       </div>
 
       <div className={`relative ${filterFieldWrapClass}`}>

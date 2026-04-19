@@ -225,15 +225,37 @@ export async function GET(request: NextRequest) {
   `
 
   try {
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: overpassQuery,
-      next: { revalidate: 3600 },
-    })
+    const endpoints = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+    ]
 
-    if (!response.ok) {
-      throw new Error(`Overpass failed with ${response.status}`)
+    let response: Response | null = null
+    let lastError: string | null = null
+
+    for (const endpoint of endpoints) {
+      try {
+        const nextResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: overpassQuery,
+          next: { revalidate: 3600 },
+        })
+
+        if (!nextResponse.ok) {
+          lastError = `Overpass failed with ${nextResponse.status}`
+          continue
+        }
+
+        response = nextResponse
+        break
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : 'Overpass request failed'
+      }
+    }
+
+    if (!response) {
+      throw new Error(lastError || 'Overpass request failed')
     }
 
     const payload = (await response.json()) as { elements?: OverpassElement[] }

@@ -184,11 +184,11 @@ export default function NearbyExplorer({
   }, [visibleFeaturesInView])
 
   const counts = useMemo(() => {
-    return featuresInView.reduce<Record<SurroundingCategory, number>>((acc, feature) => {
+    return features.reduce<Record<SurroundingCategory, number>>((acc, feature) => {
       acc[feature.category] = (acc[feature.category] || 0) + 1
       return acc
     }, { ...EMPTY_COUNTS })
-  }, [featuresInView])
+  }, [features])
 
   useEffect(() => {
     if (!token || !containerRef.current || mapRef.current || typeof latitude !== 'number' || typeof longitude !== 'number') {
@@ -496,6 +496,12 @@ export default function NearbyExplorer({
             <p>Kliknij znaczniki na mapie, aby sprawdzić nazwę punktu, czas dojścia i dostępne linie.</p>
           </div>
         </div>
+
+        {!loading && !failed && features.length === 0 ? (
+          <div className="mt-4 rounded-none border border-[#dbe4f8] bg-[#f8fbff] p-4 text-sm leading-relaxed text-[#5e6d98]">
+            Nie udało się potwierdzić punktów w bezpośrednim otoczeniu tej lokalizacji. Mapa nadal pokazuje samą pozycję biura, a po wysłaniu zapytania doradca może uzupełnić dane ręcznie.
+          </div>
+        ) : null}
       </aside>
 
       <div className="border border-[#dbe4f8] bg-white p-4 shadow-[0_18px_46px_rgba(0,7,89,0.08)]">
@@ -539,6 +545,11 @@ export default function NearbyExplorer({
             {failed ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-center text-[#5e6d98]">
                 Nie udało się pobrać danych o otoczeniu. Spróbuj ponownie za chwilę.
+              </div>
+            ) : null}
+            {!loading && !failed && features.length === 0 ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/75 text-center text-[#5e6d98]">
+                Brak potwierdzonych punktów w promieniu 900 m.
               </div>
             ) : null}
           </div>
