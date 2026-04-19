@@ -443,12 +443,14 @@ export default function SearchClient({
 
   // Compact inline-label filter style — h-10, matches header button scale
   const filterTriggerClass =
-    'flex h-10 w-full items-center justify-between gap-2 bg-white pl-4 pr-3 text-left transition-all duration-200 hover:bg-[#eef3ff]'
+    'flex h-10 w-full items-center justify-between gap-2 bg-white px-4 text-left text-[14px] font-normal leading-none text-[#000759] transition-all duration-200 hover:bg-[#eef3ff]'
   const filterMenuClass =
     'absolute left-0 top-[calc(100%+6px)] z-30 min-w-[300px] border border-[#d8e2fb] bg-white shadow-[0_24px_56px_rgba(0,7,89,0.12)]'
   const filterFieldWrapClass = 'flex flex-col xl:flex-1 xl:min-w-0'
-  const filterLabelClass = 'mb-2 block px-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white'
-  const filterLabelItemClass = 'mb-2 block px-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white'
+  const filterLabelClass = 'mb-2 block px-1 text-[10px] font-bold uppercase tracking-[0.24em] text-white !opacity-100'
+  const filterLabelItemClass = 'mb-2 block px-1 text-[10px] font-bold uppercase tracking-[0.24em] text-white !opacity-100'
+  const filterMenuTextClass =
+    'flex w-full items-center justify-between border px-4 py-3 text-left text-[14px] font-normal leading-tight transition-all'
   const budgetOptions = [
     { value: '', label: 'Dowolny' },
     { value: '1500', label: `Do 1 500 ${currency}` },
@@ -506,7 +508,7 @@ export default function SearchClient({
                   clearCitySelection()
                   setOpenMenu(null)
                 }}
-                className="flex w-full items-center justify-between border border-[#e7edf9] bg-white px-4 py-3 text-left text-[15px] font-medium text-[#000759] transition-all hover:border-[#b7cbff] hover:bg-[#f8fbff]"
+                className="flex w-full items-center justify-between border border-[#e7edf9] bg-white px-4 py-3 text-left text-[14px] font-normal leading-tight text-[#000759] transition-all hover:border-[#b7cbff] hover:bg-[#f8fbff]"
               >
                 <span>Cała Polska</span>
                 {!selectedCitySlug ? <Check size={14} className="text-[#1C54F4]" /> : null}
@@ -521,7 +523,7 @@ export default function SearchClient({
                       setSelectedCitySlug(cityArea.city)
                       setOpenMenu(null)
                     }}
-                    className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                    className={`${filterMenuTextClass} ${
                       checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                     }`}
                   >
@@ -594,7 +596,7 @@ export default function SearchClient({
                     <span className={`flex h-5 w-5 items-center justify-center border ${checked ? 'border-[#1C54F4] bg-[#1C54F4] text-white' : 'border-[#c6d5f8] text-transparent'}`}>
                       <Check size={12} />
                     </span>
-                    <span className="text-[15px] font-medium text-[#000759]">{districtItem.label}</span>
+                    <span className="text-[14px] font-normal text-[#000759]">{districtItem.label}</span>
                   </label>
                 )
               })}
@@ -623,7 +625,7 @@ export default function SearchClient({
           <input
             type="number"
             placeholder="od"
-            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
+            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal text-[#000759] focus:ring-0 placeholder:text-slate-300"
             value={stanowiskaOd}
             onChange={(e) => setStanowiskaOd(e.target.value.replace(/\D/g, ''))}
             inputMode="numeric"
@@ -633,7 +635,7 @@ export default function SearchClient({
           <input
             type="number"
             placeholder="do"
-            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-sm font-bold text-[#000759] focus:ring-0 placeholder:text-slate-300"
+            className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal text-[#000759] focus:ring-0 placeholder:text-slate-300"
             value={stanowiskaDo}
             onChange={(e) => setStanowiskaDo(e.target.value.replace(/\D/g, ''))}
             inputMode="numeric"
@@ -663,7 +665,7 @@ export default function SearchClient({
                       setCeniaDo(option.value)
                       setOpenMenu(null)
                     }}
-                    className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                    className={`${filterMenuTextClass} ${
                       checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                     }`}
                   >
@@ -692,7 +694,7 @@ export default function SearchClient({
                   setSelectedOperator('')
                   setOpenMenu(null)
                 }}
-                className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                className={`${filterMenuTextClass} ${
                   !selectedOperator ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                 }`}
               >
@@ -709,7 +711,7 @@ export default function SearchClient({
                       setSelectedOperator(op.slug)
                       setOpenMenu(null)
                     }}
-                    className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                    className={`${filterMenuTextClass} ${
                       checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                     }`}
                   >
@@ -739,7 +741,7 @@ export default function SearchClient({
                     setSelectedMetroLine('')
                     setOpenMenu(null)
                   }}
-                  className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                  className={`${filterMenuTextClass} ${
                     !selectedMetroLine ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                   }`}
                 >
@@ -756,7 +758,7 @@ export default function SearchClient({
                         setSelectedMetroLine(line.id)
                         setOpenMenu(null)
                       }}
-                      className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                      className={`${filterMenuTextClass} ${
                         checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                       }`}
                     >
@@ -803,7 +805,7 @@ export default function SearchClient({
                       setSort(option.value)
                       setOpenMenu(null)
                     }}
-                    className={`flex w-full items-center justify-between border px-4 py-3 text-left text-[15px] font-medium transition-all ${
+                    className={`${filterMenuTextClass} ${
                       checked ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                     }`}
                   >

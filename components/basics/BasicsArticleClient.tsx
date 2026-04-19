@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Calculator, MapPin, SlidersHorizontal } from 'lucide-react'
+import { ArrowRight, Calculator, ChevronDown, MapPin, SlidersHorizontal } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
@@ -14,9 +14,9 @@ interface BasicsArticleClientProps {
   nextLinks: Array<{ title: string; href: string; description: string }>
 }
 
-function sectionStyle(format: string) {
+function sectionStyle(format: string, variant: 'cards' | 'accordion') {
+  if (variant === 'accordion') return 'space-y-3'
   if (format.includes('table')) return 'grid grid-cols-1 md:grid-cols-2 gap-3'
-  if (format.includes('checklist')) return 'space-y-3'
   if (format.includes('6')) return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3'
   return 'grid grid-cols-1 md:grid-cols-2 gap-3'
 }
@@ -84,20 +84,29 @@ export default function BasicsArticleClient({ topic, nextLinks }: BasicsArticleC
                   </h2>
                   <p className="eyebrow-label text-[10px]">{section.format}</p>
                 </div>
-                <div className={sectionStyle(section.format)}>
-                  {section.items.map((item, itemIndex) => (
-                    <div
-                      key={item}
-                      className={`surface-panel-soft p-5 text-body-strong leading-relaxed ${
-                        section.format.includes('checklist') ? 'flex items-start gap-3' : ''
-                      }`}
-                    >
-                      {section.format.includes('checklist') && (
-                        <span className="text-[#1C54F4] text-sm font-bold">{itemIndex + 1}.</span>
-                      )}
-                      <span>{item}</span>
-                    </div>
-                  ))}
+                <div className={sectionStyle(section.format, section.variant)}>
+                  {section.items.map((item, itemIndex) =>
+                    section.variant === 'accordion' ? (
+                      <details
+                        key={item.title}
+                        className="surface-panel-soft group p-5 text-body-strong leading-relaxed"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-[#000759]">
+                          <span className="flex items-start gap-3">
+                            <span className="text-[#1C54F4] text-sm font-bold">{itemIndex + 1}.</span>
+                            <span>{item.title}</span>
+                          </span>
+                          <ChevronDown size={16} className="shrink-0 text-[#1C54F4] transition-transform duration-200 group-open:rotate-180" />
+                        </summary>
+                        <p className="mt-4 text-body-muted text-sm leading-relaxed">{item.description}</p>
+                      </details>
+                    ) : (
+                      <div key={item.title} className="surface-panel-soft p-5 text-body-strong leading-relaxed">
+                        <p className="mb-3 text-[15px] font-semibold text-[#000759]">{item.title}</p>
+                        <p className="text-body-muted text-sm leading-relaxed">{item.description}</p>
+                      </div>
+                    )
+                  )}
                 </div>
               </article>
             ))}
