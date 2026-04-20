@@ -114,11 +114,13 @@ export async function POST(request: NextRequest) {
             street: String(payloadRecord.address_street),
             postcode: String(payloadRecord.address_postcode || ''),
             city: String(payloadRecord.address_city),
+            fallbackQueries: [row.name ?? '', row.description ?? ''],
           })
 
           payloadRecord.latitude = payloadRecord.latitude ?? geocoded.latitude
           payloadRecord.longitude = payloadRecord.longitude ?? geocoded.longitude
           payloadRecord.address_district = payloadRecord.address_district ?? geocoded.district
+          payloadRecord.address_postcode = payloadRecord.address_postcode || geocoded.postcode || ''
         }
 
         if ((payloadRecord.latitude ?? null) === null || (payloadRecord.longitude ?? null) === null) {

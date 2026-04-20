@@ -59,6 +59,38 @@ function readBoolean(value: unknown) {
   return null
 }
 
+function normalizeImportedCity(value: string | null) {
+  if (!value) return null
+
+  const normalized = slugify(value)
+  const cityMap: Record<string, string> = {
+    warsaw: 'Warszawa',
+    warszawa: 'Warszawa',
+    gdansk: 'Gdańsk',
+    gdańsk: 'Gdańsk',
+    krakow: 'Kraków',
+    kraków: 'Kraków',
+    wroclaw: 'Wrocław',
+    wrocław: 'Wrocław',
+    poznan: 'Poznań',
+    poznań: 'Poznań',
+    lodz: 'Łódź',
+    łódź: 'Łódź',
+    bialystok: 'Białystok',
+    białystok: 'Białystok',
+    bydgoszcz: 'Bydgoszcz',
+    katowice: 'Katowice',
+    lublin: 'Lublin',
+    rzeszow: 'Rzeszów',
+    rzeszów: 'Rzeszów',
+    szczecin: 'Szczecin',
+    gdynia: 'Gdynia',
+    sopot: 'Sopot',
+  }
+
+  return cityMap[normalized] ?? value
+}
+
 export function parseImportWorkbook(buffer: ArrayBuffer) {
   const workbook = XLSX.read(buffer, { type: 'array' })
   const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
@@ -85,7 +117,7 @@ export function parseImportWorkbook(buffer: ArrayBuffer) {
       description_uk: readText(normalized.description_uk),
       address_street: readText(normalized.address_street),
       address_postcode: readText(normalized.address_postcode),
-      address_city: readText(normalized.address_city),
+      address_city: normalizeImportedCity(readText(normalized.address_city)),
       address_district: readText(normalized.address_district),
       latitude: readNumber(normalized.latitude),
       longitude: readNumber(normalized.longitude),

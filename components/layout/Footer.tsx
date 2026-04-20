@@ -14,9 +14,9 @@ export default function Footer() {
             <Image
               src="/images/logo-colliers.png"
               alt="Colliers Flex"
-              width={120}
-              height={120}
-              className="h-10 w-auto"
+              width={1572}
+              height={896}
+              className="h-auto w-[128px]"
             />
             <p className="max-w-xs text-xs font-normal leading-relaxed uppercase tracking-wider text-white/72">
               Profesjonalne doradztwo w zakresie biur serwisowanych i przestrzeni coworkingowych w całej Polsce.

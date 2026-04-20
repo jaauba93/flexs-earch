@@ -39,15 +39,15 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
   const operatorName = readText(formData, 'operator_name')
   const advisorId = readText(formData, 'advisor_id')
   const addressStreet = readText(formData, 'address_street')
-  const addressPostcode = readText(formData, 'address_postcode')
+  let addressPostcode = readText(formData, 'address_postcode')
   const addressCity = readText(formData, 'address_city')
   const amenityIds = formData.getAll('amenity_ids').filter((value): value is string => typeof value === 'string' && value.length > 0)
   let latitude = readNumber(formData, 'latitude')
   let longitude = readNumber(formData, 'longitude')
   let district = readText(formData, 'address_district')
 
-  if (!name || !slug || !operatorName || !addressStreet || !addressPostcode || !addressCity) {
-    return { error: 'Uzupełnij wymagane pola: nazwa, operator, adres, miasto i kod pocztowy.', success: false, savedListingId: null }
+  if (!name || !slug || !operatorName || !addressStreet || !addressCity) {
+    return { error: 'Uzupełnij wymagane pola: nazwa, operator, adres i miasto.', success: false, savedListingId: null }
   }
 
   let operatorRecord = await operatorsTable.select('id, name, slug').ilike('name', operatorName).maybeSingle()
@@ -79,11 +79,20 @@ export async function saveListingAction(_: SaveListingState, formData: FormData)
     latitude = latitude ?? geocoded.latitude
     longitude = longitude ?? geocoded.longitude
     district = district ?? geocoded.district
+    addressPostcode = addressPostcode || geocoded.postcode || ''
   }
 
   if (latitude === null || longitude === null) {
     return {
       error: 'Nie udało się automatycznie ustalić koordynatów. Uzupełnij latitude i longitude lub popraw adres.',
+      success: false,
+      savedListingId: null,
+    }
+  }
+
+  if (!addressPostcode) {
+    return {
+      error: 'Nie udało się ustalić kodu pocztowego na podstawie adresu. Uzupełnij go ręcznie lub popraw adres.',
       success: false,
       savedListingId: null,
     }

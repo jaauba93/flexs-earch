@@ -22,6 +22,18 @@ export default async function HomePage() {
     .order('name')
     .limit(6)
 
+  const listingsForHomepage =
+    featuredListings && featuredListings.length > 0
+      ? featuredListings
+      : (
+          await supabase
+            .from('listings')
+            .select('*, operator:operators(*)')
+            .eq('is_active', true)
+            .order('name')
+            .limit(6)
+        ).data
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return <HomeClient featuredListings={(featuredListings as any) || []} />
+  return <HomeClient featuredListings={(listingsForHomepage as any) || []} />
 }
