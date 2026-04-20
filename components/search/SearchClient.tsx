@@ -41,15 +41,15 @@ function FilterLabel({
   labelClass?: string
 }) {
   return (
-    <div className="mb-1 flex items-center gap-1.5">
-      <span className={`mb-0 block text-[10px] font-bold uppercase tracking-[0.24em] text-white !opacity-100 ${labelClass}`}>{children}</span>
+    <div className="mb-1 flex items-start gap-1.5">
+      <span className={`mb-0 block text-[10px] font-bold uppercase leading-none tracking-[0.24em] text-white !opacity-100 ${labelClass}`}>{children}</span>
       {tooltip ? (
         <span className="group relative inline-flex">
           <button
             type="button"
             tabIndex={0}
             aria-label={`Wyjaśnienie pola ${children}`}
-            className="inline-flex h-4 w-4 items-center justify-center text-white/50 transition-colors hover:text-white focus:text-white"
+            className="mt-[1px] inline-flex h-4 w-4 items-center justify-center text-white/50 transition-colors hover:text-white focus:text-white"
           >
             <CircleHelp size={14} />
           </button>
