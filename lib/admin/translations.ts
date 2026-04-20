@@ -84,15 +84,35 @@ export async function buildTranslationWorkbook() {
   const admin = createAdminClient()
   const support = await detectTranslationSupport()
 
+  const listingSelect = [
+    'id',
+    'slug',
+    'name',
+    'description',
+    ...(support.listings.name_en ? ['name_en'] : []),
+    ...(support.listings.name_uk ? ['name_uk'] : []),
+    ...(support.listings.description_en ? ['description_en'] : []),
+    ...(support.listings.description_uk ? ['description_uk'] : []),
+  ].join(', ')
+
+  const amenitySelect = [
+    'id',
+    'slug',
+    'category',
+    'name',
+    ...(support.amenities.name_en ? ['name_en'] : []),
+    ...(support.amenities.name_uk ? ['name_uk'] : []),
+  ].join(', ')
+
   const [{ data: listings }, { data: amenities }] = await Promise.all([
     admin
       .from('listings')
-      .select('id, slug, name, name_en, name_uk, description, description_en, description_uk')
+      .select(listingSelect)
       .order('address_city')
       .order('name'),
     admin
       .from('amenities')
-      .select('id, slug, category, name, name_en')
+      .select(amenitySelect)
       .order('category')
       .order('sort_order'),
   ])
