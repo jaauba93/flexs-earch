@@ -9,6 +9,7 @@ interface TranslationImportResponse {
     listingsUpdated: number
     amenitiesUpdated: number
     publicUiUpdated: number
+    pageContentUpdated: number
     errors: string[]
   }
   error?: string
@@ -42,7 +43,8 @@ export default function AdminTranslationsForm() {
         <h2 className="mt-2 text-xl font-semibold text-[#000759]">Eksport, tłumaczenie zbiorcze, import</h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-[#51628b]">
           Wyeksportuj aktualne treści do Excela, przetłumacz je zbiorczo poza CMS i zaimportuj z powrotem bez edytowania
-          każdego stringa osobno. Pakiet obejmuje nazwy i opisy ofert, nazwy amenities oraz arkusz pod wspólne teksty UI.
+          każdego stringa osobno. Pakiet obejmuje nazwy i opisy ofert, nazwy amenities, wspólne teksty UI oraz osobny
+          arkusz z contentem strony głównej, podstron, CTA i metadanych SEO.
         </p>
 
         <div className="mt-5 flex flex-wrap gap-3">
@@ -61,8 +63,8 @@ export default function AdminTranslationsForm() {
           <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#7c8ab1]">Import tłumaczeń</p>
           <h3 className="mt-2 text-lg font-semibold text-[#000759]">Załaduj uzupełniony workbook</h3>
           <p className="mt-2 max-w-3xl text-sm text-[#51628b]">
-            Import aktualizuje tylko kolumny tłumaczeniowe. Dane bazowe ofert nie są nadpisywane. Arkusz UI zapisze się do bazy
-            po uruchomieniu migracji SQL dla tabeli `public_site_translations`.
+            Import aktualizuje tylko kolumny tłumaczeniowe. Dane bazowe ofert nie są nadpisywane. Arkusze UI i page content
+            zapisują się do bazy po uruchomieniu migracji SQL dla tabeli `public_site_translations`.
           </p>
         </div>
 
@@ -91,7 +93,8 @@ export default function AdminTranslationsForm() {
         <ul className="mt-4 space-y-2 text-sm leading-7 text-[#51628b]">
           <li>Arkusz `listings_translations`: nazwy i opisy ofert w PL / EN / UK.</li>
           <li>Arkusz `amenities_translations`: nazwy udogodnień w PL / EN / UK.</li>
-          <li>Arkusz `public_ui_translations`: wspólne stringi interfejsu do dalszego podpięcia pod DB-backed i18n.</li>
+          <li>Arkusz `public_ui_translations`: wspólne stringi interfejsu i elementów nawigacyjnych.</li>
+          <li>Arkusz `page_content_translations`: treści home, przewodnika, podstaw flex, raportów, polityk, formularzy i metadanych.</li>
         </ul>
       </section>
 
@@ -103,7 +106,7 @@ export default function AdminTranslationsForm() {
               {result.error}
             </p>
           ) : result.summary ? (
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <div className="mt-4 grid gap-4 md:grid-cols-4">
               <div className="rounded-[18px] border border-[#dbe6fa] bg-white p-4">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#7b8bb2]">Oferty</p>
                 <p className="mt-2 text-3xl font-semibold text-[#000759]">{result.summary.listingsUpdated}</p>
@@ -115,6 +118,10 @@ export default function AdminTranslationsForm() {
               <div className="rounded-[18px] border border-[#dbe6fa] bg-white p-4">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#7b8bb2]">UI / wspólne teksty</p>
                 <p className="mt-2 text-3xl font-semibold text-[#000759]">{result.summary.publicUiUpdated}</p>
+              </div>
+              <div className="rounded-[18px] border border-[#dbe6fa] bg-white p-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#7b8bb2]">Page content</p>
+                <p className="mt-2 text-3xl font-semibold text-[#000759]">{result.summary.pageContentUpdated}</p>
               </div>
               {result.summary.errors.length > 0 ? (
                 <div className="md:col-span-3 rounded-[18px] border border-[#ffe1b2] bg-[#fff8ed] p-4">

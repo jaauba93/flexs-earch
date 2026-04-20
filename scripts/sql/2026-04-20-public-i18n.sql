@@ -1,5 +1,12 @@
 -- Colliers Flex — public i18n foundation for bulk export/import
--- Run in Supabase SQL editor before importing public_ui_translations and amenity name_uk.
+-- Run in Supabase SQL editor before importing listings_translations,
+-- amenities_translations, public_ui_translations and page_content_translations.
+
+ALTER TABLE listings
+  ADD COLUMN IF NOT EXISTS name_en text,
+  ADD COLUMN IF NOT EXISTS name_uk text,
+  ADD COLUMN IF NOT EXISTS description_en text,
+  ADD COLUMN IF NOT EXISTS description_uk text;
 
 ALTER TABLE amenities
   ADD COLUMN IF NOT EXISTS name_uk text;

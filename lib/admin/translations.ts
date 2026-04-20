@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publicUiMessages, type PublicLocale } from '@/lib/i18n/messages'
+import { getStaticPageContentEntries } from '@/lib/i18n/contentCatalog'
 
 type TranslationSupport = {
   listings: {
@@ -20,6 +21,7 @@ export interface TranslationImportSummary {
   listingsUpdated: number
   amenitiesUpdated: number
   publicUiUpdated: number
+  pageContentUpdated: number
   errors: string[]
 }
 
@@ -164,6 +166,7 @@ export async function buildTranslationWorkbook() {
   const flattenedPl = flattenMessages(publicUiMessages.pl)
   const flattenedEn = flattenMessages(publicUiMessages.en)
   const flattenedUk = flattenMessages(publicUiMessages.uk)
+  const staticPageContent = getStaticPageContentEntries()
   const publicUiRows = Object.keys(flattenedPl)
     .sort()
     .map((key) => {
@@ -173,6 +176,20 @@ export async function buildTranslationWorkbook() {
         value_pl: override?.pl || flattenedPl[key] || '',
         value_en: override?.en || flattenedEn[key] || '',
         value_uk: override?.uk || flattenedUk[key] || '',
+      }
+    })
+
+  const pageContentRows = staticPageContent
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .map((item) => {
+      const override = publicUiOverrides.get(item.key)
+      return {
+        key: item.key,
+        group: item.group,
+        route: item.route,
+        value_pl: override?.pl || item.value_pl || '',
+        value_en: override?.en || '',
+        value_uk: override?.uk || '',
       }
     })
 
@@ -190,6 +207,10 @@ export async function buildTranslationWorkbook() {
       purpose: 'Wspólne stringi interfejsu. Import zapisze je do bazy po uruchomieniu migracji SQL dla public_site_translations.',
     },
     {
+      sheet: 'page_content_translations',
+      purpose: 'Treści strony głównej, podstron, polityk, części CTA i metadata/SEO. To jest główny arkusz do zbiorczego tłumaczenia contentu.',
+    },
+    {
       sheet: 'status',
       purpose: support.publicUiTable
         ? 'Tabela public_site_translations jest dostępna i może przyjmować import.'
@@ -200,6 +221,7 @@ export async function buildTranslationWorkbook() {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(listingRows), 'listings_translations')
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(amenityRows), 'amenities_translations')
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(publicUiRows), 'public_ui_translations')
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(pageContentRows), 'page_content_translations')
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(instructionsRows), 'instructions')
 
   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
@@ -212,11 +234,13 @@ export async function importTranslationWorkbook(buffer: ArrayBuffer): Promise<Tr
   const listingRows = normalizeSheetRows(workbook.Sheets.listings_translations)
   const amenityRows = normalizeSheetRows(workbook.Sheets.amenities_translations)
   const publicUiRows = normalizeSheetRows(workbook.Sheets.public_ui_translations)
+  const pageContentRows = normalizeSheetRows(workbook.Sheets.page_content_translations)
 
   const summary: TranslationImportSummary = {
     listingsUpdated: 0,
     amenitiesUpdated: 0,
     publicUiUpdated: 0,
+    pageContentUpdated: 0,
     errors: [],
   }
 
@@ -293,6 +317,30 @@ export async function importTranslationWorkbook(buffer: ArrayBuffer): Promise<Tr
       }
 
       summary.publicUiUpdated += 1
+    }
+
+    for (let index = 0; index < pageContentRows.length; index += 1) {
+      const row = pageContentRows[index]
+      const key = String(row.key || '').trim()
+      if (!key) continue
+
+      const payload = {
+        key,
+        value_pl: String(row.value_pl || '').trim() || null,
+        value_en: String(row.value_en || '').trim() || null,
+        value_uk: String(row.value_uk || '').trim() || null,
+      }
+
+      const { error } = await (admin as any)
+        .from('public_site_translations')
+        .upsert(payload, { onConflict: 'key' })
+
+      if (error) {
+        summary.errors.push(`Page content row ${index + 2}: ${error.message}`)
+        continue
+      }
+
+      summary.pageContentUpdated += 1
     }
   }
 

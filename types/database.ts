@@ -35,8 +35,12 @@ export interface Database {
           operator_id: string
           advisor_id: string | null
           name: string
+          name_en: string | null
+          name_uk: string | null
           slug: string
           description: string | null
+          description_en: string | null
+          description_uk: string | null
           address_street: string
           address_postcode: string
           address_city: string
@@ -75,6 +79,7 @@ export interface Database {
           id: string
           name: string
           name_en: string | null
+          name_uk: string | null
           slug: string
           category: 'space' | 'operator' | 'building'
           icon: string | null
