@@ -95,7 +95,7 @@ export default function AdminImportForm() {
                 ['address_district / latitude / longitude', 'Można wpisać ręcznie, ale CMS spróbuje też uzupełnić je automatycznie na podstawie adresu.'],
                 ['amenity__slug', 'Każde udogodnienie ma własną kolumnę typu `tak/nie` w pliku template.'],
                 ['is_active / is_featured', 'Flagi publikacji. Obsługa `tak/nie`, `true/false`, `1/0`.'],
-                ['name_en / name_uk / description_en / description_uk', 'Kolumny pod przyszłe tłumaczenia treści publicznych.'],
+                ['name_en / name_uk / description_en / description_uk', 'Kolumny tłumaczeniowe dla ofert. Do wsadowej pracy wygodniej użyj sekcji Tłumaczenia.'],
               ].map(([label, description]) => (
                 <tr key={label} className="border-b border-[#eef3fb] last:border-b-0">
                   <td className="px-3 py-3 font-mono text-[13px]">{label}</td>

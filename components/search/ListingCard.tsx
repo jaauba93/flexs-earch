@@ -4,8 +4,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPricePreview } from '@/lib/currency/currency'
 import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
+import { localizeField } from '@/lib/i18n/localize'
+import { getPublicMessage } from '@/lib/i18n/runtime'
 import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator } from '@/types/database'
 
@@ -19,10 +22,16 @@ interface ListingCardProps {
 
 export default function ListingCard({ listing, highlighted, selectedWorkstationsFrom = null, selectedWorkstationsTo = null }: ListingCardProps) {
   const { addItem, removeItem, isInBasket, mounted } = useBasketContext()
+  const { locale } = useLocaleContext()
   const { currency, rates } = useCurrencyContext()
   const inBasket = mounted && isInBasket(listing.id)
   const missingPriceTooltip =
-    'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
+    locale === 'pl'
+      ? 'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
+      : locale === 'en'
+        ? 'We do not have an up-to-date rate for this listing yet. Send an enquiry and a Colliers advisor will confirm it with the operator.'
+        : 'Наразі ми ще не маємо актуальної ставки для цієї пропозиції. Надішліть запит, і консультант Colliers уточнить її в оператора.'
+  const listingName = localizeField(listing, 'name', locale) ?? listing.name
 
   const citySlug = slugify(listing.address_city)
   const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
@@ -40,17 +49,26 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
   }
 
   const pricePerDeskLabel = listing.price_desk_private
-    ? formatPricePreview(listing.price_desk_private, currency, rates).replace(' / stanowisko / miesiąc', '')
+    ? formatPricePreview(listing.price_desk_private, currency, rates, locale).replace(
+        locale === 'pl' ? ' / stanowisko / miesiąc' : locale === 'en' ? ' / desk / month' : ' / місце / міс.',
+        ''
+      )
     : null
 
   const totalPriceFromLabel =
     listing.price_desk_private && selectedWorkstationsFrom
-      ? formatPricePreview(listing.price_desk_private * selectedWorkstationsFrom, currency, rates).replace(' / stanowisko / miesiąc', '')
+      ? formatPricePreview(listing.price_desk_private * selectedWorkstationsFrom, currency, rates, locale).replace(
+          locale === 'pl' ? ' / stanowisko / miesiąc' : locale === 'en' ? ' / desk / month' : ' / місце / міс.',
+          ''
+        )
       : null
 
   const totalPriceToLabel =
     listing.price_desk_private && selectedWorkstationsTo
-      ? formatPricePreview(listing.price_desk_private * selectedWorkstationsTo, currency, rates).replace(' / stanowisko / miesiąc', '')
+      ? formatPricePreview(listing.price_desk_private * selectedWorkstationsTo, currency, rates, locale).replace(
+          locale === 'pl' ? ' / stanowisko / miesiąc' : locale === 'en' ? ' / desk / month' : ' / місце / міс.',
+          ''
+        )
       : null
 
   const totalPriceRows = [
@@ -146,19 +164,19 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
             className="text-[#000759] leading-tight group-hover:text-[#1C54F4] transition-colors duration-200"
             style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '0.9rem' }}
           >
-            {listing.name}
+            {listingName}
           </h3>
         </div>
 
         {/* Bottom — price + actions */}
         <div className="mt-2 border-t border-[#edf2f9] pt-3">
           <div className="mb-2">
-            <p className="mb-0.5 text-[9px] font-bold uppercase text-[#7d8cb4]" style={{ letterSpacing: '0.14em' }}>Cena od</p>
+            <p className="mb-0.5 text-[9px] font-bold uppercase text-[#7d8cb4]" style={{ letterSpacing: '0.14em' }}>{getPublicMessage(locale, 'listingCard.priceFrom')}</p>
             <p className="font-bold text-[#000759] leading-none" style={{ fontSize: '0.95rem' }}>
               {pricePerDeskLabel ? (
-                <>{pricePerDeskLabel} <span className="text-[10px] font-normal text-[#7d8cb4]">/ st. / mies.</span></>
+                <>{pricePerDeskLabel} <span className="text-[10px] font-normal text-[#7d8cb4]">{getPublicMessage(locale, 'listingCard.perDeskShort')}</span></>
               ) : (
-                <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+                <UnavailableValueTooltip value={getPublicMessage(locale, 'listingCard.onRequest')} tooltip={missingPriceTooltip} />
               )}
             </p>
             {totalPriceRows.length > 0 ? (
@@ -185,14 +203,14 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
                     : 'border-[#d9e3f5] text-[#56648F] hover:border-[#1C54F4] hover:text-[#1C54F4]'
                 }`}
                 style={{ letterSpacing: '0.12em' }}
-              >
+                >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   {inBasket
                     ? <><line x1="5" y1="12" x2="19" y2="12"/></>
                     : <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>
                   }
                 </svg>
-                {inBasket ? 'Usuń' : 'Porównaj'}
+                {inBasket ? getPublicMessage(locale, 'listingCard.remove') : getPublicMessage(locale, 'listingCard.compare')}
               </button>
 
               <Link
@@ -200,7 +218,7 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
                 className="inline-flex items-center gap-1 border border-[#d9e3f5] px-3 py-2 text-[9px] font-bold uppercase text-[#000759] transition-colors hover:border-[#1C54F4] hover:text-[#1C54F4]"
                 style={{ letterSpacing: '0.12em' }}
               >
-                Szczegóły
+                {getPublicMessage(locale, 'listingCard.details')}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>

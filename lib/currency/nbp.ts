@@ -10,35 +10,15 @@ type NbpTable = {
   rates: NbpRate[]
 }
 
-function todayInWarsaw() {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Warsaw',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date())
-
-  const year = parts.find((part) => part.type === 'year')?.value
-  const month = parts.find((part) => part.type === 'month')?.value
-  const day = parts.find((part) => part.type === 'day')?.value
-
-  if (!year || !month || !day) {
-    return new Date().toISOString().slice(0, 10)
-  }
-
-  return `${year}-${month}-${day}`
-}
-
 function pickTable(tables: NbpTable[]) {
-  const today = todayInWarsaw()
   const sorted = [...tables].sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate))
-  return sorted.find((table) => table.effectiveDate < today) ?? sorted[0]
+  return sorted[0]
 }
 
 export async function fetchNbpRates() {
   const response = await fetch(NBP_TABLE_A_LAST_2_URL, {
     headers: { Accept: 'application/json' },
-    next: { revalidate: 60 * 60 },
+    next: { revalidate: 60 * 60 * 12 },
   })
 
   if (!response.ok) {

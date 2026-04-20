@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BarChart3, BriefcaseBusiness, FileSpreadsheet, LogOut, PencilRuler } from 'lucide-react'
+import { BarChart3, BriefcaseBusiness, FileSpreadsheet, Globe2, LogOut, PencilRuler } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { logoutAction } from '@/app/admin/actions'
 
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/admin/listings', label: 'Oferty', icon: PencilRuler },
   { href: '/admin/advisors', label: 'Doradcy', icon: BriefcaseBusiness },
   { href: '/admin/flex-kalkulator', label: 'Kalkulator flex', icon: BarChart3 },
+  { href: '/admin/translations', label: 'Tłumaczenia', icon: Globe2 },
   { href: '/admin/import', label: 'Import', icon: FileSpreadsheet },
 ]
 

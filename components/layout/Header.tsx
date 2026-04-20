@@ -6,6 +6,9 @@ import Image from 'next/image'
 import { ChevronDown, Menu, X, ArrowRight } from 'lucide-react'
 import BasketDropdown from '@/components/comparator/BasketDropdown'
 import CurrencySwitcher from '@/components/layout/CurrencySwitcher'
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getPublicMessage } from '@/lib/i18n/runtime'
 
 const cities = [
   { label: 'Warszawa', slug: 'warszawa' },
@@ -25,11 +28,11 @@ interface HeaderProps {
 }
 
 const guideBasics = [
-  { label: 'Czym są biura elastyczne', href: '/podstawy-flex/czym-sa-biura-elastyczne' },
-  { label: 'Modele biur elastycznych', href: '/podstawy-flex/modele-biur-elastycznych' },
-  { label: 'Kiedy warto wybrać flex', href: '/podstawy-flex/kiedy-warto-wybrac-flex' },
-  { label: 'Flex a najem tradycyjny', href: '/podstawy-flex/flex-a-najem-tradycyjny' },
-  { label: 'Jak wybrać biuro flex', href: '/podstawy-flex/jak-wybrac-biuro-flex' },
+  { key: 'what-is-flex', label: 'Czym są biura elastyczne', href: '/podstawy-flex/czym-sa-biura-elastyczne' },
+  { key: 'models', label: 'Modele biur elastycznych', href: '/podstawy-flex/modele-biur-elastycznych' },
+  { key: 'when-flex', label: 'Kiedy warto wybrać flex', href: '/podstawy-flex/kiedy-warto-wybrac-flex' },
+  { key: 'flex-vs-traditional', label: 'Flex a najem tradycyjny', href: '/podstawy-flex/flex-a-najem-tradycyjny' },
+  { key: 'choose-flex', label: 'Jak wybrać biuro flex', href: '/podstawy-flex/jak-wybrac-biuro-flex' },
 ]
 
 const guideCities = [
@@ -43,15 +46,16 @@ const guideCities = [
 ]
 
 const guideTools = [
-  { label: 'Kalkulator kosztów', href: '/kalkulator-flex' },
-  { label: 'Dobierz model biura', href: '/porownaj#porownanie-modeli' },
-  { label: 'Baza wiedzy', href: '/podstawy-flex' },
+  { key: 'calculator', label: 'Kalkulator kosztów', href: '/kalkulator-flex' },
+  { key: 'wizard', label: 'Dobierz model biura', href: '/porownaj#porownanie-modeli' },
+  { key: 'knowledge', label: 'Baza wiedzy', href: '/podstawy-flex' },
 ]
 
 const menuMotionClass =
   'transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]'
 
 export default function Header({ onOpenForm, onOpenWizard, transparent = false, overlay = false }: HeaderProps) {
+  const { locale } = useLocaleContext()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileSection, setMobileSection] = useState<'search' | 'guide' | 'why' | null>(null)
@@ -95,6 +99,16 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
       closeTimerRef.current = null
     }, 300)
   }
+
+  const localizedGuideTools = guideTools.map((item) => ({
+    ...item,
+    label:
+      item.key === 'calculator'
+        ? getPublicMessage(locale, 'header.costCalculator')
+        : item.key === 'wizard'
+          ? getPublicMessage(locale, 'header.officeModel')
+          : getPublicMessage(locale, 'header.knowledgeBase'),
+  }))
 
   return (
     <header
@@ -143,7 +157,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                 className="nav-link active flex items-center gap-1.5 h-full border-b-2 border-[#1C54F4] opacity-100"
                 style={transparent ? { color: '#ffffff' } : undefined}
               >
-                Wyszukaj
+                {getPublicMessage(locale, 'header.search')}
                 <ChevronDown
                   size={13}
                   className={`${menuMotionClass} ${activeMenu === 'search' ? 'rotate-180' : ''}`}
@@ -208,7 +222,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                 className={`nav-link h-full flex items-center gap-1.5 ${activeMenu === 'guide' ? 'opacity-100 border-b-2 border-[#1C54F4]' : ''}`}
                 style={transparent ? { color: '#ffffff', opacity: activeMenu === 'guide' ? 1 : 0.9 } : undefined}
               >
-                Przewodnik flex
+                {getPublicMessage(locale, 'header.guide')}
                 <ChevronDown
                   size={13}
                   className={`${menuMotionClass} ${activeMenu === 'guide' ? 'rotate-180' : ''}`}
@@ -221,7 +235,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               className="nav-link h-full flex items-center"
               style={transparent ? { color: '#ffffff', opacity: 0.9 } : undefined}
             >
-              Dlaczego z Colliers
+              {getPublicMessage(locale, 'header.whyColliers')}
             </button>
           </nav>
         </div>
@@ -229,9 +243,10 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
         {/* Right: Compare + CTA */}
         <div className="hidden lg:flex items-center gap-6">
           <BasketDropdown onOpenForm={onOpenForm} variant="desktop" transparent={transparent} />
+          <LanguageSwitcher transparent={transparent} />
           <CurrencySwitcher transparent={transparent} />
           <button onClick={onOpenForm} className={transparent ? 'btn-primary-bright' : 'btn-primary'}>
-            Otrzymaj ofertę
+            {getPublicMessage(locale, 'header.getOffer')}
           </button>
         </div>
 
@@ -255,6 +270,10 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
           style={{ boxShadow: '0 10px 34px rgba(0,7,89,0.12)' }}
         >
           <div className="px-8 py-5 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <LanguageSwitcher />
+              <CurrencySwitcher />
+            </div>
             <button
               type="button"
               onClick={() => setMobileSection((current) => (current === 'search' ? null : 'search'))}
@@ -262,13 +281,13 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               style={{ letterSpacing: '0.14em' }}
               aria-expanded={mobileSection === 'search'}
             >
-              <span>Wyszukaj</span>
+              <span>{getPublicMessage(locale, 'header.search')}</span>
               <ChevronDown size={14} className={`transition-transform ${mobileSection === 'search' ? 'rotate-180' : ''}`} />
             </button>
             {mobileSection === 'search' && (
               <div className="pl-3 pr-1 pb-2">
                 <div className="eyebrow-label mb-3 text-[9px]">
-                  Biura w Polsce
+                  {getPublicMessage(locale, 'header.officesInPoland')}
                 </div>
                 <div className="flex flex-col">
                   {cities.map((c) => (
@@ -289,7 +308,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                   className="mt-2 inline-flex text-[11px] font-bold uppercase text-[#1C54F4]"
                   style={{ letterSpacing: '0.14em' }}
                 >
-                  Wszystkie lokalizacje →
+                  {getPublicMessage(locale, 'header.allLocations')} →
                 </Link>
               </div>
             )}
@@ -301,7 +320,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               style={{ letterSpacing: '0.14em' }}
               aria-expanded={mobileSection === 'guide'}
             >
-              <span>Przewodnik flex</span>
+              <span>{getPublicMessage(locale, 'header.guide')}</span>
               <ChevronDown size={14} className={`transition-transform ${mobileSection === 'guide' ? 'rotate-180' : ''}`} />
             </button>
             {mobileSection === 'guide' && (
@@ -346,13 +365,13 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
 
                 <div>
                   <p className="eyebrow-label mb-3 text-[9px]">
-                    Narzędzia
+                    {locale === 'pl' ? 'Narzędzia' : locale === 'en' ? 'Tools' : 'Інструменти'}
                   </p>
                   <div className="flex flex-col gap-1">
-                    {guideTools.map((item) =>
-                      item.label === 'Dobierz model biura' && onOpenWizard ? (
+                    {localizedGuideTools.map((item) =>
+                      item.key === 'wizard' && onOpenWizard ? (
                         <button
-                          key={item.label}
+                          key={item.key}
                           type="button"
                           onClick={() => { onOpenWizard(); setMobileOpen(false) }}
                           className="py-1.5 pl-0 text-left text-[11px] font-bold uppercase text-[#000759] hover:text-[#1C54F4] transition-colors before:content-none"
@@ -362,7 +381,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                         </button>
                       ) : (
                         <Link
-                          key={item.label}
+                          key={item.key}
                           href={item.href}
                           onClick={() => setMobileOpen(false)}
                           className="py-1.5 text-[11px] font-bold uppercase text-[#000759] hover:text-[#1C54F4] transition-colors"
@@ -384,7 +403,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               style={{ letterSpacing: '0.14em' }}
               aria-expanded={mobileSection === 'why'}
             >
-              <span>Dlaczego z Colliers</span>
+              <span>{getPublicMessage(locale, 'header.whyColliers')}</span>
               <ChevronDown size={14} className={`transition-transform ${mobileSection === 'why' ? 'rotate-180' : ''}`} />
             </button>
             {mobileSection === 'why' && (
@@ -396,7 +415,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               onClick={() => { onOpenForm?.(); setMobileOpen(false) }}
               className="btn-primary mt-4 w-full justify-center"
             >
-              Otrzymaj ofertę
+              {getPublicMessage(locale, 'header.getOffer')}
             </button>
           </div>
         </div>
@@ -435,9 +454,9 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                     Podstawy flex
                   </p>
                   <div className="space-y-5">
-                    {guideBasics.map((item) => (
+                  {guideBasics.map((item) => (
                       <Link
-                        key={item.label}
+                        key={item.key}
                         href={item.href}
                         className="block text-left text-[0.98rem] leading-snug text-[#222c4d] hover:text-[#1C54F4] transition-colors"
                       >
@@ -472,10 +491,10 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                     Narzędzia
                   </p>
                   <div className="space-y-5">
-                    {guideTools.map((item) => (
-                      item.label === 'Dobierz model biura' && onOpenWizard ? (
+                    {localizedGuideTools.map((item) => (
+                      item.key === 'wizard' && onOpenWizard ? (
                         <button
-                          key={item.label}
+                          key={item.key}
                           type="button"
                           onClick={() => { onOpenWizard(); setActiveMenu(null) }}
                           className="block text-left text-[0.98rem] leading-snug text-[#222c4d] hover:text-[#1C54F4] transition-colors"
@@ -484,7 +503,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                         </button>
                       ) : (
                         <Link
-                          key={item.label}
+                          key={item.key}
                           href={item.href}
                           className="block text-left text-[0.98rem] leading-snug text-[#222c4d] hover:text-[#1C54F4] transition-colors"
                         >

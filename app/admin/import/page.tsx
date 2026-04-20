@@ -9,7 +9,7 @@ export default async function AdminImportPage() {
     <AdminShell
       user={user}
       title="Import CSV / Excel"
-      subtitle="Ta sekcja zastępuje ręczne grzebanie w Supabase. Możesz wsadowo dodawać, aktualizować i usuwać oferty, a format jest przygotowany też pod przyszłe tłumaczenia treści publicznych."
+      subtitle="Ta sekcja zastępuje ręczne grzebanie w Supabase. Możesz wsadowo dodawać, aktualizować i usuwać oferty, a osobny moduł Tłumaczenia obsługuje zbiorczy eksport / import treści EN i UK."
     >
       <AdminImportForm />
     </AdminShell>

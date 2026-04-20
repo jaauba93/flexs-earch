@@ -8,9 +8,11 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
-import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPriceShort } from '@/lib/currency/currency'
+import { localizeField } from '@/lib/i18n/localize'
+import { getPublicMessage } from '@/lib/i18n/runtime'
 import { slugify } from '@/lib/utils/slugify'
 import { CITY_OPTIONS, DISTRICT_OPTIONS, METRO_OPTIONS, findSearchOption, getSearchHref, normalizeSearchText } from '@/lib/search/locations'
 import type { Listing, Operator } from '@/types/database'
@@ -34,9 +36,8 @@ const TRANSITION_MS = 900
 const TRANSITION_EASING = 'cubic-bezier(0.77, 0, 0.175, 1)'
 
 export default function HomeClient({ featuredListings }: HomeClientProps) {
+  const { locale } = useLocaleContext()
   const { currency, rates } = useCurrencyContext()
-  const missingPriceTooltip =
-    'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
   const [searchValue, setSearchValue] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -94,7 +95,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
   const featuredListingSuggestions = featuredListings.slice(0, 3).map((listing) => ({
     key: `listing-${listing.id}`,
-    label: listing.name,
+    label: localizeField(listing, 'name', locale) ?? listing.name,
     href: `/biura-serwisowane/${slugify(listing.address_city)}/${listing.address_district ? slugify(listing.address_district) : '_'}/${listing.slug}`,
   }))
 
@@ -546,19 +547,19 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
             <div className="flex flex-col md:flex-row justify-between items-end mb-20" data-reveal>
               <div>
-                <p className="overline mb-5">Wybrane lokalizacje</p>
+                <p className="overline mb-5">{getPublicMessage(locale, 'home.selectedLocations')}</p>
                 <h2
                   className="text-[#000759] leading-tight"
                   style={{ fontFamily: 'var(--font-sans)', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 3.5rem)' }}
                 >
-                  Polecane biura<br />
-                  <span style={{ fontWeight: 700 }}>serwisowane</span>
+                  {getPublicMessage(locale, 'home.featuredTitleLight')}<br />
+                  <span style={{ fontWeight: 700 }}>{getPublicMessage(locale, 'home.featuredTitleStrong')}</span>
                 </h2>
               </div>
               <div className="flex flex-col items-end gap-3 mt-6 md:mt-0">
                 <div className="h-px w-24 bg-gradient-to-l from-[#1C54F4] to-transparent" />
                 <Link href="/biura-serwisowane" className="cta-link">
-                  Zobacz wszystkie →
+                  {getPublicMessage(locale, 'home.seeAll')} →
                 </Link>
               </div>
             </div>
@@ -568,6 +569,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                 const citySlug = slugify(listing.address_city)
                 const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
                 const href = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
+                const listingName = localizeField(listing, 'name', locale) ?? listing.name
                 return (
                   <Link
                     key={listing.id}
@@ -603,16 +605,18 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                           className="text-white leading-snug group-hover:text-[#C3E6FF] transition-colors duration-300"
                           style={{ fontFamily: 'var(--font-sans)', fontWeight: 300, fontSize: '1.25rem' }}
                         >
-                          {listing.name}
+                          {listingName}
                         </h3>
                         <div className="mt-3 flex items-center justify-between">
                           {listing.price_desk_private && (
                             <span className="text-[#4D93FF] font-bold text-sm">
-                              {formatPriceShort(listing.price_desk_private, currency, rates)}
+                              {formatPriceShort(listing.price_desk_private, currency, rates, locale)}
                             </span>
                           )}
                           {!listing.price_desk_private && (
-                            <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+                            <span className="select-none blur-[2px] text-[#1C54F4] opacity-80">
+                              {getPublicMessage(locale, 'home.onRequest')}
+                            </span>
                           )}
                           <span className="text-white/40 text-[10px] uppercase tracking-widest font-bold ml-auto">
                             {listing.operator.name}

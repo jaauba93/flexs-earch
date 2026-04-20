@@ -10,6 +10,9 @@ import { formatPricePreview, type CurrencyCode, type CurrencyRates } from '@/lib
 import { slugify } from '@/lib/utils/slugify'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import type { BasketItem } from '@/lib/hooks/useBasket'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getPublicMessage } from '@/lib/i18n/runtime'
+import { localizeField } from '@/lib/i18n/localize'
 
 export interface MapBounds {
   north: number
@@ -63,11 +66,13 @@ function buildPopupContent(
     onToggleBasket: (wasInBasket: boolean) => void
     currency: CurrencyCode
     rates: Pick<CurrencyRates, 'EUR' | 'USD' | 'GBP'> | null
+    locale: 'pl' | 'en' | 'uk'
   }
 ): HTMLDivElement {
   const citySlug = slugify(listing.address_city)
   const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
   const detailsHref = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
+  const listingName = localizeField(listing, 'name', options.locale) ?? listing.name
   const root = document.createElement('div')
   root.style.fontFamily = "'Open Sans', sans-serif"
   root.style.minWidth = '180px'
@@ -75,7 +80,7 @@ function buildPopupContent(
   root.style.animation = 'mapbox-popup-enter 180ms ease-out'
 
   const title = document.createElement('p')
-  title.textContent = listing.name
+  title.textContent = listingName
   title.style.fontWeight = '700'
   title.style.color = '#000759'
   title.style.margin = '0 0 3px'
@@ -92,10 +97,18 @@ function buildPopupContent(
 
   if (listing.price_desk_private) {
     const price = document.createElement('p')
-    price.textContent = formatPricePreview(listing.price_desk_private, options.currency, options.rates).replace(
-      ' / stanowisko / miesiąc',
-      ' / mies.'
-    )
+    const longSuffix =
+      options.locale === 'pl'
+        ? ' / stanowisko / miesiąc'
+        : options.locale === 'en'
+          ? ' / desk / month'
+          : ' / місце / міс.'
+    price.textContent = formatPricePreview(
+      listing.price_desk_private,
+      options.currency,
+      options.rates,
+      options.locale
+    ).replace(longSuffix, getPublicMessage(options.locale, 'listingCard.perDeskShort'))
     price.style.color = '#1C54F4'
     price.style.margin = '0 0 10px'
     price.style.fontSize = '12px'
@@ -111,7 +124,7 @@ function buildPopupContent(
 
   const detailsLink = document.createElement('a')
   detailsLink.href = detailsHref
-  detailsLink.textContent = 'Szczegóły →'
+  detailsLink.textContent = getPublicMessage(options.locale, 'listingCard.detailsArrow')
   detailsLink.style.display = 'inline-block'
   detailsLink.style.fontSize = '10px'
   detailsLink.style.fontWeight = '700'
@@ -124,7 +137,9 @@ function buildPopupContent(
 
   const compareLink = document.createElement('button')
   compareLink.type = 'button'
-  compareLink.textContent = options.inBasket ? 'Usuń z porównywarki →' : 'Porównaj →'
+  compareLink.textContent = options.inBasket
+    ? getPublicMessage(options.locale, 'listingCard.removeArrow')
+    : getPublicMessage(options.locale, 'listingCard.compareArrow')
   compareLink.style.display = 'inline-block'
   compareLink.style.fontSize = '10px'
   compareLink.style.fontWeight = '700'
@@ -148,8 +163,8 @@ function buildPopupContent(
 
   const hint = document.createElement('p')
   hint.textContent = options.inBasket
-    ? 'Kliknij, aby usunąć z porównywarki.'
-    : 'Kliknij, aby dodać do porównywarki.'
+    ? getPublicMessage(options.locale, 'listingCard.removeHint')
+    : getPublicMessage(options.locale, 'listingCard.addHint')
   hint.style.width = '100%'
   hint.style.margin = '2px 0 0'
   hint.style.fontSize = '10px'
@@ -227,6 +242,7 @@ export default function MapView({
   onToggleMetroLines,
   showOverlayControls = true,
 }: MapViewProps) {
+  const { locale } = useLocaleContext()
   const { currency, rates } = useCurrencyContext()
   const { items, addItem, removeItem, isInBasket, mounted } = useBasketContext()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -249,6 +265,7 @@ export default function MapView({
       inBasket,
       currency,
       rates,
+      locale,
       onToggleBasket: (wasInBasket) => {
         const basketItem = toBasketItem(listing)
         if (wasInBasket) {

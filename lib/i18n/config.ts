@@ -1,9 +1,8 @@
-export const PUBLIC_SITE_LOCALES = ['pl', 'en', 'uk'] as const
-
-export const PUBLIC_SITE_LOCALE_LABELS: Record<(typeof PUBLIC_SITE_LOCALES)[number], string> = {
-  pl: 'Polski',
-  en: 'English',
-  uk: 'Українська',
-}
-
-export const DEFAULT_PUBLIC_LOCALE = 'pl'
+export {
+  DEFAULT_PUBLIC_LOCALE,
+  PUBLIC_SITE_LOCALES,
+  PUBLIC_SITE_LOCALE_LABELS,
+  PUBLIC_SITE_LOCALE_SHORT_LABELS,
+  PUBLIC_SITE_LOCALE_FLAGS,
+  type PublicLocale,
+} from '@/lib/i18n/messages'

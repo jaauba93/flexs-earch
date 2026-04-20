@@ -1,4 +1,5 @@
 export type CurrencyCode = 'PLN' | 'EUR' | 'USD' | 'GBP'
+export type CurrencyLocale = 'pl' | 'en' | 'uk'
 
 export type ForeignCurrencyCode = Exclude<CurrencyCode, 'PLN'>
 
@@ -83,6 +84,7 @@ export function formatCurrencyAmount(
     suffix?: string
     decimals?: number
     fallback?: string
+    locale?: CurrencyLocale
   }
 ): string {
   if (typeof amountPln === 'string' && /n\/a|n\/d|brak|–|—/i.test(amountPln)) {
@@ -100,7 +102,9 @@ export function formatCurrencyAmount(
   }).format(rounded)
 
   const unit = currency === 'PLN' ? 'PLN' : CURRENCY_SYMBOLS[currency]
-  const prefix = options?.prefix ?? 'od '
+  const locale = options?.locale ?? 'pl'
+  const defaultPrefix = locale === 'pl' ? 'od ' : locale === 'en' ? 'from ' : 'від '
+  const prefix = options?.prefix ?? defaultPrefix
   const suffix = options?.suffix ?? ''
 
   return `${prefix}${currency === 'PLN' ? `${amountText} ${unit}` : `${unit} ${amountText}`}${suffix}`
@@ -109,23 +113,32 @@ export function formatCurrencyAmount(
 export function formatPricePreview(
   amountPln: number | string | null | undefined,
   currency: CurrencyCode,
-  rates?: Pick<CurrencyRates, 'EUR' | 'USD' | 'GBP'> | null
+  rates?: Pick<CurrencyRates, 'EUR' | 'USD' | 'GBP'> | null,
+  locale: CurrencyLocale = 'pl'
 ): string {
+  const localizedSuffix =
+    locale === 'pl'
+      ? ' / stanowisko / miesiąc'
+      : locale === 'en'
+        ? ' / desk / month'
+        : ' / місце / міс.'
+
   return formatCurrencyAmount(amountPln, currency, rates, {
-    prefix: 'od ',
-    suffix: ' / stanowisko / miesiąc',
+    suffix: localizedSuffix,
     decimals: 0,
+    locale,
   })
 }
 
 export function formatPriceShort(
   amountPln: number | string | null | undefined,
   currency: CurrencyCode,
-  rates?: Pick<CurrencyRates, 'EUR' | 'USD' | 'GBP'> | null
+  rates?: Pick<CurrencyRates, 'EUR' | 'USD' | 'GBP'> | null,
+  locale: CurrencyLocale = 'pl'
 ): string {
   return formatCurrencyAmount(amountPln, currency, rates, {
-    prefix: 'od ',
     suffix: '',
     decimals: 0,
+    locale,
   })
 }

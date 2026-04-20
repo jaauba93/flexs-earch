@@ -10,19 +10,21 @@ import {
   type CurrencyCode,
 } from '@/lib/currency/currency'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getPublicMessage } from '@/lib/i18n/runtime'
 
 interface CurrencySwitcherProps {
   transparent?: boolean
 }
 
-function formatEffectiveDate(date: string) {
+function formatEffectiveDate(date: string, locale: 'pl-PL' | 'en-GB' | 'uk-UA' = 'pl-PL') {
   const parsed = new Date(`${date}T00:00:00`)
 
   if (Number.isNaN(parsed.getTime())) {
     return date
   }
 
-  return new Intl.DateTimeFormat('pl-PL', {
+  return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -30,6 +32,7 @@ function formatEffectiveDate(date: string) {
 }
 
 export default function CurrencySwitcher({ transparent = false }: CurrencySwitcherProps) {
+  const { locale } = useLocaleContext()
   const { currency, setCurrency, rates, ratesLoading, ratesMeta } = useCurrencyContext()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -70,7 +73,7 @@ export default function CurrencySwitcher({ transparent = false }: CurrencySwitch
             ? 'border border-white/30 text-white hover:bg-white/8 hover:border-white/55'
             : 'border border-[var(--colliers-navy)]/20 hover:bg-[var(--colliers-navy)]/5 hover:border-[var(--colliers-navy)]/40 text-[var(--colliers-navy)]'
         }`}
-        aria-label={`Waluta: ${CURRENCY_LABELS[currency]}`}
+        aria-label={`${getPublicMessage(locale, 'header.currency')}: ${CURRENCY_LABELS[currency]}`}
         aria-expanded={open}
       >
         <span className={`text-[10px] font-bold uppercase tracking-widest ${transparent ? 'text-white/90 group-hover:text-white' : 'text-[var(--colliers-navy)]/80 group-hover:text-[var(--colliers-navy)]'}`}>
@@ -87,9 +90,9 @@ export default function CurrencySwitcher({ transparent = false }: CurrencySwitch
       {open && (
         <div className="absolute right-0 top-full mt-2 w-[320px] rounded-none border border-[#dbe4f8] bg-white shadow-[0_24px_56px_rgba(0,7,89,0.16)] z-50">
           <div className="px-4 py-3 border-b border-[#edf2fb]">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-1">Waluta</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-1">{getPublicMessage(locale, 'currency.title')}</p>
             <p className="text-[11px] leading-relaxed text-body-muted">
-              {CURRENCY_NOTE}
+              {getPublicMessage(locale, 'currency.note') || CURRENCY_NOTE}
             </p>
           </div>
 
@@ -97,11 +100,16 @@ export default function CurrencySwitcher({ transparent = false }: CurrencySwitch
             <p className="text-[11px] leading-relaxed text-[#5f6f9f]">
               {ratesMeta ? (
                 <>
-                  Kursy orientacyjne na podstawie tabeli A NBP z dnia{' '}
-                  <span className="font-semibold text-[#000759]">{formatEffectiveDate(ratesMeta.effectiveDate)}</span>.
+                  {getPublicMessage(locale, 'currency.ratesLoadedOn')}{' '}
+                  <span className="font-semibold text-[#000759]">
+                    {formatEffectiveDate(
+                      ratesMeta.effectiveDate,
+                      locale === 'pl' ? 'pl-PL' : locale === 'en' ? 'en-GB' : 'uk-UA'
+                    )}
+                  </span>.
                 </>
               ) : (
-                'Pobieramy aktualny kurs orientacyjny na podstawie tabeli A NBP.'
+                getPublicMessage(locale, 'currency.ratesLoading')
               )}
             </p>
           </div>
@@ -125,12 +133,12 @@ export default function CurrencySwitcher({ transparent = false }: CurrencySwitch
                       Kurs NBP: 1 {option} = {rates[option].toLocaleString('pl-PL', { maximumFractionDigits: 4 })} PLN
                     </span>
                   ) : option === 'PLN' ? (
-                    <span className="block text-[11px] text-[#7a88b1]">Cena źródłowa w złotówkach</span>
+                    <span className="block text-[11px] text-[#7a88b1]">{getPublicMessage(locale, 'currency.sourcePln')}</span>
                   ) : (
-                    <span className="block text-[11px] text-[#7a88b1]">Ładowanie kursu NBP…</span>
+                    <span className="block text-[11px] text-[#7a88b1]">{getPublicMessage(locale, 'currency.loading')}</span>
                   )}
                 </div>
-                {option === currency && <span className="text-[#1C54F4] text-xs font-bold">Aktywna</span>}
+                {option === currency && <span className="text-[#1C54F4] text-xs font-bold">{getPublicMessage(locale, 'currency.active')}</span>}
               </button>
             ))}
           </div>

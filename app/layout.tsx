@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import './globals.css'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { BasketProvider } from '@/lib/context/BasketContext'
 import { CurrencyProvider } from '@/lib/context/CurrencyContext'
+import { LocaleProvider, LOCALE_COOKIE_NAME } from '@/lib/context/LocaleContext'
 import CookieBanner from '@/components/ui/CookieBanner'
 import GoogleAnalytics from '@/components/ui/GoogleAnalytics'
 import SmoothScroll from '@/components/ui/SmoothScroll'
 import ScrollReveal from '@/components/ui/ScrollReveal'
+import { DEFAULT_PUBLIC_LOCALE, PUBLIC_SITE_LOCALES } from '@/lib/i18n/messages'
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -28,14 +31,23 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies()
+  const localeCookie = cookieStore.get(LOCALE_COOKIE_NAME)?.value
+  const initialLocale =
+    localeCookie && PUBLIC_SITE_LOCALES.includes(localeCookie as (typeof PUBLIC_SITE_LOCALES)[number])
+      ? (localeCookie as (typeof PUBLIC_SITE_LOCALES)[number])
+      : DEFAULT_PUBLIC_LOCALE
+
   return (
-    <html lang="pl">
+    <html lang={initialLocale}>
       <body>
         <BasketProvider>
-          <CurrencyProvider>
-            {children}
-          </CurrencyProvider>
+          <LocaleProvider initialLocale={initialLocale}>
+            <CurrencyProvider>
+              {children}
+            </CurrencyProvider>
+          </LocaleProvider>
           <CookieBanner />
         </BasketProvider>
         <GoogleAnalytics />

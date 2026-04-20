@@ -7,7 +7,7 @@ export async function GET() {
 
     return NextResponse.json(payload, {
       headers: {
-        'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400',
       },
     })
   } catch (error) {

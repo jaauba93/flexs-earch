@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { CheckCircle, Mail, Phone, ChevronLeft, ChevronRight, ChevronDown, Check, Plus } from 'lucide-react'
+import { Mail, Phone, ChevronLeft, ChevronRight, ChevronDown, Check, Plus } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Breadcrumbs from '@/components/layout/Breadcrumbs'
@@ -13,8 +13,12 @@ import NearbyExplorer from '@/components/listing/NearbyExplorer'
 import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPricePreview } from '@/lib/currency/currency'
+import { localizeField } from '@/lib/i18n/localize'
+import { formatPublicMessage, getPublicMessage } from '@/lib/i18n/runtime'
 import type { Listing, Operator, Advisor, ListingImage, Amenity } from '@/types/database'
+import AmenityIcon from '@/components/ui/AmenityIcon'
 
 interface FullListing extends Listing {
   operator: Operator
@@ -32,9 +36,14 @@ interface Props {
 
 export default function ListingDetailClient({ listing, relatedListings, citySlug, districtSlug }: Props) {
   const { addItem, removeItem, isInBasket, isFull, mounted } = useBasketContext()
+  const { locale } = useLocaleContext()
   const { currency, rates } = useCurrencyContext()
   const missingPriceTooltip =
-    'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
+    locale === 'pl'
+      ? 'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
+      : locale === 'en'
+        ? 'We do not have an up-to-date rate for this listing yet. Send an enquiry and a Colliers advisor will confirm it with the operator.'
+        : 'Наразі ми ще не маємо актуальної ставки для цієї пропозиції. Надішліть запит, і консультант Colliers уточнить її в оператора.'
   const inBasket = mounted && isInBasket(listing.id)
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -43,9 +52,11 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
   const anchorWrapperRef = useRef<HTMLDivElement>(null)
   const [anchorStop, setAnchorStop] = useState(false)
 
+  const listingName = localizeField(listing, 'name', locale) ?? listing.name
+  const listingDescription = localizeField(listing, 'description', locale) ?? listing.description
   const images = listing.images.length > 0 ? listing.images : []
   const allImages = listing.main_image_url
-    ? [{ id: 'main', image_url: listing.main_image_url, alt_text: listing.name, sort_order: -1, listing_id: listing.id, created_at: '' }, ...images]
+    ? [{ id: 'main', image_url: listing.main_image_url, alt_text: listingName, sort_order: -1, listing_id: listing.id, created_at: '' }, ...images]
     : images
 
   const amenitiesSpace = listing.amenities.filter((a) => a.amenity.category === 'space' || a.amenity.category === 'operator')
@@ -53,7 +64,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
 
   const basketItem = {
     id: listing.id,
-    name: listing.name,
+    name: listingName,
     address_street: listing.address_street,
     address_city: listing.address_city,
     address_district: listing.address_district,
@@ -63,16 +74,16 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
   }
 
   const crumbs = [
-    { label: 'Strona główna', href: '/' },
+    { label: getPublicMessage(locale, 'listing.home'), href: '/' },
     { label: listing.address_city, href: `/biura-serwisowane/${citySlug}` },
     ...(listing.address_district ? [{ label: listing.address_district, href: `/biura-serwisowane/${citySlug}/${districtSlug}` }] : []),
-    { label: listing.name },
+    { label: listingName },
   ]
 
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    name: listing.name,
+    name: listingName,
     address: {
       '@type': 'PostalAddress',
       streetAddress: listing.address_street,
@@ -85,10 +96,10 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
   }
 
   const sectionTabs = [
-    { id: 'o-biurze', label: 'O biurze' },
-    { id: 'galeria', label: 'Galeria' },
-    { id: 'udogodnienia', label: 'Udogodnienia' },
-    { id: 'lokalizacja', label: 'Otoczenie' },
+    { id: 'o-biurze', label: getPublicMessage(locale, 'listing.aboutOffice') },
+    { id: 'galeria', label: getPublicMessage(locale, 'listing.gallery') },
+    { id: 'udogodnienia', label: getPublicMessage(locale, 'listing.amenities') },
+    { id: 'lokalizacja', label: getPublicMessage(locale, 'listing.surroundings') },
   ]
 
   useEffect(() => {
@@ -123,7 +134,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
               className="text-[#000759]"
               style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.7rem, 4.4vw, 4.6rem)', lineHeight: 1.04 }}
             >
-              {listing.name}
+              {listingName}
             </h1>
             <p className="text-body-strong mt-4 max-w-3xl text-[20px] font-normal leading-relaxed">
               {listing.address_street}, {listing.address_postcode}, {listing.address_district ? `${listing.address_district}, ` : ''}{listing.address_city}
@@ -211,29 +222,35 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
           {/* Left — info */}
           <div>
             <section className="mb-10">
-              <p className="overline mb-5">Warunki komercyjne</p>
+                <p className="overline mb-5">{getPublicMessage(locale, 'listing.commercialTerms')}</p>
               <div className="surface-shell grid grid-cols-2 gap-4 p-6 sm:grid-cols-3">
               {[
                 {
-                  label: 'Cena (biuro prywatne)',
+                  label: getPublicMessage(locale, 'listing.privateOfficePrice'),
                   value: listing.price_desk_private ? (
-                    formatPricePreview(listing.price_desk_private, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.')
+                    formatPricePreview(listing.price_desk_private, currency, rates, locale).replace(
+                      locale === 'pl' ? ' / stanowisko / miesiąc' : locale === 'en' ? ' / desk / month' : ' / місце / міс.',
+                      getPublicMessage(locale, 'listingCard.perDeskShort')
+                    )
                   ) : (
-                    <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+                    <UnavailableValueTooltip value={getPublicMessage(locale, 'listing.onRequest')} tooltip={missingPriceTooltip} />
                   ),
                 },
                 {
-                  label: 'Hot-desk',
+                  label: getPublicMessage(locale, 'listing.hotDesk'),
                   value: listing.price_desk_hotdesk ? (
-                    formatPricePreview(listing.price_desk_hotdesk, currency, rates).replace(' / stanowisko / miesiąc', ' / st. / mies.')
+                    formatPricePreview(listing.price_desk_hotdesk, currency, rates, locale).replace(
+                      locale === 'pl' ? ' / stanowisko / miesiąc' : locale === 'en' ? ' / desk / month' : ' / місце / міс.',
+                      getPublicMessage(locale, 'listingCard.perDeskShort')
+                    )
                   ) : (
-                    <UnavailableValueTooltip value="na zapytanie" tooltip={missingPriceTooltip} />
+                    <UnavailableValueTooltip value={getPublicMessage(locale, 'listing.onRequest')} tooltip={missingPriceTooltip} />
                   ),
                 },
-                { label: 'Łączna liczba stanowisk', value: listing.total_workstations ? `${listing.total_workstations} stanowisk` : '–' },
-                { label: 'Wielkość gabinetów', value: (listing.min_office_size && listing.max_office_size) ? `od ${listing.min_office_size} do ${listing.max_office_size} stanowisk` : '–' },
-                { label: 'Rok otwarcia', value: listing.year_opened?.toString() || '–' },
-                { label: 'Operator', value: listing.operator.name },
+                { label: getPublicMessage(locale, 'listing.totalWorkstations'), value: listing.total_workstations ? `${listing.total_workstations} ${getPublicMessage(locale, 'listing.workstations')}` : getPublicMessage(locale, 'listing.missing') },
+                { label: getPublicMessage(locale, 'listing.officeSize'), value: (listing.min_office_size && listing.max_office_size) ? formatPublicMessage(locale, 'listing.officeSizeRange', { min: listing.min_office_size, max: listing.max_office_size }) : getPublicMessage(locale, 'listing.missing') },
+                { label: getPublicMessage(locale, 'listing.openingYear'), value: listing.year_opened?.toString() || getPublicMessage(locale, 'listing.missing') },
+                { label: getPublicMessage(locale, 'listing.operator'), value: listing.operator.name },
               ].map(({ label, value }) => (
                 <div key={label} className="surface-panel-soft px-4 py-4">
                   <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6879a4]">{label}</p>
@@ -243,16 +260,16 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
               </div>
             </section>
 
-            {listing.description && (
+            {listingDescription && (
               <section className="mb-10">
-                <p className="overline mb-5">Opis biura</p>
-                <p className={`text-body-strong leading-relaxed ${!descExpanded && listing.description.length > 200 ? 'line-clamp-4' : ''}`}>
-                  {listing.description}
+                <p className="overline mb-5">{getPublicMessage(locale, 'listing.officeDescription')}</p>
+                <p className={`text-body-strong leading-relaxed ${!descExpanded && listingDescription.length > 200 ? 'line-clamp-4' : ''}`}>
+                  {listingDescription}
                 </p>
-                {listing.description.length > 200 && (
+                {listingDescription.length > 200 && (
                   <button onClick={() => setDescExpanded((v) => !v)}
                     className="mt-2 text-sm text-[var(--colliers-blue-bright)] font-semibold hover:underline">
-                    {descExpanded ? 'Pokaż mniej' : 'Pokaż więcej'}
+                    {descExpanded ? getPublicMessage(locale, 'listing.showLess') : getPublicMessage(locale, 'listing.showMore')}
                   </button>
                 )}
               </section>
@@ -286,15 +303,15 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
 
             {listing.amenities.length > 0 && (
               <section id="udogodnienia" className="mb-12">
-                <p className="overline mb-5">Udogodnienia</p>
+                <p className="overline mb-5">{getPublicMessage(locale, 'listing.amenities')}</p>
                 {amenitiesSpace.length > 0 && (
                   <>
-                    <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6d7da7]">Udogodnienia w biurze</h3>
+                    <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6d7da7]">{getPublicMessage(locale, 'listing.officeAmenities')}</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
                       {amenitiesSpace.map(({ amenity }) => (
                         <div key={amenity.id} className="surface-panel-soft flex flex-col items-center gap-2 p-3 text-center">
-                          <CheckCircle size={20} style={{ color: 'var(--colliers-blue-bright)' }} />
-                          <p className="text-xs text-[var(--colliers-navy)] leading-snug">{amenity.name}</p>
+                          <AmenityIcon slug={amenity.slug} name={amenity.name} />
+                          <p className="text-xs text-[var(--colliers-navy)] leading-snug">{localizeField(amenity, 'name', locale) ?? amenity.name}</p>
                         </div>
                       ))}
                     </div>
@@ -302,12 +319,12 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
                 )}
                 {amenitiesBuilding.length > 0 && (
                   <>
-                    <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6d7da7]">Udogodnienia w budynku</h3>
+                    <h3 className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6d7da7]">{getPublicMessage(locale, 'listing.buildingAmenities')}</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                       {amenitiesBuilding.map(({ amenity }) => (
                         <div key={amenity.id} className="surface-panel-soft flex flex-col items-center gap-2 p-3 text-center">
-                          <CheckCircle size={20} style={{ color: 'var(--colliers-gray)' }} />
-                          <p className="text-xs text-[var(--colliers-navy)] leading-snug">{amenity.name}</p>
+                          <AmenityIcon slug={amenity.slug} name={amenity.name} />
+                          <p className="text-xs text-[var(--colliers-navy)] leading-snug">{localizeField(amenity, 'name', locale) ?? amenity.name}</p>
                         </div>
                       ))}
                     </div>
@@ -322,7 +339,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
           <div>
             <div className="surface-panel sticky top-[120px] flex flex-col gap-4 p-6">
               <button onClick={() => setFormOpen(true)} className="btn-primary w-full justify-center py-3 text-base">
-                Otrzymaj ofertę
+                {getPublicMessage(locale, 'listing.getOffer')}
               </button>
               <button
                 onClick={() => inBasket ? removeItem(listing.id) : addItem(basketItem)}
@@ -332,12 +349,12 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
                 }`}
               >
                 {inBasket ? <Check size={16} /> : <Plus size={16} />}
-                {inBasket ? 'Dodano do porównywarki' : 'Dodaj do porównywarki'}
+                {inBasket ? getPublicMessage(locale, 'listing.addedToCompare') : getPublicMessage(locale, 'listing.addToCompare')}
               </button>
 
               {/* Advisor */}
               <div className="border-t border-[var(--colliers-border)] pt-4 mt-2">
-                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6c7ca7]">Twój doradca Colliers</p>
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6c7ca7]">{getPublicMessage(locale, 'listing.yourAdvisor')}</p>
                 {listing.advisor ? (
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 flex-shrink-0 bg-[var(--colliers-bg-blue-tint)] flex items-center justify-center font-semibold text-[var(--colliers-navy)] overflow-hidden">
