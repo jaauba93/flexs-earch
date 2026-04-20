@@ -229,6 +229,12 @@ export async function GET(request: NextRequest) {
       'https://overpass-api.de/api/interpreter',
       'https://overpass.kumi.systems/api/interpreter',
     ]
+    const requestHeaders = {
+      'Content-Type': 'text/plain;charset=UTF-8',
+      'User-Agent': 'Colliers Flex/1.0 (+https://flex.colliers.pl)',
+      'Accept-Language': 'pl,en;q=0.9',
+      Referer: 'https://flex.colliers.pl',
+    }
 
     let response: Response | null = null
     let lastError: string | null = null
@@ -237,7 +243,7 @@ export async function GET(request: NextRequest) {
       try {
         const nextResponse = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          headers: requestHeaders,
           body: overpassQuery,
           next: { revalidate: 3600 },
         })

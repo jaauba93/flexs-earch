@@ -17,7 +17,7 @@ import { getCityAreas } from '@/lib/mapbox/city-areas'
 import { OFFICE_MODEL_CONTACT_PREFILL_STORAGE_KEY } from '@/lib/recommendation/officeModelRecommendation'
 import type { Listing, Operator, Amenity } from '@/types/database'
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 5000
 const CITY_AREAS = getCityAreas()
 
 interface SearchClientProps {
