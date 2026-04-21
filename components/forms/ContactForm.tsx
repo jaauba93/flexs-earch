@@ -5,6 +5,8 @@ import { X, CheckCircle, Loader2, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useBasketContext } from '@/lib/context/BasketContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getContentMessage } from '@/lib/i18n/runtime'
 import type { BasketItem } from '@/lib/hooks/useBasket'
 
 export interface ContactFormPrefill {
@@ -36,6 +38,8 @@ interface FormErrors {
 
 export default function ContactForm({ onClose, preselectedListing, prefill }: ContactFormProps) {
   const { items: basketItems } = useBasketContext()
+  const { locale } = useLocaleContext()
+  const t = (key: string, fallback?: string) => getContentMessage(locale, key, fallback)
 
   const initialListings: BasketItem[] = preselectedListing
     ? [preselectedListing]
@@ -76,10 +80,10 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
   function validate(): boolean {
     const e: FormErrors = {}
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      e.email = 'Podaj poprawny adres email'
+      e.email = t('contact_form.error.invalid_email', 'Podaj poprawny adres email')
     }
     if (!formData.consent) {
-      e.consent = 'Zgoda jest wymagana'
+      e.consent = t('contact_form.error.consent', 'Zgoda jest wymagana')
     }
     setErrors(e)
     return Object.keys(e).length === 0
@@ -110,7 +114,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
       }
       setSuccess(true)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Nie udało się wysłać zapytania.'
+      const message = err instanceof Error ? err.message : t('contact_form.error.generic', 'Nie udało się wysłać zapytania.')
       setApiError(message)
     } finally {
       setLoading(false)
@@ -128,13 +132,13 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
         >
           <CheckCircle size={48} className="mx-auto mb-4 text-[#468254]" />
           <h2 className="mb-3 text-2xl font-normal text-[#000759]">
-            Zapytanie zostało wysłane
+            {t('contact_form.success.title', 'Zapytanie zostało wysłane')}
           </h2>
           <p className="text-body-muted mb-8 text-sm leading-relaxed">
-            Dziękujemy. Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.
+            {t('contact_form.success.body', 'Dziękujemy. Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.')}
           </p>
           <Link href="/biura-serwisowane" onClick={onClose} className="btn-outline">
-            Wróć do wyszukiwarki
+            {t('contact_form.success.cta', 'Wróć do wyszukiwarki')}
           </Link>
         </div>
       </div>
@@ -160,10 +164,10 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
         {/* LEFT — form */}
         <div className="flex-[3] overflow-y-auto bg-white p-8 md:p-12" data-lenis-prevent>
           <header className="mb-8">
-            <p className="overline mb-2">Zapytanie ofertowe</p>
-            <h2 className="mb-3 text-3xl font-normal text-[#000759]">Zapytaj o ofertę</h2>
+            <p className="overline mb-2">{t('contact_form.header.eyebrow', 'Zapytanie ofertowe')}</p>
+            <h2 className="mb-3 text-3xl font-normal text-[#000759]">{t('contact_form.header.title', 'Zapytaj o ofertę')}</h2>
             <p className="text-body-muted max-w-md text-sm font-normal">
-              Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.
+              {t('contact_form.header.body', 'Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.')}
             </p>
           </header>
 
@@ -171,22 +175,22 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
             {/* Email + Phone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="ghost-border">
-                <label className="form-label">Email (wymagane)</label>
+                <label className="form-label">{t('contact_form.email_label', 'Email (wymagane)')}</label>
                 <input
                   type="email"
                   className="w-full bg-transparent border-none px-0 py-2 text-sm text-[#000759] placeholder:text-[#9aa7c9] focus:ring-0"
-                  placeholder="twoj@email.pl"
+                  placeholder={t('contact_form.email_placeholder', 'twoj@email.pl')}
                   value={formData.email}
                   onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
                 />
                 {errors.email && <p className="text-red-600 text-[11px] mt-1">{errors.email}</p>}
               </div>
               <div className="ghost-border">
-                <label className="form-label">Telefon (opcjonalnie)</label>
+                <label className="form-label">{t('contact_form.phone_label', 'Telefon (opcjonalnie)')}</label>
                 <input
                   type="tel"
                   className="w-full bg-transparent border-none px-0 py-2 text-sm text-[#000759] placeholder:text-[#9aa7c9] focus:ring-0"
-                  placeholder="+48 ___ ___ ___"
+                  placeholder={t('contact_form.phone_placeholder', '+48 ___ ___ ___')}
                   value={formData.phone}
                   onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
                 />
@@ -202,7 +206,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
               >
                 <span className="flex items-center gap-2">
                   <span className="text-lg">+</span>
-                  Dodatkowe informacje (opcjonalnie)
+                  {t('contact_form.extra_toggle', 'Dodatkowe informacje (opcjonalnie)')}
                 </span>
                 <ChevronRight size={16} className={`transition-transform ${extraOpen ? 'rotate-90' : ''}`} />
               </button>
@@ -215,7 +219,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                   <div className="space-y-5">
                     <div className="grid grid-cols-2 gap-6">
                       <div className="ghost-border">
-                        <label className="form-label">Stanowisk (od)</label>
+                        <label className="form-label">{t('contact_form.workstations_from', 'Stanowisk (od)')}</label>
                         <input
                           type="number"
                           min={1}
@@ -226,7 +230,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                         />
                       </div>
                       <div className="ghost-border">
-                        <label className="form-label">Stanowisk (do)</label>
+                        <label className="form-label">{t('contact_form.workstations_to', 'Stanowisk (do)')}</label>
                         <input
                           type="number"
                           min={1}
@@ -238,11 +242,11 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                       </div>
                     </div>
                     <div className="ghost-border">
-                      <label className="form-label">Dodatkowe uwagi</label>
+                      <label className="form-label">{t('contact_form.notes_label', 'Dodatkowe uwagi')}</label>
                       <textarea
                         rows={6}
                         className="w-full min-h-[160px] resize-y bg-transparent border-none px-0 py-2 text-sm text-[#000759] placeholder:text-[#9aa7c9] focus:ring-0"
-                        placeholder="Inne wymagania..."
+                        placeholder={t('contact_form.notes_placeholder', 'Inne wymagania...')}
                         value={formData.message}
                         onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
                       />
@@ -261,10 +265,10 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                 onChange={(e) => setFormData((p) => ({ ...p, consent: e.target.checked }))}
               />
               <label className="text-body-muted cursor-pointer select-none text-[11px] leading-relaxed">
-                Wyrażam zgodę na przetwarzanie moich danych osobowych przez Colliers International Poland sp. z o.o.
-                w celu obsługi zapytania oraz przesyłania informacji handlowych.{' '}
+                {t('contact_form.consent', 'Wyrażam zgodę na przetwarzanie moich danych osobowych przez Colliers International Poland sp. z o.o. w celu obsługi zapytania oraz przesyłania informacji handlowych.')}
+                {' '}
                 <Link href="/polityka-prywatnosci" target="_blank" className="text-[#1C54F4] underline">
-                  Polityka prywatności
+                  {t('contact_form.privacy_link', 'Polityka prywatności')}
                 </Link>
                 .
               </label>
@@ -282,7 +286,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                 className="btn-primary py-4 px-10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
-                Wyślij zapytanie
+                {t('contact_form.submit', 'Wyślij zapytanie')}
               </button>
             </div>
           </form>
@@ -291,12 +295,12 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
         {/* RIGHT — selected offices */}
         <div className="flex-[2] bg-[var(--surface-container-low)] p-8 md:p-12 border-l border-[var(--outline-variant)]/10 overflow-hidden flex flex-col" data-lenis-prevent>
           <div className="mb-8">
-            <p className="overline mb-2">Twój wybór</p>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#000759]">Wybrane biura</h3>
+            <p className="overline mb-2">{t('contact_form.selection.eyebrow', 'Twój wybór')}</p>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-[#000759]">{t('contact_form.selection.title', 'Wybrane biura')}</h3>
           </div>
 
           {listings.length === 0 ? (
-            <p className="text-body-soft text-sm italic">Brak wybranych biur.</p>
+            <p className="text-body-soft text-sm italic">{t('contact_form.selection.empty', 'Brak wybranych biur.')}</p>
           ) : (
             <div className="flex flex-col gap-3 overflow-y-auto pr-1" style={{ maxHeight: 320 }}>
               {listings.map((item) => (
@@ -331,8 +335,8 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
               <div>
-                <p className="text-xs font-bold text-[#000759] mb-1">Gwarancja jakości Colliers</p>
-                <p className="text-[11px] text-body-muted leading-relaxed">Wszystkie przestrzenie są weryfikowane przez naszych ekspertów.</p>
+                <p className="text-xs font-bold text-[#000759] mb-1">{t('contact_form.guarantee_1_title', 'Gwarancja jakości Colliers')}</p>
+                <p className="text-[11px] text-body-muted leading-relaxed">{t('contact_form.guarantee_1_text', 'Wszystkie przestrzenie są weryfikowane przez naszych ekspertów.')}</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -340,8 +344,8 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
               <div>
-                <p className="text-xs font-bold text-[#000759] mb-1">Szybka odpowiedź</p>
-                <p className="text-[11px] text-body-muted leading-relaxed">Otrzymasz propozycje w ciągu jednego dnia roboczego.</p>
+                <p className="text-xs font-bold text-[#000759] mb-1">{t('contact_form.guarantee_2_title', 'Szybka odpowiedź')}</p>
+                <p className="text-[11px] text-body-muted leading-relaxed">{t('contact_form.guarantee_2_text', 'Otrzymasz propozycje w ciągu jednego dnia roboczego.')}</p>
               </div>
             </div>
           </div>

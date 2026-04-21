@@ -9,7 +9,9 @@ import CookieBanner from '@/components/ui/CookieBanner'
 import GoogleAnalytics from '@/components/ui/GoogleAnalytics'
 import SmoothScroll from '@/components/ui/SmoothScroll'
 import ScrollReveal from '@/components/ui/ScrollReveal'
+import PublicTranslationsHydrator from '@/components/i18n/PublicTranslationsHydrator'
 import { DEFAULT_PUBLIC_LOCALE, PUBLIC_SITE_LOCALES } from '@/lib/i18n/messages'
+import { loadPublicTranslations } from '@/lib/i18n/loadPublicTranslations'
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -34,6 +36,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
   const localeCookie = cookieStore.get(LOCALE_COOKIE_NAME)?.value
+  const publicTranslations = await loadPublicTranslations()
   const initialLocale =
     localeCookie && PUBLIC_SITE_LOCALES.includes(localeCookie as (typeof PUBLIC_SITE_LOCALES)[number])
       ? (localeCookie as (typeof PUBLIC_SITE_LOCALES)[number])
@@ -44,9 +47,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <BasketProvider>
           <LocaleProvider initialLocale={initialLocale}>
-            <CurrencyProvider>
-              {children}
-            </CurrencyProvider>
+            <PublicTranslationsHydrator translations={publicTranslations}>
+              <CurrencyProvider>
+                {children}
+              </CurrencyProvider>
+            </PublicTranslationsHydrator>
           </LocaleProvider>
           <CookieBanner />
         </BasketProvider>

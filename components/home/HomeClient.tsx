@@ -12,7 +12,7 @@ import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPriceShort } from '@/lib/currency/currency'
 import { localizeField } from '@/lib/i18n/localize'
-import { getPublicMessage } from '@/lib/i18n/runtime'
+import { getContentMessage, getPublicMessage } from '@/lib/i18n/runtime'
 import { slugify } from '@/lib/utils/slugify'
 import { CITY_OPTIONS, DISTRICT_OPTIONS, METRO_OPTIONS, findSearchOption, getSearchHref, normalizeSearchText } from '@/lib/search/locations'
 import type { Listing, Operator } from '@/types/database'
@@ -46,6 +46,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
   const [activePanel, setActivePanel] = useState(0)
   const [heroVisible, setHeroVisible] = useState(true)
   const router = useRouter()
+  const t = (key: string, fallback?: string) => getContentMessage(locale, key, fallback)
 
   // ── Refs (used inside event handlers to avoid stale closures) ─────────────
   const heroWrapperRef = useRef<HTMLDivElement>(null)
@@ -101,23 +102,23 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
   const searchGroups = [
     {
-      title: 'Miasta',
+      title: t('home.hero.search_group_cities', 'Miasta'),
       items: CITY_OPTIONS.filter((item) =>
         !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
       ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
     },
     {
-      title: 'Biura',
+      title: t('home.hero.search_group_offices', 'Biura'),
       items: featuredListingSuggestions.filter((item) => !normalizedSearch || normalizeSearchText(item.label).includes(normalizedSearch)).slice(0, 3),
     },
     {
-      title: 'Linie metra',
+      title: t('home.hero.search_group_metro', 'Linie metra'),
       items: METRO_OPTIONS.filter((item) =>
         !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
       ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
     },
     {
-      title: 'Dzielnice',
+      title: t('home.hero.search_group_districts', 'Dzielnice'),
       items: DISTRICT_OPTIONS.filter((item) =>
         !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
       ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
@@ -200,7 +201,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                   className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#4D93FF] mb-6"
                   style={{ opacity: heroLoaded ? 1 : 0, transition: 'opacity 0.8s ease 0.1s' }}
                 >
-                  Biura serwisowane w Polsce
+                  {t('home.hero.eyebrow', 'Biura serwisowane w Polsce')}
                 </p>
 
                 <h1
@@ -213,9 +214,11 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                     transition: 'all 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s',
                   }}
                 >
-                  Znajdź biuro serwisowane{' '}
+                  {t('home.hero.title_line_1', 'Znajdź biuro serwisowane')}{' '}
                   <br className="hidden md:block" />
-                  <span className="text-white" style={{ fontWeight: 700 }}>z pomocą Colliers</span>
+                  <span className="text-white" style={{ fontWeight: 700 }}>
+                    {t('home.hero.title_line_2', 'z pomocą Colliers')}
+                  </span>
                 </h1>
 
                 <p
@@ -226,7 +229,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                     transition: 'all 0.9s cubic-bezier(0.22,1,0.36,1) 0.28s',
                   }}
                 >
-                  Przeszukaj oferty w największych miastach, porównaj lokalizacje i zawęź wybór szybciej.
+                  {t('home.hero.lead', 'Przeszukaj oferty w największych miastach, porównaj lokalizacje i zawęź wybór szybciej.')}
                 </p>
 
                 {/* Search box */}
@@ -253,7 +256,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                         onChange={(e) => setSearchValue(e.target.value)}
                         onFocus={() => setSearchFocused(true)}
                         onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-                        placeholder="Wpisz miasto, dzielnicę lub nazwę biura..."
+                        placeholder={t('home.hero.search_placeholder', 'Wpisz miasto, dzielnicę lub nazwę biura...')}
                         className="w-full bg-transparent border-none focus:ring-0 text-white placeholder:text-white/56 font-normal tracking-wide"
                         style={{ outline: 'none', boxShadow: 'none', fontSize: '1rem' }}
                         autoComplete="off"
@@ -263,7 +266,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                       type="submit"
                       className="bg-[#1C54F4] text-white px-10 py-5 font-bold uppercase tracking-[0.22em] text-[11px] flex-shrink-0 hover:bg-white hover:text-[#000759] transition-all duration-300"
                     >
-                      Szukaj biur
+                      {t('home.hero.search_cta', 'Szukaj biur')}
                     </button>
                   </form>
 
@@ -305,7 +308,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                           onMouseDown={() => { router.push('/biura-serwisowane'); setSearchFocused(false) }}
                           className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C3E6FF] hover:text-white transition-colors"
                         >
-                          Pokaż wszystkie biura w Polsce →
+                          {t('home.hero.show_all_cta', 'Pokaż wszystkie biura w Polsce →')}
                         </button>
                       </div>
                     </div>
@@ -313,7 +316,9 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
 
                   {/* Popular cities */}
                   <div className="mt-7 flex flex-wrap justify-center items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mr-1">Popularne:</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mr-1">
+                      {t('home.hero.popular_label', 'Popularne:')}
+                    </span>
                     {cities.map((c) => (
                       <button
                         key={c.slug}
@@ -357,10 +362,10 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
             <div className="relative z-10 w-full px-8 lg:px-16">
               <div className="max-w-4xl mx-auto text-center">
                 <h2 className="font-normal leading-tight mb-5 text-white" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
-                  Narzędzia i wiedza do lepszej decyzji
+                  {t('home.tools.title', 'Narzędzia i wiedza do lepszej decyzji')}
                 </h2>
                 <p className="text-white/75 text-lg font-normal mb-14 max-w-2xl mx-auto leading-relaxed">
-                  Nie każda firma potrzebuje tego samego typu biura. Skorzystaj z narzędzi porównawczych i wiedzy eksperckiej, aby szybciej zawęzić wybór i podjąć racjonalną decyzję.
+                  {t('home.tools.lead', 'Nie każda firma potrzebuje tego samego typu biura. Skorzystaj z narzędzi porównawczych i wiedzy eksperckiej, aby szybciej zawęzić wybór i podjąć racjonalną decyzję.')}
                 </p>
 
                 <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
@@ -370,10 +375,10 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
                       </svg>
                     </div>
-                    <h3 className="text-base font-bold uppercase tracking-[0.12em] !text-[#000759] group-hover:!text-white mb-3 transition-colors">Porównywarka modeli biura</h3>
-                    <p className="text-sm font-normal mb-7 leading-relaxed transition-colors flex-1 text-[#56648F] group-hover:!text-white/90">Sprawdź, czy lepszym wyborem będzie biuro serwisowane, najem tradycyjny czy model hybrydowy.</p>
+                    <h3 className="text-base font-bold uppercase tracking-[0.12em] !text-[#000759] group-hover:!text-white mb-3 transition-colors">{t('home.tools.model_compare.title', 'Porównywarka modeli biura')}</h3>
+                    <p className="text-sm font-normal mb-7 leading-relaxed transition-colors flex-1 text-[#56648F] group-hover:!text-white/90">{t('home.tools.model_compare.text', 'Sprawdź, czy lepszym wyborem będzie biuro serwisowane, najem tradycyjny czy model hybrydowy.')}</p>
                     <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
-                      Porównaj modele
+                      {t('home.tools.model_compare.cta', 'Porównaj modele')}
                     </div>
                   </div>
 
@@ -383,10 +388,10 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                         <rect x="4" y="2" width="16" height="20" rx="0"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/>
                       </svg>
                     </div>
-                    <h3 className="text-base font-bold uppercase tracking-[0.12em] !text-[#000759] group-hover:!text-white mb-3 transition-colors">Kalkulator kosztów biura</h3>
-                    <p className="text-sm font-normal mb-7 leading-relaxed transition-colors flex-1 text-[#56648F] group-hover:!text-white/90">Oszacuj orientacyjny koszt biura dla Twojego zespołu i zobacz, jak różne założenia wpływają na budżet.</p>
+                    <h3 className="text-base font-bold uppercase tracking-[0.12em] !text-[#000759] group-hover:!text-white mb-3 transition-colors">{t('home.tools.calculator.title', 'Kalkulator kosztów biura')}</h3>
+                    <p className="text-sm font-normal mb-7 leading-relaxed transition-colors flex-1 text-[#56648F] group-hover:!text-white/90">{t('home.tools.calculator.text', 'Oszacuj orientacyjny koszt biura dla Twojego zespołu i zobacz, jak różne założenia wpływają na budżet.')}</p>
                     <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
-                      Uruchom kalkulator
+                      {t('home.tools.calculator.cta', 'Uruchom kalkulator')}
                     </div>
                   </div>
 
@@ -397,10 +402,10 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
                         <path d="M8 7h8M8 11h8M8 15h6"/>
                       </svg>
                     </div>
-                    <h3 className="text-base font-bold uppercase tracking-[0.12em] !text-[#000759] group-hover:!text-white mb-3 transition-colors">Przewodnik Flex</h3>
-                    <p className="text-sm font-normal mb-7 leading-relaxed transition-colors flex-1 text-[#56648F] group-hover:!text-white/90">Uporządkuj temat od podstaw: modele najmu, scenariusze użycia i raporty miejskie w jednym miejscu.</p>
+                    <h3 className="text-base font-bold uppercase tracking-[0.12em] !text-[#000759] group-hover:!text-white mb-3 transition-colors">{t('home.tools.guide.title', 'Przewodnik Flex')}</h3>
+                    <p className="text-sm font-normal mb-7 leading-relaxed transition-colors flex-1 text-[#56648F] group-hover:!text-white/90">{t('home.tools.guide.text', 'Poznaj podstawy rynku, porównaj modele i przejdź przez kluczowe decyzje przed wyborem biura.')}</p>
                     <div className="w-full bg-[#1C54F4] group-hover:bg-white text-white group-hover:text-[#000759] py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all mt-auto">
-                      Otwórz przewodnik
+                      {t('home.tools.guide.cta', 'Przejdź do przewodnika')}
                     </div>
                   </div>
                 </div>
@@ -436,16 +441,16 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
             <div className="relative z-10 w-full px-8 lg:px-16">
               <div className="max-w-3xl mx-auto text-center">
                 <h2 className="font-normal leading-tight mb-7 text-white" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4.5vw, 4.5rem)' }}>
-                  Wolisz porównać rynek z doradcą?
+                  {t('home.cta.title', 'Skonsultuj wybór z doradcą Colliers')}
                 </h2>
                 <p className="text-white/82 text-xl font-normal mb-12 max-w-xl mx-auto leading-relaxed">
-                  Nasi eksperci pomogą Ci zawęzić wybór, porównać operatorów i wynegocjować lepsze warunki — bez dodatkowego kosztu po Twojej stronie.
+                  {t('home.cta.lead', 'Jeśli chcesz przejść od inspiracji do shortlisty, pomożemy zawęzić rynek, porównać opcje i przygotować rekomendację dopasowaną do Twojego zespołu.')}
                 </p>
                 <button
                   onClick={() => setFormOpen(true)}
                   className="bg-[#1C54F4] text-white px-14 py-5 font-bold uppercase tracking-[0.22em] text-[11px] hover:bg-white hover:text-[#000759] transition-all duration-300 shadow-[0_20px_60px_rgba(28,84,244,0.35)]"
                 >
-                  Porozmawiaj z doradcą
+                  {t('home.cta.primary', 'Porozmawiaj z doradcą')}
                 </button>
                 <div className="mt-10 flex flex-wrap justify-center gap-6">
                   {['Bezpośredni kontakt', 'Bezpłatne wsparcie', 'Negocjacja warunków'].map((item) => (
@@ -489,13 +494,13 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
 
             <div className="lg:col-span-1">
-              <p className="overline mb-6">Przewodnik</p>
+              <p className="overline mb-6">{t('home.process.eyebrow', 'Przewodnik')}</p>
               <h2
                 className="text-[#000759] leading-snug"
                 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.8rem, 3vw, 2.6rem)' }}
               >
-                Jak działamy<br />
-                <span style={{ fontWeight: 700 }}>w Colliers Flex?</span>
+                {t('home.process.title_line_1', 'Jak działamy')}<br />
+                <span style={{ fontWeight: 700 }}>{t('home.process.title_line_2', 'w Colliers Flex?')}</span>
               </h2>
             </div>
 
@@ -503,18 +508,18 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
               {[
                 {
                   num: '01',
-                  title: 'Określ swoje potrzeby',
-                  desc: 'Powiedz nam, ile stanowisk szukasz, w jakim mieście i na jak długo. Możesz też skorzystać z porównywarki modeli.',
+                  title: t('home.process.step_1_title', 'Określ swoje potrzeby'),
+                  desc: t('home.process.step_1_text', 'Powiedz nam, ile stanowisk szukasz, w jakim mieście i na jak długo. Możesz też skorzystać z porównywarki modeli.'),
                 },
                 {
                   num: '02',
-                  title: 'Porównaj najlepsze oferty',
-                  desc: 'Dobierzemy dla Ciebie oferty dopasowane do budżetu i wymagań. Możesz zestawić je ze sobą w naszej porównywarce.',
+                  title: t('home.process.step_2_title', 'Porównaj najlepsze oferty'),
+                  desc: t('home.process.step_2_text', 'Dobierzemy dla Ciebie oferty dopasowane do budżetu i wymagań. Możesz też je ze sobą zestawić w naszej porównywarce.'),
                 },
                 {
                   num: '03',
-                  title: 'Sfinalizuj umowę',
-                  desc: 'Nasz doradca przeprowadzi Cię przez negocjacje i formalności — bezpłatnie, bez zobowiązań.',
+                  title: t('home.process.step_3_title', 'Sfinalizuj umowę'),
+                  desc: t('home.process.step_3_text', 'Nasz doradca przeprowadzi Cię przez negocjacje i formalności — bezpłatnie, bez zobowiązań.'),
                 },
               ].map(({ num, title, desc }, i) => (
                 <div key={num} data-reveal={`d${i + 1}`}>

@@ -12,7 +12,9 @@ import MapView from '@/components/search/MapView'
 import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPriceShort } from '@/lib/currency/currency'
+import { getContentMessage } from '@/lib/i18n/runtime'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator, Advisor } from '@/types/database'
@@ -22,6 +24,7 @@ type FullListing = Listing & { operator: Operator; advisor: Advisor | null }
 export default function ComparatorClient() {
   const { items, removeItem } = useBasketContext()
   const { currency, rates } = useCurrencyContext()
+  const { locale } = useLocaleContext()
   const [listings, setListings] = useState<FullListing[]>([])
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -44,6 +47,7 @@ export default function ComparatorClient() {
   const advisor = listings.find((l) => l.advisor)?.advisor || null
   const missingPriceTooltip =
     'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
+  const t = (key: string, fallback?: string) => getContentMessage(locale, key, fallback)
 
   return (
     <>
@@ -52,26 +56,26 @@ export default function ComparatorClient() {
       <div className="container-colliers py-12 pb-20 lg:pb-28">
         {/* Page header */}
         <div className="mb-10">
-          <p className="overline mb-4">Twoje zestawienie</p>
+          <p className="overline mb-4">{t('compare.header.eyebrow', 'Twoje zestawienie')}</p>
           <h1
             className="text-4xl md:text-5xl font-normal text-[var(--colliers-navy)]"
             style={{ fontFamily: 'var(--font-serif)' }}
           >
-            Porównaj i uzyskaj ofertę<br />na wybrane biura
+            {t('compare.header.title', 'Porównaj i uzyskaj ofertę na wybrane biura')}
           </h1>
         </div>
 
         {items.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-[var(--colliers-gray)] mb-6 text-lg">
-              Nie dodałeś jeszcze żadnych biur do porównywarki.
+              {t('compare.empty', 'Nie dodałeś jeszcze żadnych biur do porównywarki.')}
             </p>
             <Link href="/biura-serwisowane" className="btn-primary">
-              Przeglądaj biura
+              {t('compare.empty_cta', 'Przeglądaj biura')}
             </Link>
           </div>
         ) : loading ? (
-          <p className="text-[var(--colliers-gray)]">Ładowanie…</p>
+          <p className="text-[var(--colliers-gray)]">{t('compare.loading', 'Ładowanie…')}</p>
         ) : (
           <>
             {/* Advisor card + CTA */}
@@ -79,7 +83,7 @@ export default function ComparatorClient() {
               <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.8fr]">
                 <div className="p-7 md:p-8 lg:p-10">
                   <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-5">
-                    Twój doradca Colliers
+                    {t('compare.advisor.eyebrow', 'Twój doradca Colliers')}
                   </p>
                   <div className="flex items-center gap-5">
                     <div className="w-16 h-16 flex-shrink-0 overflow-hidden bg-[var(--colliers-bg-blue-tint)] flex items-center justify-center font-semibold text-[var(--colliers-navy)] text-lg">
@@ -128,14 +132,13 @@ export default function ComparatorClient() {
                 </div>
                 <div className="border-t md:border-t-0 md:border-l border-[#d8e0f3] p-7 md:p-8 lg:p-10 bg-white/65 flex flex-col justify-center">
                   <p className="text-sm text-[var(--colliers-gray)] leading-relaxed mb-5">
-                    Masz pytania? Wyślij zapytanie o wybrane biura — doradca Colliers przygotuje
-                    dla Ciebie indywidualną ofertę.
+                    {t('compare.advisor.body', 'Masz pytania? Wyślij zapytanie o wybrane biura — doradca Colliers przygotuje dla Ciebie indywidualną ofertę.')}
                   </p>
                   <button
                     onClick={() => setFormOpen(true)}
                     className="btn-primary whitespace-nowrap self-start"
                   >
-                    Wyślij zapytanie ofertowe
+                    {t('compare.advisor.cta', 'Wyślij zapytanie ofertowe')}
                   </button>
                 </div>
               </div>
@@ -146,7 +149,16 @@ export default function ComparatorClient() {
               <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
                 <thead>
                   <tr className="border-b-2 border-[var(--colliers-navy)]">
-                    {['', 'Nazwa biura', 'Adres', 'Operator', 'Stanowiska', 'Cena (biurko)', 'Rok', ''].map((col) => (
+                    {[
+                      '',
+                      t('compare.table.col_name', 'Nazwa biura'),
+                      t('compare.table.col_address', 'Adres'),
+                      t('compare.table.col_operator', 'Operator'),
+                      t('compare.table.col_workstations', 'Stanowiska'),
+                      t('compare.table.col_price', 'Cena (biurko)'),
+                      t('compare.table.col_year', 'Rok'),
+                      '',
+                    ].map((col) => (
                       <th
                         key={col}
                         className="text-left py-3 pr-5 text-[10px] font-bold uppercase tracking-[3px] text-[#1C54F4] whitespace-nowrap last:pr-0"
@@ -195,7 +207,7 @@ export default function ComparatorClient() {
                           </Link>
                           {l.is_featured && (
                             <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-[2px] text-[#1C54F4]">
-                              Polecane
+                              {t('compare.table.featured', 'Polecane')}
                             </span>
                           )}
                         </td>
@@ -243,7 +255,7 @@ export default function ComparatorClient() {
                           <button
                             onClick={() => removeItem(l.id)}
                             className="text-[var(--colliers-gray)] hover:text-red-500 transition-colors p-1"
-                            title="Usuń z porównywarki"
+                            title={t('compare.remove_title', 'Usuń z porównywarki')}
                           >
                             <X size={16} />
                           </button>

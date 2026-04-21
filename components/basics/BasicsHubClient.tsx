@@ -7,6 +7,8 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getContentMessage } from '@/lib/i18n/runtime'
 import { BASICS_TOOLS_SECTION, getBasicsCards } from '@/lib/basics/flexBasics'
 
 function formatNumber(value: number) {
@@ -38,11 +40,13 @@ function useCountUp(target: number, active: boolean) {
 }
 
 export default function BasicsHubClient() {
+  const { locale } = useLocaleContext()
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [kpiVisible, setKpiVisible] = useState(false)
   const kpiRef = useRef<HTMLElement>(null)
   const cards = getBasicsCards()
+  const t = (key: string, fallback?: string) => getContentMessage(locale, key, fallback)
 
   useEffect(() => {
     const section = kpiRef.current
@@ -67,22 +71,22 @@ export default function BasicsHubClient() {
         <section className="pt-32 pb-24 bg-[linear-gradient(180deg,#ffffff_0%,#f8faff_100%)] border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
             <div data-reveal="left">
-              <p className="overline mb-6">Podstawy flex</p>
+              <p className="overline mb-6">{t('basics_hub.hero.eyebrow', 'Podstawy flex')}</p>
               <h1
                 className="text-[#000759] leading-[1.05] mb-6"
                 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 4.2rem)' }}
               >
-                Zrozum biura elastyczne od podstaw
+                {t('basics_hub.hero.title', 'Zrozum biura elastyczne od podstaw')}
               </h1>
               <p className="text-body-strong text-lg leading-relaxed mb-9">
-                Poznaj najważniejsze pojęcia, modele najmu i scenariusze, w których biuro flex może być lepszym rozwiązaniem niż najem tradycyjny.
+                {t('basics_hub.hero.lead', 'Poznaj najważniejsze pojęcia, modele najmu i scenariusze, w których biuro flex może być lepszym rozwiązaniem niż najem tradycyjny.')}
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/podstawy-flex/czym-sa-biura-elastyczne" className="btn-primary inline-flex items-center gap-2">
-                  Zacznij od definicji <ArrowRight size={14} />
+                  {t('basics_hub.hero.primary_cta', 'Zacznij od definicji')} <ArrowRight size={14} />
                 </Link>
                 <Link href="/podstawy-flex/modele-biur-elastycznych" className="btn-outline inline-flex items-center gap-2">
-                  Porównaj modele <ArrowRight size={14} />
+                  {t('basics_hub.hero.secondary_cta', 'Porównaj modele')} <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
@@ -110,28 +114,28 @@ export default function BasicsHubClient() {
         <section ref={kpiRef} className="py-20 bg-[#f8faff] border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-10 items-start">
             <div data-reveal="left">
-              <p className="overline mb-6">Kontekst</p>
+              <p className="overline mb-6">{t('basics_hub.context.eyebrow', 'Kontekst')}</p>
               <h2 className="text-[#000759] leading-tight mb-6" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(1.8rem,3.2vw,3rem)' }}>
-                Flex to nie tylko coworking
+                {t('basics_hub.context.title', 'Flex to nie tylko coworking')}
               </h2>
               <p className="text-body-strong leading-relaxed">
-                Rynek biur elastycznych przestał być niszową alternatywą dla małych firm. Dziś to dojrzały segment rynku biurowego, odpowiadający zarówno na potrzeby start-upów, jak i większych organizacji oczekujących szybkości wdrożenia, przewidywalności kosztów i gotowego środowiska pracy. Raport pokazuje też, że podaż flex w siedmiu największych miastach Polski przekracza 430 tys. m², a cały segment rośnie wraz z potrzebą elastyczności i redukcji ryzyka.
+                {t('basics_hub.context.body', 'Rynek biur elastycznych przestał być niszową alternatywą dla małych firm. Dziś to dojrzały segment rynku biurowego, odpowiadający zarówno na potrzeby start-upów, jak i większych organizacji oczekujących szybkości wdrożenia, przewidywalności kosztów i gotowego środowiska pracy. Raport pokazuje też, że podaż flex w siedmiu największych miastach Polski przekracza 430 tys. m², a cały segment rośnie wraz z potrzebą elastyczności i redukcji ryzyka.')}
               </p>
             </div>
             <div className="surface-panel-soft space-y-5 p-6" data-reveal="right">
               <div>
                 <p className="text-[#000759] text-4xl font-normal">{formatNumber(totalSupply)}+ m²</p>
-                <p className="text-body-muted text-sm">elastycznej powierzchni w 7 największych miastach</p>
+                <p className="text-body-muted text-sm">{t('basics_hub.context.kpi_supply_label', 'elastycznej powierzchni w 7 największych miastach')}</p>
               </div>
               <div className="h-px bg-[#e6ebf8]" />
               <div>
                 <p className="text-[#000759] text-2xl font-normal">3%+</p>
-                <p className="text-body-muted text-sm">udziału w całkowitej podaży biur</p>
+                <p className="text-body-muted text-sm">{t('basics_hub.context.kpi_share_label', 'udziału w całkowitej podaży biur')}</p>
               </div>
               <div className="h-px bg-[#e6ebf8]" />
               <div>
                 <p className="text-[#000759] text-2xl font-normal">3</p>
-                <p className="text-body-muted text-sm">główne modele opisane w przewodniku</p>
+                <p className="text-body-muted text-sm">{t('basics_hub.context.kpi_models_label', 'główne modele opisane w przewodniku')}</p>
               </div>
             </div>
           </div>
@@ -139,9 +143,9 @@ export default function BasicsHubClient() {
 
         <section className="py-20 border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers">
-            <p className="overline mb-6">Evergreeny</p>
+            <p className="overline mb-6">{t('basics_hub.evergreens.eyebrow', 'Evergreeny')}</p>
             <h2 className="text-[#000759] mb-10" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2rem,3.6vw,3.3rem)' }}>
-              Pięć tematów, od których warto zacząć
+              {t('basics_hub.evergreens.title', 'Pięć tematów, od których warto zacząć')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {cards.map((card, idx) => (
@@ -152,11 +156,11 @@ export default function BasicsHubClient() {
                   data-reveal={`d${(idx % 3) + 1}`}
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_80%_20%,rgba(28,84,244,0.1),transparent_55%)]" />
-                  <p className="text-[#1C54F4] text-[11px] font-bold uppercase tracking-[0.2em] mb-5">{card.number}</p>
-                  <h3 className="text-[#000759] text-[1.45rem] font-normal leading-tight mb-4">{card.title}</h3>
-                  <p className="text-body-muted text-sm leading-relaxed mb-7">{card.description}</p>
+                  <p className="text-[#1C54F4] text-[11px] font-bold uppercase tracking-[0.2em] mb-5">{t(`basics_hub.card.${idx + 1}.number`, card.number)}</p>
+                  <h3 className="text-[#000759] text-[1.45rem] font-normal leading-tight mb-4">{t(`basics_hub.card.${idx + 1}.title`, card.title)}</h3>
+                  <p className="text-body-muted text-sm leading-relaxed mb-7">{t(`basics_hub.card.${idx + 1}.description`, card.description)}</p>
                   <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
-                    Zobacz więcej <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
+                    {t('header.knowledgeBase', 'Baza wiedzy')} <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </span>
                 </Link>
               ))}
@@ -166,7 +170,7 @@ export default function BasicsHubClient() {
 
         <section className="py-20 bg-[#f8faff] border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers">
-            <p className="overline mb-6">Narzędzia</p>
+            <p className="overline mb-6">{t('basics_hub.tools.eyebrow', 'Narzędzia')}</p>
             <h2 className="text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2rem,3.6vw,3.3rem)' }}>
               Przejdź od wiedzy do decyzji
             </h2>
@@ -195,19 +199,19 @@ export default function BasicsHubClient() {
 
         <section className="py-20 bg-[#000759] text-white" data-reveal>
           <div className="container-colliers">
-            <p className="overline mb-6">Dalej</p>
+            <p className="overline mb-6">{t('basics_hub.next.eyebrow', 'Dalej')}</p>
             <h2 className="text-white text-4xl font-normal mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
-              Nie musisz zaczynać od pełnego briefu
+              {t('basics_hub.next.title', 'Nie musisz zaczynać od pełnego briefu')}
             </h2>
             <p className="max-w-3xl mb-8 text-white/84">
-              Możesz zacząć od definicji, porównać modele albo od razu przejść do narzędzi. Gdy będziesz gotowy, pomożemy przełożyć to na realne opcje rynkowe.
+              {t('basics_hub.next.body', 'Możesz zacząć od definicji, porównać modele albo od razu przejść do narzędzi. Gdy będziesz gotowy, pomożemy przełożyć to na realne opcje rynkowe.')}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/kalkulator-flex" className="btn-primary-bright inline-flex items-center gap-2">
-                Uruchom kalkulator <ArrowRight size={14} />
+                {t('basics_hub.next.primary_cta', 'Uruchom kalkulator')} <ArrowRight size={14} />
               </Link>
               <button onClick={() => setFormOpen(true)} className="btn-outline border-white/35 text-white hover:bg-white hover:text-[#000759]">
-                Porozmawiaj z doradcą
+                {t('basics_hub.next.secondary_cta', 'Porozmawiaj z doradcą')}
               </button>
             </div>
           </div>

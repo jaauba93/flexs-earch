@@ -8,6 +8,8 @@ import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import PolandOverviewMap from '@/components/maps/PolandOverviewMap'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getContentMessage } from '@/lib/i18n/runtime'
 import { CITY_REPORT_ORDER, CITY_REPORTS, type CityReportSlug } from '@/lib/reports/cityReports'
 
 const basics = [
@@ -97,6 +99,7 @@ function useCountUp(target: number, active: boolean) {
 }
 
 export default function GuideClient() {
+  const { locale } = useLocaleContext()
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [activeCity, setActiveCity] = useState<CityReportSlug>('warszawa')
@@ -119,6 +122,30 @@ export default function GuideClient() {
   const count420 = useCountUp(420000, kpiVisible)
   const count235 = useCountUp(235000, kpiVisible)
   const count71 = useCountUp(71000, kpiVisible)
+  const t = (key: string, fallback?: string) => getContentMessage(locale, key, fallback)
+  const navCards = [
+    {
+      title: t('guide.section.basics.eyebrow', 'Podstawy flex'),
+      copy:
+        'Zrozum, czym są biura elastyczne, jakie modele masz do wyboru i kiedy flex realnie wygrywa z tradycyjnym najmem.',
+      href: '#podstawy-flex',
+      icon: Building2,
+    },
+    {
+      title: t('guide.section.reports.eyebrow', 'Raporty miejskie'),
+      copy:
+        'Sprawdź dane, dynamikę i charakterystykę najważniejszych rynków biur elastycznych w Polsce.',
+      href: '#raporty-miejskie',
+      icon: MapPin,
+    },
+    {
+      title: t('guide.section.tools.eyebrow', 'Narzędzia'),
+      copy:
+        'Porównaj modele, oszacuj koszty i zawęź wybór szybciej dzięki praktycznym narzędziom.',
+      href: '#narzedzia',
+      icon: SlidersHorizontal,
+    },
+  ]
 
   return (
     <>
@@ -128,25 +155,25 @@ export default function GuideClient() {
         <section className="pt-32 pb-24 bg-[linear-gradient(180deg,#ffffff_0%,#f8faff_100%)] border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
             <div data-reveal="left">
-              <p className="overline mb-6">Przewodnik Flex</p>
+              <p className="overline mb-6">{t('guide.hero.eyebrow', 'Przewodnik Flex')}</p>
               <h1
                 className="text-[#000759] leading-[1.05] mb-6"
                 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 4.4rem)' }}
               >
-                Przewodnik po biurach elastycznych
+                {t('guide.hero.title', 'Przewodnik po biurach elastycznych')}
               </h1>
               <p className="text-body-strong text-lg leading-relaxed mb-6">
-                Modele najmu, różnice względem biura tradycyjnego, praktyczne kryteria wyboru i raporty miejskie dla największych rynków w Polsce. Wszystko w jednym miejscu.
+                {t('guide.hero.lead', 'Modele najmu, różnice względem biura tradycyjnego, praktyczne kryteria wyboru i raporty miejskie dla największych rynków w Polsce. Wszystko w jednym miejscu.')}
               </p>
               <p className="text-body-muted text-[1rem] leading-relaxed mb-10 max-w-2xl">
-                Biuro flex to dziś nie tylko coworking. To szerokie spektrum rozwiązań — od hot desku po dedykowane moduły z brandingiem, własną recepcją i rozbudowanym zakresem usług. To ważne, bo raport pokazuje, że segment w Polsce przekroczył już 420 tys. m², a na największych rynkach udział flex sięga około 3–4% nowoczesnej podaży biurowej.
+                {t('guide.hero.body', 'Biuro flex to dziś nie tylko coworking. To szerokie spektrum rozwiązań — od hot desku po dedykowane moduły z brandingiem, własną recepcją i rozbudowanym zakresem usług. To ważne, bo raport pokazuje, że segment w Polsce przekroczył już 420 tys. m², a na największych rynkach udział flex sięga około 3–4% nowoczesnej podaży biurowej.')}
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="#podstawy-flex" className="btn-primary inline-flex items-center gap-2">
-                  Zacznij od podstaw <ArrowRight size={14} />
+                  {t('guide.hero.primary_cta', 'Zacznij od podstaw')} <ArrowRight size={14} />
                 </Link>
                 <Link href="#raporty-miejskie" className="btn-outline inline-flex items-center gap-2">
-                  Sprawdź raporty miejskie <ArrowRight size={14} />
+                  {t('guide.hero.secondary_cta', 'Sprawdź raporty miejskie')} <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
@@ -180,28 +207,9 @@ export default function GuideClient() {
 
         <section id="filary" className="py-20 border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers">
-            <p className="overline mb-8">Szybka nawigacja</p>
+            <p className="overline mb-8">{t('guide.nav.eyebrow', 'Szybka nawigacja')}</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {[
-                {
-                  title: 'Podstawy flex',
-                  copy: 'Zrozum, czym są biura elastyczne, jakie modele masz do wyboru i kiedy flex realnie wygrywa z tradycyjnym najmem.',
-                  href: '#podstawy-flex',
-                  icon: Building2,
-                },
-                {
-                  title: 'Raporty miejskie',
-                  copy: 'Sprawdź dane, dynamikę i charakterystykę najważniejszych rynków biur elastycznych w Polsce.',
-                  href: '#raporty-miejskie',
-                  icon: MapPin,
-                },
-                {
-                  title: 'Narzędzia',
-                  copy: 'Porównaj modele, oszacuj koszty i zawęź wybór szybciej dzięki praktycznym narzędziom.',
-                  href: '#narzedzia',
-                  icon: SlidersHorizontal,
-                },
-              ].map((card, idx) => {
+              {navCards.map((card, idx) => {
                 const Icon = card.icon
                 return (
                   <Link
@@ -215,7 +223,7 @@ export default function GuideClient() {
                     <h3 className="text-[#000759] text-2xl font-normal mb-4 group-hover:translate-x-1 transition-transform duration-300">{card.title}</h3>
                     <p className="text-body-muted text-sm leading-relaxed mb-6">{card.copy}</p>
                     <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
-                      Przejdź dalej <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
+                      {t('header.guide', 'Przewodnik flex')} <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                     </span>
                   </Link>
                 )
@@ -227,27 +235,27 @@ export default function GuideClient() {
         <section ref={kpiRef} className="py-24 bg-[#f8faff] border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-12 items-start">
             <div data-reveal="left">
-              <p className="overline mb-6">Dlaczego teraz</p>
+              <p className="overline mb-6">{t('guide.context.eyebrow', 'Dlaczego teraz')}</p>
               <h2 className="text-[#000759] leading-tight mb-6" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(1.8rem,3.2vw,3rem)' }}>
-                Rynek flex dojrzał. Decyzja stała się bardziej strategiczna niż doraźna.
+                {t('guide.context.title', 'Rynek flex dojrzał. Decyzja stała się bardziej strategiczna niż doraźna.')}
               </h2>
               <p className="text-body-strong leading-relaxed">
-                Elastyczne biura przestały być formatem kojarzonym wyłącznie z coworkingiem. Dziś są elementem strategii najmu dla firm, które chcą szybciej uruchamiać biura, ograniczać CAPEX, lepiej reagować na zmiany zatrudnienia i korzystać z gotowego środowiska pracy. Raport wskazuje, że w siedmiu największych miastach Polski całkowita podaż flex przekracza 420 tys. m², z najwyższą skalą w Warszawie, Krakowie i Wrocławiu.
+                {t('guide.context.body', 'Elastyczne biura przestały być formatem kojarzonym wyłącznie z coworkingiem. Dziś są elementem strategii najmu dla firm, które chcą szybciej uruchamiać biura, ograniczać CAPEX, lepiej reagować na zmiany zatrudnienia i korzystać z gotowego środowiska pracy. Raport wskazuje, że w siedmiu największych miastach Polski całkowita podaż flex przekracza 420 tys. m², z najwyższą skalą w Warszawie, Krakowie i Wrocławiu.')}
               </p>
             </div>
 
             <div className="space-y-4" data-reveal="right">
               <div className="surface-panel-soft relative p-6">
                 <p className="text-[#000759] text-4xl font-normal mb-2">{formatNumber(count420)}+</p>
-                <p className="text-body-muted text-sm">m² elastycznej powierzchni w 7 największych miastach</p>
+                <p className="text-body-muted text-sm">{t('guide.context.kpi_supply_label', 'm² elastycznej powierzchni w 7 największych miastach')}</p>
               </div>
               <div className="surface-panel-soft relative p-6">
                 <p className="text-[#000759] text-4xl font-normal mb-2">{formatNumber(count235)} m²</p>
-                <p className="text-body-muted text-sm">w Warszawie</p>
+                <p className="text-body-muted text-sm">{t('guide.context.kpi_warsaw_label', 'w Warszawie')}</p>
               </div>
               <div className="surface-panel-soft relative p-6">
                 <p className="text-[#000759] text-4xl font-normal mb-2">{formatNumber(count71)} m²</p>
-                <p className="text-body-muted text-sm">w Krakowie</p>
+                <p className="text-body-muted text-sm">{t('guide.context.kpi_krakow_label', 'w Krakowie')}</p>
               </div>
             </div>
           </div>
