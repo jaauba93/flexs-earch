@@ -47,6 +47,18 @@ function normalizeSheetRows(sheet: XLSX.WorkSheet | undefined) {
   return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
 }
 
+function hasAnyTranslatedValue(
+  rows: Record<string, unknown>[],
+  fields: string[]
+) {
+  return rows.some((row) =>
+    fields.some((field) => {
+      const value = row[field]
+      return typeof value === 'string' && value.trim().length > 0
+    })
+  )
+}
+
 async function detectTranslationSupport(): Promise<TranslationSupport> {
   const admin = createAdminClient()
   const [{ data: listingRows }, { data: amenityRows }] = await Promise.all([
@@ -242,6 +254,37 @@ export async function importTranslationWorkbook(buffer: ArrayBuffer): Promise<Tr
     publicUiUpdated: 0,
     pageContentUpdated: 0,
     errors: [],
+  }
+
+  if (
+    (!support.listings.name_en ||
+      !support.listings.name_uk ||
+      !support.listings.description_en ||
+      !support.listings.description_uk) &&
+    hasAnyTranslatedValue(listingRows, ['name_en', 'name_uk', 'description_en', 'description_uk'])
+  ) {
+    summary.errors.push(
+      'Baza nie ma jeszcze kolumn tłumaczeń dla tabeli listings (`name_en`, `name_uk`, `description_en`, `description_uk`). Uruchom migrację SQL `2026-04-20-public-i18n.sql` i ponów import.'
+    )
+  }
+
+  if (
+    !support.amenities.name_uk &&
+    hasAnyTranslatedValue(amenityRows, ['name_uk'])
+  ) {
+    summary.errors.push(
+      'Baza nie ma jeszcze kolumny `amenities.name_uk`. Uruchom migrację SQL `2026-04-20-public-i18n.sql` i ponów import.'
+    )
+  }
+
+  if (
+    !support.publicUiTable &&
+    (hasAnyTranslatedValue(publicUiRows, ['value_en', 'value_uk']) ||
+      hasAnyTranslatedValue(pageContentRows, ['value_en', 'value_uk']))
+  ) {
+    summary.errors.push(
+      'Baza nie ma jeszcze tabeli `public_site_translations`, więc import tekstów UI i page content został pominięty. Uruchom migrację SQL `2026-04-20-public-i18n.sql` i ponów import.'
+    )
   }
 
   for (let index = 0; index < listingRows.length; index += 1) {
