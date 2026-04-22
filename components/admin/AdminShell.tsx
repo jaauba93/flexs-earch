@@ -1,5 +1,8 @@
+'use client'
+
 import Link from 'next/link'
-import { BarChart3, BriefcaseBusiness, FileSpreadsheet, Globe2, LogOut, PencilRuler } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { BarChart3, BriefcaseBusiness, ChevronDown, FileSpreadsheet, Globe2, LogOut, PencilRuler } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { logoutAction } from '@/app/admin/actions'
 
@@ -10,16 +13,24 @@ interface AdminShellProps {
   children: React.ReactNode
 }
 
-const navItems = [
+const businessNavItems = [
   { href: '/admin', label: 'Dashboard', icon: BarChart3 },
   { href: '/admin/listings', label: 'Oferty', icon: PencilRuler },
   { href: '/admin/advisors', label: 'Doradcy', icon: BriefcaseBusiness },
   { href: '/admin/flex-kalkulator', label: 'Kalkulator flex', icon: BarChart3 },
-  { href: '/admin/translations', label: 'Tłumaczenia', icon: Globe2 },
   { href: '/admin/import', label: 'Import', icon: FileSpreadsheet },
 ]
 
+const webNavItems = [
+  { href: '/admin/web', label: 'Dashboard web', icon: Globe2 },
+  { href: '/admin/web/pages', label: 'Strony i sitemap', icon: Globe2 },
+  { href: '/admin/web/translations', label: 'Tłumaczenia zbiorcze', icon: Globe2 },
+]
+
 export default function AdminShell({ user, title, subtitle, children }: AdminShellProps) {
+  const pathname = usePathname()
+  const isWebOpen = pathname.startsWith('/admin/web') || pathname.startsWith('/admin/translations')
+
   return (
     <div className="min-h-screen bg-[#f3f6fb] text-[#10204a]">
       <div className="mx-auto grid min-h-screen max-w-[1720px] gap-6 px-4 py-4 lg:grid-cols-[290px_minmax(0,1fr)] lg:px-6">
@@ -40,19 +51,54 @@ export default function AdminShell({ user, title, subtitle, children }: AdminShe
           </div>
 
           <nav className="space-y-2">
-            {navItems.map((item) => {
+            {businessNavItems.map((item) => {
               const Icon = item.icon
+              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold text-[#243763] transition-all duration-200 hover:bg-[#eef4ff] hover:text-[#1c54f4]"
+                  className={`flex items-center gap-3 rounded-[18px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? 'bg-[#eef4ff] text-[#1c54f4]'
+                      : 'text-[#243763] hover:bg-[#eef4ff] hover:text-[#1c54f4]'
+                  }`}
                 >
                   <Icon size={18} />
                   {item.label}
                 </Link>
               )
             })}
+
+            <details open={isWebOpen} className="group rounded-[20px] border border-[#e5ecfa] bg-[#fbfcff]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[20px] px-4 py-3 text-sm font-semibold text-[#243763] marker:hidden">
+                <span className="flex items-center gap-3">
+                  <Globe2 size={18} />
+                  web
+                </span>
+                <ChevronDown size={16} className="transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-1 px-2 pb-2">
+                {webNavItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-[16px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                        isActive
+                          ? 'bg-[#eef4ff] text-[#1c54f4]'
+                          : 'text-[#243763] hover:bg-[#eef4ff] hover:text-[#1c54f4]'
+                      }`}
+                    >
+                      <Icon size={16} />
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            </details>
           </nav>
 
           <form action={logoutAction} className="mt-8">

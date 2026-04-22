@@ -8,18 +8,11 @@ import BasketDropdown from '@/components/comparator/BasketDropdown'
 import CurrencySwitcher from '@/components/layout/CurrencySwitcher'
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getLocalizedCityLabel } from '@/lib/i18n/cities'
 import { getContentMessage, getPublicMessage } from '@/lib/i18n/runtime'
 import { withLocalePath } from '@/lib/i18n/routing'
 
-const cities = [
-  { label: 'Warszawa', slug: 'warszawa' },
-  { label: 'Kraków', slug: 'krakow' },
-  { label: 'Wrocław', slug: 'wroclaw' },
-  { label: 'Trójmiasto', slug: 'trojmiasto' },
-  { label: 'Poznań', slug: 'poznan' },
-  { label: 'Katowice', slug: 'katowice' },
-  { label: 'Łódź', slug: 'lodz' },
-]
+const cities = ['warszawa', 'krakow', 'wroclaw', 'trojmiasto', 'poznan', 'katowice', 'lodz']
 
 interface HeaderProps {
   onOpenForm?: () => void
@@ -37,13 +30,13 @@ const guideBasics = [
 ]
 
 const guideCities = [
-  { label: 'Warszawa', href: '/raporty-miejskie/warszawa' },
-  { label: 'Kraków', href: '/raporty-miejskie/krakow' },
-  { label: 'Wrocław', href: '/raporty-miejskie/wroclaw' },
-  { label: 'Trójmiasto', href: '/raporty-miejskie/trojmiasto' },
-  { label: 'Poznań', href: '/raporty-miejskie/poznan' },
-  { label: 'Łódź', href: '/raporty-miejskie/lodz' },
-  { label: 'Katowice', href: '/raporty-miejskie/katowice' },
+  { slug: 'warszawa', href: '/raporty-miejskie/warszawa' },
+  { slug: 'krakow', href: '/raporty-miejskie/krakow' },
+  { slug: 'wroclaw', href: '/raporty-miejskie/wroclaw' },
+  { slug: 'trojmiasto', href: '/raporty-miejskie/trojmiasto' },
+  { slug: 'poznan', href: '/raporty-miejskie/poznan' },
+  { slug: 'lodz', href: '/raporty-miejskie/lodz' },
+  { slug: 'katowice', href: '/raporty-miejskie/katowice' },
 ]
 
 const guideTools = [
@@ -113,6 +106,14 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
   const localizedGuideBasics = guideBasics.map((item) => ({
     ...item,
     label: getContentMessage(locale, `basics.${item.key}.hero.title`),
+  }))
+  const localizedCities = cities.map((slug) => ({
+    slug,
+    label: getLocalizedCityLabel(slug, locale),
+  }))
+  const localizedGuideCities = guideCities.map((item) => ({
+    ...item,
+    label: getLocalizedCityLabel(item.slug, locale),
   }))
 
   return (
@@ -194,7 +195,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                     {getPublicMessage(locale, 'header.officesLabel')}
                   </p>
 
-                  {cities.map((c) => (
+                  {localizedCities.map((c) => (
                     <Link
                       key={c.slug}
                       href={withLocalePath(locale, `/biura-serwisowane/${c.slug}`)}
@@ -210,7 +211,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                       className="flex items-center gap-3 px-6 py-3 text-[11px] font-bold uppercase text-[#1C54F4] hover:bg-[#EDF2FF] transition-colors"
                       style={{ letterSpacing: '0.2em' }}
                     >
-                      Wszystkie lokalizacje →
+                      {getPublicMessage(locale, 'header.allLocations')} →
                     </Link>
                   </div>
                 </div>
@@ -295,7 +296,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                   {getPublicMessage(locale, 'header.officesInPoland')}
                 </div>
                 <div className="flex flex-col">
-                  {cities.map((c) => (
+                  {localizedCities.map((c) => (
                     <Link
                       key={c.slug}
                       href={withLocalePath(locale, `/biura-serwisowane/${c.slug}`)}
@@ -354,9 +355,9 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                     {getPublicMessage(locale, 'header.reportsSection')}
                   </p>
                   <div className="flex flex-col">
-                    {guideCities.map((item) => (
+                    {localizedGuideCities.map((item) => (
                       <Link
-                        key={item.label}
+                        key={item.slug}
                         href={withLocalePath(locale, item.href)}
                         onClick={() => setMobileOpen(false)}
                         className="list-none py-1.5 pl-0 text-[11px] font-bold uppercase text-[#000759] hover:text-[#1C54F4] transition-colors before:content-none"
@@ -480,9 +481,9 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                     {getPublicMessage(locale, 'header.reportsSection')}
                   </Link>
                   <div className="space-y-5">
-                    {guideCities.map((item) => (
+                    {localizedGuideCities.map((item) => (
                       <Link
-                        key={item.label}
+                        key={item.slug}
                         href={withLocalePath(locale, item.href)}
                         className="block text-left text-[0.98rem] leading-snug text-[#222c4d] hover:text-[#1C54F4] transition-colors"
                       >

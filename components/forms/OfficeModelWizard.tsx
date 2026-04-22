@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, ChevronRight, ShieldCheck, Users, Wallet, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { ContactFormPrefill } from '@/components/forms/ContactForm'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { formatContentMessage, getContentMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import {
-  buildRecommendationNote,
   DESK_COUNT_LABELS,
   getDeskPrefill,
   getRecommendationResult,
@@ -86,6 +88,43 @@ const STEP_META = [
   },
 ] as const
 
+function getWizardDriverTranslation(locale: 'pl' | 'en' | 'uk', driver: string) {
+  const map: Record<string, string> = {
+    'mała liczba osób z dostępem': 'wizard.driver.team.small',
+    'średnia skala zespołu': 'wizard.driver.team.medium',
+    'duża liczba osób z dostępem': 'wizard.driver.team.large',
+    'mała liczba stałych stanowisk': 'wizard.driver.desk.small',
+    'duża liczba stanowisk': 'wizard.driver.desk.large',
+    'bardzo duża liczba stanowisk': 'wizard.driver.desk.xlarge',
+    'niska potrzeba prywatności': 'wizard.driver.privacy.low',
+    'neutralne podejście do prywatności': 'wizard.driver.privacy.neutral',
+    'wysoka potrzeba prywatności': 'wizard.driver.privacy.high',
+    'niska presja na ograniczenie CAPEX': 'wizard.driver.capex.low',
+    'neutralne podejście do CAPEX': 'wizard.driver.capex.neutral',
+    'ważne ograniczenie CAPEX': 'wizard.driver.capex.high',
+    'wysoka elastyczność': 'wizard.driver.term.short',
+    'średni horyzont zobowiązania': 'wizard.driver.term.medium',
+    'dłuższa akceptowalna umowa': 'wizard.driver.term.long',
+    'niski poziom rotacyjności': 'wizard.driver.sharing.low',
+    'umiarkowany poziom rotacyjności': 'wizard.driver.sharing.medium',
+    'wysoki poziom rotacyjności': 'wizard.driver.sharing.high',
+  }
+
+  return map[driver] ? getContentMessage(locale, map[driver], driver) : driver
+}
+
+function formatWizardList(locale: 'pl' | 'en' | 'uk', items: string[]) {
+  if (items.length === 0) return ''
+  if (items.length === 1) return items[0]
+  if (items.length === 2) {
+    const joiner = locale === 'pl' ? ' i ' : locale === 'en' ? ' and ' : ' і '
+    return `${items[0]}${joiner}${items[1]}`
+  }
+
+  const joiner = locale === 'pl' ? ' i ' : locale === 'en' ? ' and ' : ' і '
+  return `${items.slice(0, -1).join(', ')}${joiner}${items[items.length - 1]}`
+}
+
 function StepOptionCard({
   title,
   active,
@@ -113,14 +152,16 @@ function StepOptionCard({
 function ScaleSelector({
   value,
   onChange,
+  options,
 }: {
   value?: ScaleKey
   onChange: (next: ScaleKey) => void
+  options: { key: ScaleKey; label: string }[]
 }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-5 gap-2">
-        {SCALE_OPTIONS.map((option) => (
+        {options.map((option) => (
           <button
             key={option.key}
             type="button"
@@ -138,7 +179,7 @@ function ScaleSelector({
         ))}
       </div>
       <div className="grid grid-cols-5 gap-2">
-        {SCALE_OPTIONS.map((option) => (
+        {options.map((option) => (
           <span key={option.key} className="text-[11px] leading-snug text-[#6c7ba5] text-center">
             {option.label}
           </span>
@@ -196,6 +237,8 @@ function RecommendationPanel({
   answeredCount,
   totalSteps,
   highSharingHint,
+  currentRecommendationLabel,
+  progressLabel,
 }: {
   topLabel: string | null
   explanation: string
@@ -203,14 +246,16 @@ function RecommendationPanel({
   answeredCount: number
   totalSteps: number
   highSharingHint: string | null
+  currentRecommendationLabel: string
+  progressLabel: string
 }) {
   return (
     <div className="border-l border-[#dbe4f8] bg-[linear-gradient(180deg,#fbfcff_0%,#f4f8ff_100%)] lg:sticky lg:top-0 lg:h-full">
       <div className="flex h-full flex-col p-6 md:p-7">
         <div className="mb-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-2">Aktualna rekomendacja</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-2">{currentRecommendationLabel}</p>
           <h3 className="text-2xl font-normal text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
-            {topLabel || 'Wybierz pierwszą odpowiedź'}
+            {topLabel || currentRecommendationLabel}
           </h3>
         </div>
 
@@ -218,7 +263,7 @@ function RecommendationPanel({
 
         <div className="rounded-none border border-[#dbe4f8] bg-white px-4 py-3 mb-6">
           <div className="flex items-center justify-between gap-4">
-            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7a88b1]">Postęp</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7a88b1]">{progressLabel}</span>
             <span className="text-sm font-semibold text-[#000759]">{answeredCount}/{totalSteps}</span>
           </div>
         </div>
@@ -239,17 +284,21 @@ function MobileRecommendationSummary({
   topLabel,
   topScore,
   explanation,
+  currentRecommendationLabel,
+  fallbackLabel,
 }: {
   topLabel: string | null
   topScore: number
   explanation: string
+  currentRecommendationLabel: string
+  fallbackLabel: string
 }) {
   return (
     <div className="lg:hidden sticky bottom-0 z-10 border-t border-[#dbe4f8] bg-white/95 backdrop-blur px-5 py-4">
       <div className="flex items-start justify-between gap-4 mb-2">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#1C54F4] mb-1">Aktualna rekomendacja</p>
-          <p className="text-sm font-semibold text-[#000759]">{topLabel || 'Uzupełnij odpowiedzi'}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#1C54F4] mb-1">{currentRecommendationLabel}</p>
+          <p className="text-sm font-semibold text-[#000759]">{topLabel || fallbackLabel}</p>
         </div>
         <span className="text-sm font-bold text-[#1C54F4]">{topScore}%</span>
       </div>
@@ -258,17 +307,25 @@ function MobileRecommendationSummary({
   )
 }
 
-function AdvisorCard() {
+function AdvisorCard({
+  title,
+  team,
+  role,
+}: {
+  title: string
+  team: string
+  role: string
+}) {
   return (
     <div className="border border-[#dbe4f8] bg-[linear-gradient(135deg,#ffffff_0%,#f7faff_100%)] p-6">
-      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-4">Wsparcie doradcy</p>
+      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] mb-4">{title}</p>
       <div className="flex items-center gap-4 mb-4">
         <div className="flex h-14 w-14 items-center justify-center bg-[#000759] text-white font-semibold">
           CF
         </div>
         <div>
-          <p className="text-lg font-semibold text-[#000759]">Zespół Colliers Flex</p>
-          <p className="text-sm text-body-muted">Doradztwo w zakresie biur serwisowanych</p>
+          <p className="text-lg font-semibold text-[#000759]">{team}</p>
+          <p className="text-sm text-body-muted">{role}</p>
         </div>
       </div>
       <div className="space-y-2 text-sm">
@@ -289,6 +346,7 @@ export default function OfficeModelWizard({
   onSearchCta,
 }: OfficeModelWizardProps) {
   const router = useRouter()
+  const { locale } = useLocaleContext()
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<RecommendationAnswers>({})
   const [isHydrated, setIsHydrated] = useState(false)
@@ -350,7 +408,75 @@ export default function OfficeModelWizard({
   }, [answers, isHydrated, step])
 
   const recommendation = useMemo(() => getRecommendationResult(answers), [answers])
-  const currentStepMeta = STEP_META[step]
+  const localizedTeamAccessOptions = useMemo(
+    () => TEAM_ACCESS_OPTIONS.map((option) => ({ ...option, label: getContentMessage(locale, `wizard.option.team.${option.key}`, option.label) })),
+    [locale]
+  )
+  const localizedDeskOptions = useMemo(
+    () => DESK_COUNT_OPTIONS.map((option) => ({ ...option, label: getContentMessage(locale, `wizard.option.desk.${option.key}`, option.label) })),
+    [locale]
+  )
+  const localizedScaleOptions = useMemo(
+    () => SCALE_OPTIONS.map((option) => ({ ...option, label: getContentMessage(locale, `wizard.scale.${option.key}`, option.label) })),
+    [locale]
+  )
+  const localizedTermOptions = useMemo(
+    () => TERM_OPTIONS.map((option) => ({ ...option, label: getContentMessage(locale, `wizard.term.${option.key}`, option.label) })),
+    [locale]
+  )
+  const localizedStepMeta = useMemo(
+    () =>
+      STEP_META.map((item, index) => ({
+        ...item,
+        title: getContentMessage(locale, `wizard.step.${index + 1}.title`, item.title),
+        helper: item.helper ? getContentMessage(locale, `wizard.step.${index + 1}.helper`, item.helper) : item.helper,
+      })),
+    [locale]
+  )
+  const currentStepMeta = localizedStepMeta[step]
+  const localizedRanking = useMemo(
+    () =>
+      recommendation.ranking.map((item) => ({
+        ...item,
+        label: getContentMessage(locale, `wizard.model.${item.key}`, item.label),
+      })),
+    [locale, recommendation.ranking]
+  )
+  const strongestDrivers = useMemo(
+    () => recommendation.strongestDrivers.map((driver) => getWizardDriverTranslation(locale, driver)),
+    [locale, recommendation.strongestDrivers]
+  )
+  const topModelLabel = recommendation.topModelKey
+    ? getContentMessage(locale, `wizard.model.${recommendation.topModelKey}`, recommendation.topModelLabel || undefined)
+    : null
+  const runnerUpLabel = recommendation.runnerUpKey
+    ? getContentMessage(locale, `wizard.model.${recommendation.runnerUpKey}`, recommendation.runnerUpLabel || undefined)
+    : null
+  const localizedExplanation = useMemo(() => {
+    if (recommendation.tieMessage && topModelLabel && runnerUpLabel) {
+      return formatContentMessage(locale, 'wizard.explanation.tie', {
+        first: topModelLabel,
+        second: runnerUpLabel,
+      })
+    }
+    if (topModelLabel && strongestDrivers.length > 0) {
+      return formatContentMessage(locale, 'wizard.explanation.top_leads', {
+        model: topModelLabel,
+        drivers: formatWizardList(locale, strongestDrivers),
+      })
+    }
+    if (topModelLabel) {
+      return formatContentMessage(locale, 'wizard.explanation.top_simple', { model: topModelLabel })
+    }
+    return getContentMessage(locale, 'wizard.explanation.initial')
+  }, [locale, recommendation.tieMessage, runnerUpLabel, strongestDrivers, topModelLabel])
+  const localizedTopDescription = recommendation.topModelKey
+    ? {
+        description: getContentMessage(locale, `wizard.model.${recommendation.topModelKey}.description`),
+        dlaKogo: getContentMessage(locale, `wizard.model.${recommendation.topModelKey}.for_whom`),
+        naCoUwazac: getContentMessage(locale, `wizard.model.${recommendation.topModelKey}.watch_out`),
+      }
+    : null
   const topScore = recommendation.topModelKey ? recommendation.normalizedScores[recommendation.topModelKey] : 50
   const isResultStep = step === TOTAL_QUESTION_STEPS
 
@@ -380,8 +506,16 @@ export default function OfficeModelWizard({
   }
 
   function openContactForm() {
-    const topModelLabel = recommendation.topModelLabel || 'Brak jednoznacznej rekomendacji'
-    const note = buildRecommendationNote(answers, topModelLabel)
+    const resolvedTopModelLabel = topModelLabel || getContentMessage(locale, 'wizard.empty_recommendation')
+    const note = [
+      getContentMessage(locale, 'wizard.note.header'),
+      formatContentMessage(locale, 'wizard.note.model', { value: resolvedTopModelLabel }),
+      formatContentMessage(locale, 'wizard.note.team', { value: answers.teamAccess ? getContentMessage(locale, `wizard.option.team.${answers.teamAccess}`, TEAM_ACCESS_LABELS[answers.teamAccess]) : getContentMessage(locale, 'wizard.value.undefined') }),
+      formatContentMessage(locale, 'wizard.note.desk', { value: answers.deskCount ? getContentMessage(locale, `wizard.option.desk.${answers.deskCount}`, DESK_COUNT_LABELS[answers.deskCount]) : getContentMessage(locale, 'wizard.value.undefined') }),
+      formatContentMessage(locale, 'wizard.note.privacy', { value: answers.privacy ? getContentMessage(locale, `wizard.scale.${answers.privacy}`, SCALE_LABELS[answers.privacy]) : getContentMessage(locale, 'wizard.value.undefined') }),
+      formatContentMessage(locale, 'wizard.note.capex', { value: answers.capex ? getContentMessage(locale, `wizard.scale.${answers.capex}`, SCALE_LABELS[answers.capex]) : getContentMessage(locale, 'wizard.value.undefined') }),
+      formatContentMessage(locale, 'wizard.note.term', { value: answers.term ? getContentMessage(locale, `wizard.term.${answers.term}`, TERM_LABELS[answers.term]) : getContentMessage(locale, 'wizard.value.undefined') }),
+    ].join('\n')
     const prefill: ContactFormPrefill = {
       ...getDeskPrefill(answers.deskCount),
       message: note,
@@ -400,7 +534,7 @@ export default function OfficeModelWizard({
     }
 
     onClose()
-    router.push('/biura-serwisowane?open_contact=1')
+    router.push(withLocalePath(locale, '/biura-serwisowane?open_contact=1'))
   }
 
   function goToSearch() {
@@ -410,7 +544,7 @@ export default function OfficeModelWizard({
     }
 
     onClose()
-    router.push('/biura-serwisowane')
+    router.push(withLocalePath(locale, '/biura-serwisowane'))
   }
 
   function resetWizard() {
@@ -451,9 +585,9 @@ export default function OfficeModelWizard({
         <div className="sticky top-0 z-30 overflow-hidden border-b border-[#d6deef] bg-[linear-gradient(180deg,#ffffff_0%,#f4f7fd_100%)] shadow-[0_12px_28px_rgba(0,7,89,0.06)]">
           <div className="flex items-center justify-between px-6 md:px-8 py-5">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-1">Dobierz model biura</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-1">{getContentMessage(locale, 'wizard.title')}</p>
               <p className="text-sm text-[#6f7da7]">
-                {isResultStep ? 'Wynik rekomendacji' : `Krok ${step + 1} z ${TOTAL_QUESTION_STEPS}`}
+                {isResultStep ? getContentMessage(locale, 'wizard.result_label') : formatContentMessage(locale, 'wizard.step_label', { step: step + 1, total: TOTAL_QUESTION_STEPS })}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -464,7 +598,7 @@ export default function OfficeModelWizard({
                 className="inline-flex h-10 items-center gap-2 border border-[#dbe4f8] bg-white px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#7a88b1] transition-colors hover:text-[#000759] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ArrowLeft size={14} />
-                Wstecz
+                {getContentMessage(locale, 'wizard.back')}
               </button>
               {!isResultStep ? (
                 <button
@@ -473,7 +607,7 @@ export default function OfficeModelWizard({
                   disabled={!canMoveForward()}
                   className="inline-flex h-10 items-center gap-2 border border-[#000759] bg-white px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#000759] transition-colors hover:border-[#1C54F4] hover:text-[#1C54F4] disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {step === TOTAL_QUESTION_STEPS - 1 ? 'Wynik' : 'Dalej'}
+                  {step === TOTAL_QUESTION_STEPS - 1 ? getContentMessage(locale, 'wizard.result') : getContentMessage(locale, 'wizard.next')}
                   <ArrowRight size={14} />
                 </button>
               ) : (
@@ -482,14 +616,14 @@ export default function OfficeModelWizard({
                   onClick={resetWizard}
                   className="inline-flex h-10 items-center border border-[#dbe4f8] bg-white px-3 text-xs font-bold uppercase tracking-[0.16em] text-[#7a88b1] transition-colors hover:text-[#000759]"
                 >
-                  Zacznij od nowa
+                  {getContentMessage(locale, 'wizard.reset')}
                 </button>
               )}
               <button
                 type="button"
                 onClick={onClose}
                 className="inline-flex h-10 w-10 items-center justify-center text-[#7a88b1] hover:text-[#000759] transition-colors"
-                aria-label="Zamknij narzędzie"
+                aria-label={getContentMessage(locale, 'wizard.close_aria')}
               >
                 <X size={20} />
               </button>
@@ -529,7 +663,7 @@ export default function OfficeModelWizard({
 
                   {step === 0 && (
                     <div className="space-y-3">
-                      {TEAM_ACCESS_OPTIONS.map((option) => (
+                      {localizedTeamAccessOptions.map((option) => (
                         <StepOptionCard
                           key={option.key}
                           title={option.label}
@@ -542,7 +676,7 @@ export default function OfficeModelWizard({
 
                   {step === 1 && (
                     <div className="space-y-3">
-                      {DESK_COUNT_OPTIONS.map((option) => (
+                      {localizedDeskOptions.map((option) => (
                         <StepOptionCard
                           key={option.key}
                           title={option.label}
@@ -554,16 +688,16 @@ export default function OfficeModelWizard({
                   )}
 
                   {step === 2 && (
-                    <ScaleSelector value={answers.privacy} onChange={(next) => setAnswers((current) => ({ ...current, privacy: next }))} />
+                    <ScaleSelector value={answers.privacy} onChange={(next) => setAnswers((current) => ({ ...current, privacy: next }))} options={localizedScaleOptions} />
                   )}
 
                   {step === 3 && (
-                    <ScaleSelector value={answers.capex} onChange={(next) => setAnswers((current) => ({ ...current, capex: next }))} />
+                    <ScaleSelector value={answers.capex} onChange={(next) => setAnswers((current) => ({ ...current, capex: next }))} options={localizedScaleOptions} />
                   )}
 
                   {step === 4 && (
                     <div className="space-y-3">
-                      {TERM_OPTIONS.map((option) => (
+                      {localizedTermOptions.map((option) => (
                         <StepOptionCard
                           key={option.key}
                           title={option.label}
@@ -579,34 +713,34 @@ export default function OfficeModelWizard({
               {isResultStep && (
                 <div className="space-y-8">
                   <div className="max-w-4xl">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-3">Wynik końcowy</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-3">{getContentMessage(locale, 'wizard.result_label')}</p>
                     <h2 id="office-model-wizard-title" className="text-3xl md:text-4xl font-normal text-[#000759] mb-4" style={{ fontFamily: 'var(--font-serif)' }}>
-                      {recommendation.topModelLabel || 'Brak jednoznacznej rekomendacji'}
+                      {topModelLabel || getContentMessage(locale, 'wizard.empty_recommendation')}
                     </h2>
                     <p className="text-base leading-relaxed text-body-muted">
-                      {recommendation.tieMessage || recommendation.explanation}
+                      {localizedExplanation}
                     </p>
                   </div>
 
                   <div className="grid gap-8 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
                     <div className="space-y-6">
                       <div className="border border-[#dbe4f8] bg-white p-6">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-4">Ranking modeli</p>
-                        <AnimatedRankingList ranking={recommendation.ranking} />
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-4">{getContentMessage(locale, 'wizard.result_label')}</p>
+                        <AnimatedRankingList ranking={localizedRanking} />
                       </div>
 
-                      {recommendation.topDescription && (
+                      {localizedTopDescription && (
                         <div className="border border-[#dbe4f8] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-4">Najwyżej dopasowany model</p>
-                          <p className="text-base leading-relaxed text-body-strong mb-5">{recommendation.topDescription.description}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-4">{getContentMessage(locale, 'wizard.result.description_label')}</p>
+                          <p className="text-base leading-relaxed text-body-strong mb-5">{localizedTopDescription.description}</p>
                           <div className="grid gap-5 md:grid-cols-2">
                             <div>
-                              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] mb-2">Dla kogo</p>
-                              <p className="text-sm leading-relaxed text-[#5f6e98]">{recommendation.topDescription.dlaKogo}</p>
+                              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] mb-2">{getContentMessage(locale, 'wizard.result.for_whom_label')}</p>
+                              <p className="text-sm leading-relaxed text-[#5f6e98]">{localizedTopDescription.dlaKogo}</p>
                             </div>
                             <div>
-                              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] mb-2">Na co uważać</p>
-                              <p className="text-sm leading-relaxed text-[#5f6e98]">{recommendation.topDescription.naCoUwazac}</p>
+                              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#000759] mb-2">{getContentMessage(locale, 'wizard.result.watch_out_label')}</p>
+                              <p className="text-sm leading-relaxed text-[#5f6e98]">{localizedTopDescription.naCoUwazac}</p>
                             </div>
                           </div>
                         </div>
@@ -615,27 +749,31 @@ export default function OfficeModelWizard({
 
                     <div className="space-y-6">
                       <div className="border border-[#dbe4f8] bg-white p-6">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-4">Podsumowanie odpowiedzi</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-4">{getContentMessage(locale, 'wizard.progress')}</p>
                         <div className="space-y-3 text-sm text-body-strong">
-                          <SummaryRow label="Liczba osób z dostępem" value={answers.teamAccess ? TEAM_ACCESS_LABELS[answers.teamAccess] : '—'} />
-                          <SummaryRow label="Liczba stałych stanowisk" value={answers.deskCount ? DESK_COUNT_LABELS[answers.deskCount] : '—'} />
-                          <SummaryRow label="Prywatność" value={answers.privacy ? SCALE_LABELS[answers.privacy] : '—'} />
-                          <SummaryRow label="Ograniczenie CAPEX" value={answers.capex ? SCALE_LABELS[answers.capex] : '—'} />
-                          <SummaryRow label="Maksymalna długość zobowiązania" value={answers.term ? TERM_LABELS[answers.term] : '—'} />
+                          <SummaryRow label={getContentMessage(locale, 'wizard.step.1.title')} value={answers.teamAccess ? getContentMessage(locale, `wizard.option.team.${answers.teamAccess}`, TEAM_ACCESS_LABELS[answers.teamAccess]) : '—'} />
+                          <SummaryRow label={getContentMessage(locale, 'wizard.step.2.title')} value={answers.deskCount ? getContentMessage(locale, `wizard.option.desk.${answers.deskCount}`, DESK_COUNT_LABELS[answers.deskCount]) : '—'} />
+                          <SummaryRow label={getContentMessage(locale, 'wizard.step.3.title')} value={answers.privacy ? getContentMessage(locale, `wizard.scale.${answers.privacy}`, SCALE_LABELS[answers.privacy]) : '—'} />
+                          <SummaryRow label={getContentMessage(locale, 'wizard.step.4.title')} value={answers.capex ? getContentMessage(locale, `wizard.scale.${answers.capex}`, SCALE_LABELS[answers.capex]) : '—'} />
+                          <SummaryRow label={getContentMessage(locale, 'wizard.step.5.title')} value={answers.term ? getContentMessage(locale, `wizard.term.${answers.term}`, TERM_LABELS[answers.term]) : '—'} />
                         </div>
-                        {recommendation.highSharingHint && (
-                          <p className="mt-5 text-xs leading-relaxed text-[#6f7fad]">{recommendation.highSharingHint}</p>
+                        {recommendation.sharingRatioCategory === 'high' && (
+                          <p className="mt-5 text-xs leading-relaxed text-[#6f7fad]">{getContentMessage(locale, 'wizard.hint.high_sharing')}</p>
                         )}
                       </div>
 
-                      <AdvisorCard />
+                      <AdvisorCard
+                        title={getContentMessage(locale, 'wizard.advisor.title')}
+                        team={getContentMessage(locale, 'wizard.advisor.team')}
+                        role={getContentMessage(locale, 'wizard.advisor.role')}
+                      />
 
                       <div className="space-y-3">
                         <button type="button" onClick={openContactForm} className="btn-primary w-full justify-center">
-                          Przejdź do formularza kontaktowego
+                          {getContentMessage(locale, 'wizard.result.contact_cta')}
                         </button>
                         <button type="button" onClick={goToSearch} className="btn-outline w-full justify-center">
-                          Przejdź do wyszukiwarki
+                          {getContentMessage(locale, 'wizard.result.search_cta')}
                         </button>
                       </div>
                     </div>
@@ -654,7 +792,7 @@ export default function OfficeModelWizard({
                   className="inline-flex items-center gap-2 text-sm text-[#7a88b1] hover:text-[#000759] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ArrowLeft size={15} />
-                  Wstecz
+                  {getContentMessage(locale, 'wizard.back')}
                 </button>
                 <button
                   type="button"
@@ -662,7 +800,7 @@ export default function OfficeModelWizard({
                   disabled={!canMoveForward()}
                   className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {step === TOTAL_QUESTION_STEPS - 1 ? 'Zobacz wynik' : 'Dalej'}
+                  {step === TOTAL_QUESTION_STEPS - 1 ? getContentMessage(locale, 'wizard.result') : getContentMessage(locale, 'wizard.next')}
                   <ArrowRight size={15} />
                 </button>
               </div>
@@ -671,19 +809,21 @@ export default function OfficeModelWizard({
             {isResultStep && (
               <div className="sticky bottom-0 z-20 border-t border-[#d6deef] bg-[linear-gradient(180deg,#f9fbff_0%,#eef3fb_100%)] px-6 md:px-8 py-5 flex items-center justify-between gap-4 shadow-[0_-12px_28px_rgba(0,7,89,0.06)]">
                 <button type="button" onClick={goBack} className="btn-outline">
-                  Wróć do odpowiedzi
+                  {getContentMessage(locale, 'wizard.back')}
                 </button>
                 <button type="button" onClick={onClose} className="btn-outline">
-                  Zamknij
+                  {getContentMessage(locale, 'wizard.close_aria')}
                 </button>
               </div>
             )}
 
             {!isResultStep && (
               <MobileRecommendationSummary
-                topLabel={recommendation.topModelLabel}
+                topLabel={topModelLabel}
                 topScore={topScore}
-                explanation={recommendation.explanation}
+                explanation={localizedExplanation}
+                currentRecommendationLabel={getContentMessage(locale, 'wizard.current_recommendation')}
+                fallbackLabel={getContentMessage(locale, 'wizard.mobile_empty_recommendation')}
               />
             )}
           </div>
@@ -691,12 +831,14 @@ export default function OfficeModelWizard({
           {!isResultStep && (
           <div className="hidden lg:block min-h-0 overflow-y-auto" data-lenis-prevent>
             <RecommendationPanel
-              topLabel={recommendation.topModelLabel}
-              explanation={recommendation.explanation}
-              ranking={recommendation.ranking}
+              topLabel={topModelLabel}
+              explanation={localizedExplanation}
+              ranking={localizedRanking}
               answeredCount={recommendation.answeredCount}
               totalSteps={TOTAL_QUESTION_STEPS}
-              highSharingHint={recommendation.highSharingHint}
+              highSharingHint={recommendation.sharingRatioCategory === 'high' ? getContentMessage(locale, 'wizard.hint.high_sharing') : null}
+              currentRecommendationLabel={getContentMessage(locale, 'wizard.current_recommendation')}
+              progressLabel={getContentMessage(locale, 'wizard.progress')}
             />
           </div>
           )}

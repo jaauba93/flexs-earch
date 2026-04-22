@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
     <AdminShell
       user={user}
       title="Dashboard CMS"
-      subtitle="Panel administracyjny obejmuje zarządzanie ofertami i doradcami, import danych, automatyczne uzupełnianie lokalizacji z adresu, workflow tłumaczeń zbiorczych oraz konfigurację kalkulatora flex wraz z założeniami i market data."
+      subtitle="Panel administracyjny obejmuje zarządzanie ofertami i doradcami, import danych, automatyczne uzupełnianie lokalizacji z adresu, sekcję web z edycją stron i sitemapą, workflow tłumaczeń zbiorczych oraz konfigurację kalkulatora flex wraz z założeniami i market data."
     >
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {statCards.map(({ label, value, Icon }) => (

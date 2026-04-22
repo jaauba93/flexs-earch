@@ -8,6 +8,8 @@ import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getLocalizedCityLabel } from '@/lib/i18n/cities'
+import { formatContentMessage, getContentMessage } from '@/lib/i18n/runtime'
 import { withLocalePath } from '@/lib/i18n/routing'
 import type {
   FlexCalculatorComputedResult,
@@ -35,6 +37,68 @@ function FilterTooltip({ text }: { text: string }) {
       </span>
     </span>
   )
+}
+
+function getLocalizedCalculatorOptionLabel(
+  locale: string,
+  kind: 'location' | 'fitout' | 'density',
+  value: string,
+  fallback: string
+) {
+  if (kind === 'location') {
+    if (value === 'cbd') return locale === 'pl' ? 'Centrum' : locale === 'en' ? 'City centre' : 'Центр'
+    if (value === 'non_cbd') return locale === 'pl' ? 'Poza centrum' : locale === 'en' ? 'Outside city centre' : 'Поза центром'
+  }
+
+  if (kind === 'fitout') {
+    if (value === 'basic') return locale === 'pl' ? 'Podstawowy' : locale === 'en' ? 'Basic' : 'Базовий'
+    if (value === 'enhanced') return locale === 'pl' ? 'Wyższy' : locale === 'en' ? 'Enhanced' : 'Покращений'
+    if (value === 'premium') return locale === 'pl' ? 'Premium' : locale === 'en' ? 'Premium' : 'Преміум'
+  }
+
+  if (kind === 'density') {
+    if (value === 'dense') return locale === 'pl' ? 'Gęsto' : locale === 'en' ? 'Dense' : 'Щільно'
+    if (value === 'standard') return locale === 'pl' ? 'Standard' : locale === 'en' ? 'Standard' : 'Стандартно'
+    if (value === 'spacious') return locale === 'pl' ? 'Swobodnie' : locale === 'en' ? 'Spacious' : 'Вільніше'
+  }
+
+  return fallback
+}
+
+function getLeaseLabel(locale: string, months: number) {
+  if (locale === 'pl') {
+    if (months === 12) return '12 miesięcy'
+    if ([24, 36, 72].includes(months)) return `${months} miesiące`
+    return `${months} miesięcy`
+  }
+
+  if (locale === 'en') {
+    return `${months} months`
+  }
+
+  return `${months} міс.`
+}
+
+function getCalculatorLineItemContent(locale: 'pl' | 'en' | 'uk', label: string, note?: string) {
+  const labelMap: Record<string, string> = {
+    'Efektywny czynsz bazowy': 'calculator.line.effective_rent',
+    'Opłata eksploatacyjna': 'calculator.line.service_charge',
+    'Media i utrzymanie': 'calculator.line.utilities',
+    'Amortyzacja luki fit-out': 'calculator.line.fitout_gap',
+    'Cena za stanowisko (all-inclusive)': 'calculator.line.flex_all_in',
+  }
+  const noteMap: Record<string, string> = {
+    'Uwzględnia zachętę rent-free zgodnie z założeniami rynkowymi.': 'calculator.line.effective_rent_note',
+    'Rynkowo rozliczany w PLN, tutaj przeliczony także do EUR po kursie NBP.': 'calculator.line.service_charge_note',
+    'Założenie operacyjne utrzymywane po stronie Colliers.': 'calculator.line.utilities_note',
+    'Luka między kosztem fit-out a wkładem właściciela rozłożona na okres najmu.': 'calculator.line.fitout_gap_note',
+    'Obejmuje czynsz, service charge, utilities i standardowe przygotowanie powierzchni.': 'calculator.line.flex_all_in_note',
+  }
+
+  return {
+    label: labelMap[label] ? getContentMessage(locale, labelMap[label], label) : label,
+    note: note && noteMap[note] ? getContentMessage(locale, noteMap[note], note) : note,
+  }
 }
 
 function formatCurrency(value: number, currency: 'PLN' | 'EUR') {
@@ -143,13 +207,13 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
         const payload = (await response.json()) as FlexCalculatorComputedResult & { error?: string }
 
         if (!response.ok) {
-          throw new Error(payload.error || 'Nie udało się przeliczyć kalkulatora.')
+          throw new Error(payload.error || getContentMessage(locale, 'calculator.error.title', 'Nie udało się wyliczyć kalkulatora.'))
         }
 
         setResult(payload)
       } catch (fetchError) {
         if (controller.signal.aborted) return
-        setError(fetchError instanceof Error ? fetchError.message : 'Nie udało się przeliczyć kalkulatora.')
+        setError(fetchError instanceof Error ? fetchError.message : getContentMessage(locale, 'calculator.error.title', 'Nie udało się wyliczyć kalkulatora.'))
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false)
@@ -161,18 +225,47 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [inputs])
+  }, [inputs, locale])
 
   const densityOptions = useMemo(
     () => [...data.densityOptions].sort((a, b) => a.sort_order - b.sort_order),
     [data.densityOptions]
   )
-  const selectedDensity = useMemo(
-    () => densityOptions.find((option) => option.key === inputs.densityKey) ?? densityOptions[0],
-    [densityOptions, inputs.densityKey]
+  const selectedDensity = useMemo(() => densityOptions.find((option) => option.key === inputs.densityKey) ?? densityOptions[0], [densityOptions, inputs.densityKey])
+  const localizedCityOptions = useMemo(
+    () => data.cityOptions.map((option) => ({ ...option, label: getLocalizedCityLabel(option.value, locale) })),
+    [data.cityOptions, locale]
+  )
+  const localizedDensityOptions = useMemo(
+    () =>
+      densityOptions.map((option) => ({
+        ...option,
+        label: getLocalizedCalculatorOptionLabel(locale, 'density', option.key, option.label),
+      })),
+    [densityOptions, locale]
+  )
+  const localizedLocationOptions = useMemo(
+    () =>
+      data.settings.location_options.map((option) => ({
+        ...option,
+        label: getLocalizedCalculatorOptionLabel(locale, 'location', option.value, option.label),
+      })),
+    [data.settings.location_options, locale]
+  )
+  const localizedFitoutOptions = useMemo(
+    () =>
+      data.settings.fitout_options.map((option) => ({
+        ...option,
+        label: getLocalizedCalculatorOptionLabel(locale, 'fitout', option.value, option.label),
+      })),
+    [data.settings.fitout_options, locale]
   )
   const densityTooltip = selectedDensity
-    ? `${selectedDensity.label}: dla flexu przyjmujemy ${formatCompactNumber(selectedDensity.flex_office_sqm_per_desk, 1)} mkw. w prywatnym module na stanowisko, a dla konwencji ${formatCompactNumber(selectedDensity.conventional_sqm_per_person_avg, 1)} mkw. na osobę.`
+    ? locale === 'pl'
+      ? `${getLocalizedCalculatorOptionLabel(locale, 'density', selectedDensity.key, selectedDensity.label)}: dla flexu przyjmujemy ${formatCompactNumber(selectedDensity.flex_office_sqm_per_desk, 1)} mkw. w prywatnym module na stanowisko, a dla konwencji ${formatCompactNumber(selectedDensity.conventional_sqm_per_person_avg, 1)} mkw. na osobę.`
+      : locale === 'en'
+        ? `${getLocalizedCalculatorOptionLabel(locale, 'density', selectedDensity.key, selectedDensity.label)}: for flex we assume ${formatCompactNumber(selectedDensity.flex_office_sqm_per_desk, 1)} sqm within the private suite per desk and ${formatCompactNumber(selectedDensity.conventional_sqm_per_person_avg, 1)} sqm per person in a conventional office.`
+        : `${getLocalizedCalculatorOptionLabel(locale, 'density', selectedDensity.key, selectedDensity.label)}: для flex ми приймаємо ${formatCompactNumber(selectedDensity.flex_office_sqm_per_desk, 1)} кв. м у приватному модулі на робоче місце, а для традиційного офісу ${formatCompactNumber(selectedDensity.conventional_sqm_per_person_avg, 1)} кв. м на особу.`
     : undefined
 
   function updateInput<K extends keyof FlexCalculatorInputs>(key: K, value: FlexCalculatorInputs[K]) {
@@ -187,20 +280,20 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
       <main>
         <section className="border-b border-[#dbe4f3] bg-[linear-gradient(180deg,#ffffff_0%,#f5f9ff_100%)]">
           <div className="container-colliers py-14 md:py-20">
-            <p className="overline mb-5">{data.settings.intro_eyebrow}</p>
+            <p className="overline mb-5">{getContentMessage(locale, 'calculator.hero.eyebrow', data.settings.intro_eyebrow)}</p>
             <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
               <div>
                 <h1 className="text-4xl md:text-5xl font-normal text-[var(--colliers-navy)]" style={{ fontFamily: 'var(--font-serif)' }}>
-                  {data.settings.intro_title}
+                  {getContentMessage(locale, 'calculator.hero.title', data.settings.intro_title)}
                 </h1>
-                <p className="mt-6 max-w-3xl text-lg leading-relaxed text-body-muted">{data.settings.intro_body}</p>
+                <p className="mt-6 max-w-3xl text-lg leading-relaxed text-body-muted">{getContentMessage(locale, 'calculator.hero.body', data.settings.intro_body)}</p>
               </div>
               <div className="surface-panel-soft p-6">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Ważne przed użyciem</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">{getContentMessage(locale, 'calculator.intro.important')}</p>
                 <ul className="mt-4 space-y-3 text-sm leading-relaxed text-[#42547d]">
-                  <li className="flex gap-3"><CheckCircle2 size={16} className="mt-1 text-[#1C54F4]" /> <span>{data.settings.intro_disclaimer_approx}</span></li>
-                  <li className="flex gap-3"><CheckCircle2 size={16} className="mt-1 text-[#1C54F4]" /> <span>{data.settings.intro_disclaimer_market}</span></li>
-                  <li className="flex gap-3"><CheckCircle2 size={16} className="mt-1 text-[#1C54F4]" /> <span>{data.settings.intro_disclaimer_support}</span></li>
+                  <li className="flex gap-3"><CheckCircle2 size={16} className="mt-1 text-[#1C54F4]" /> <span>{getContentMessage(locale, 'calculator.hero.disclaimer_approx', data.settings.intro_disclaimer_approx)}</span></li>
+                  <li className="flex gap-3"><CheckCircle2 size={16} className="mt-1 text-[#1C54F4]" /> <span>{getContentMessage(locale, 'calculator.hero.disclaimer_market', data.settings.intro_disclaimer_market)}</span></li>
+                  <li className="flex gap-3"><CheckCircle2 size={16} className="mt-1 text-[#1C54F4]" /> <span>{getContentMessage(locale, 'calculator.hero.disclaimer_support', data.settings.intro_disclaimer_support)}</span></li>
                 </ul>
               </div>
             </div>
@@ -215,9 +308,9 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                   <div className="flex items-center gap-3">
                     <Calculator size={18} className="text-[#1C54F4]" />
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Założenia klienta</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">{getContentMessage(locale, 'calculator.inputs.title')}</p>
                       <p className="text-sm text-body-muted">
-                        Uzupełnij podstawowe parametry, a narzędzie przeliczy porównywalny scenariusz dla konwencji i flexu.
+                        {getContentMessage(locale, 'calculator.inputs.lead')}
                       </p>
                     </div>
                   </div>
@@ -225,7 +318,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
 
                 <div className={`calculator-inputs-shell ${hasInputInteracted ? '' : 'is-active'}`}>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <InputShell label="Liczba stanowisk pracy" hint="Zakres orientacyjny: 25–1000.">
+                    <InputShell label={getContentMessage(locale, 'calculator.inputs.headcount')} hint={getContentMessage(locale, 'calculator.inputs.headcount_hint')}>
                       <input
                         type="number"
                         min={1}
@@ -238,13 +331,13 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       />
                     </InputShell>
 
-                    <InputShell label="Rynek (miasto)">
+                    <InputShell label={getContentMessage(locale, 'calculator.inputs.city')}>
                       <select
                         value={inputs.citySlug}
                         onChange={(event) => updateInput('citySlug', event.target.value)}
                         className="form-input"
                       >
-                        {data.cityOptions.map((option) => (
+                        {localizedCityOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -252,13 +345,13 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       </select>
                     </InputShell>
 
-                    <InputShell label="Lokalizacja">
+                    <InputShell label={getContentMessage(locale, 'calculator.inputs.location')}>
                       <select
                         value={inputs.locationType}
                         onChange={(event) => updateInput('locationType', event.target.value)}
                         className="form-input"
                       >
-                        {data.settings.location_options.map((option) => (
+                        {localizedLocationOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -266,13 +359,13 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       </select>
                     </InputShell>
 
-                    <InputShell label="Standard wykończenia">
+                    <InputShell label={getContentMessage(locale, 'calculator.inputs.fitout')}>
                       <select
                         value={inputs.fitoutStandard}
                         onChange={(event) => updateInput('fitoutStandard', event.target.value)}
                         className="form-input"
                       >
-                        {data.settings.fitout_options.map((option) => (
+                        {localizedFitoutOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -280,13 +373,13 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       </select>
                     </InputShell>
 
-                    <InputShell label="Standard zagęszczenia" hint={densityTooltip}>
+                    <InputShell label={getContentMessage(locale, 'calculator.inputs.density')} hint={densityTooltip}>
                       <select
                         value={inputs.densityKey}
                         onChange={(event) => updateInput('densityKey', event.target.value)}
                         className="form-input"
                       >
-                        {densityOptions.map((option) => (
+                        {localizedDensityOptions.map((option) => (
                           <option key={option.key} value={option.key}>
                             {option.label}
                           </option>
@@ -294,7 +387,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       </select>
                     </InputShell>
 
-                    <InputShell label="Okres najmu konwencjonalnego">
+                    <InputShell label={getContentMessage(locale, 'calculator.inputs.conventional_term')}>
                       <select
                         value={String(inputs.conventionalLeaseMonths)}
                         onChange={(event) => updateInput('conventionalLeaseMonths', Number(event.target.value))}
@@ -302,13 +395,13 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       >
                         {data.settings.conventional_lease_options.map((option) => (
                           <option key={option.value} value={option.value}>
-                            {option.label}
+                            {getLeaseLabel(locale, Number(option.value))}
                           </option>
                         ))}
                       </select>
                     </InputShell>
 
-                    <InputShell label="Okres flex">
+                    <InputShell label={getContentMessage(locale, 'calculator.inputs.flex_term')}>
                       <select
                         value={String(inputs.flexLeaseMonths)}
                         onChange={(event) => updateInput('flexLeaseMonths', Number(event.target.value))}
@@ -316,25 +409,23 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       >
                         {data.settings.flex_lease_options.map((option) => (
                           <option key={option.value} value={option.value}>
-                            {option.label}
+                            {getLeaseLabel(locale, Number(option.value))}
                           </option>
                         ))}
                       </select>
                     </InputShell>
 
                     <div className="surface-panel p-5 sm:col-span-2">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Co dalej?</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">{getContentMessage(locale, 'calculator.cta.title')}</p>
                       <p className="mt-3 text-sm leading-relaxed text-body-muted">
-                        Ten kalkulator pokazuje scenariusz referencyjny. Jeśli chcesz porównać go z realnymi ofertami i
-                        negocjacjami operatorów lub landlordów, zespół Colliers przygotuje doprecyzowany benchmark dla
-                        Twojego briefu.
+                        {getContentMessage(locale, 'calculator.cta.body')}
                       </p>
                       <div className="mt-5 flex flex-wrap gap-3">
                         <button onClick={() => setFormOpen(true)} className="btn-primary" type="button">
-                          Porozmawiaj z doradcą
+                          {getContentMessage(locale, 'calculator.cta.primary')}
                         </button>
                         <Link href={withLocalePath(locale, '/biura-serwisowane')} className="btn-outline">
-                          Zobacz oferty <ArrowRight size={14} />
+                          {getContentMessage(locale, 'calculator.cta.secondary')} <ArrowRight size={14} />
                         </Link>
                       </div>
                     </div>
@@ -347,18 +438,20 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
               <div className="surface-panel-soft p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Porównanie kosztów</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">{getContentMessage(locale, 'calculator.summary.eyebrow')}</p>
                     <h2
                       className="mt-2 text-3xl font-normal text-[var(--colliers-navy)]"
                       style={{ fontFamily: 'var(--font-serif)' }}
                     >
-                      Najważniejsze wskaźniki
+                      {getContentMessage(locale, 'calculator.summary.title')}
                     </h2>
                   </div>
                   {result ? (
                     <p className="text-xs text-body-soft">
-                      Kurs NBP: 1 EUR = {formatCompactNumber(result.exchangeRate.eurPln, 4)} PLN, tabela z dnia{' '}
-                      {result.exchangeRate.effectiveDate}
+                      {formatContentMessage(locale, 'calculator.summary.rate_prefix', {
+                        rate: formatCompactNumber(result.exchangeRate.eurPln, 4),
+                        date: result.exchangeRate.effectiveDate,
+                      })}
                     </p>
                   ) : null}
                 </div>
@@ -367,67 +460,75 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
               {loading && !result ? (
                 <div className="surface-panel p-10 text-center text-body-muted">
                   <Loader2 size={20} className="mx-auto animate-spin text-[#1C54F4]" />
-                  <p className="mt-4">Liczymy scenariusz…</p>
+                  <p className="mt-4">{getContentMessage(locale, 'calculator.loading')}</p>
                 </div>
               ) : error ? (
                 <div className="surface-panel p-8 text-center text-[#9a2339]">
-                  <p className="font-semibold">Nie udało się wyliczyć kalkulatora.</p>
+                  <p className="font-semibold">{getContentMessage(locale, 'calculator.error.title')}</p>
                   <p className="mt-2 text-sm">{error}</p>
                 </div>
               ) : result ? (
                 <>
                   <div className="grid gap-4 md:grid-cols-2">
                     <ResultCard
-                      label="Łączne zobowiązanie — konwencja"
+                      label={getContentMessage(locale, 'calculator.card.conventional_liability')}
                       valuePln={result.totals.conventionalTotalLiabilityPln}
                       valueEur={result.totals.conventionalTotalLiabilityEur}
                       accent
-                      detail={`Pełne ${result.inputs.conventionalLeaseMonths} miesięcy najmu konwencjonalnego.`}
+                      detail={formatContentMessage(locale, 'calculator.card.conventional_liability_detail', {
+                        months: result.inputs.conventionalLeaseMonths,
+                      })}
                     />
                     <ResultCard
-                      label="Łączne zobowiązanie — flex"
+                      label={getContentMessage(locale, 'calculator.card.flex_liability')}
                       valuePln={result.totals.flexTotalLiabilityPln}
                       valueEur={result.totals.flexTotalLiabilityEur}
                       accent
-                      detail={`Pełne ${result.inputs.flexLeaseMonths} miesięcy umowy flex.`}
+                      detail={formatContentMessage(locale, 'calculator.card.flex_liability_detail', {
+                        months: result.inputs.flexLeaseMonths,
+                      })}
                     />
                     <ResultCard
-                      label="Koszt konwencji za okres flex"
+                      label={getContentMessage(locale, 'calculator.card.conventional_for_flex_period')}
                       valuePln={result.totals.conventionalCostForFlexPeriodPln}
                       valueEur={result.totals.conventionalCostForFlexPeriodEur}
                       accent
-                      detail={`${result.inputs.flexLeaseMonths} mies. z ${result.inputs.conventionalLeaseMonths} mies. konwencji.`}
+                      detail={formatContentMessage(locale, 'calculator.card.conventional_for_flex_period_detail', {
+                        flexMonths: result.inputs.flexLeaseMonths,
+                        conventionalMonths: result.inputs.conventionalLeaseMonths,
+                      })}
                     />
                     <ResultCard
-                      label="Koszt flex za ten sam okres"
+                      label={getContentMessage(locale, 'calculator.card.flex_for_flex_period')}
                       valuePln={result.totals.flexCostForFlexPeriodPln}
                       valueEur={result.totals.flexCostForFlexPeriodEur}
                       accent
-                      detail={`Pełny koszt flex dla ${result.inputs.flexLeaseMonths} miesięcy.`}
+                      detail={formatContentMessage(locale, 'calculator.card.flex_for_flex_period_detail', {
+                        months: result.inputs.flexLeaseMonths,
+                      })}
                     />
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="surface-panel-soft p-5">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
-                        Analogiczny okres porównania
+                        {getContentMessage(locale, 'calculator.comparable_period.title')}
                       </p>
                       <p className="mt-3 text-sm leading-relaxed text-body-muted">
-                        Koszt konwencji liczony jest tylko za okres równy wybranej umowie flex, żeby porównanie
-                        dotyczyło tego samego horyzontu czasowego zamiast całego kontraktu konwencjonalnego.
+                        {getContentMessage(locale, 'calculator.comparable_period.body')}
                       </p>
                     </div>
                     <div className="surface-panel-soft p-5">
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7c8ab1]">Konwencja</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7c8ab1]">{getContentMessage(locale, 'calculator.comparable_period.conventional')}</p>
                           <p className="mt-2 text-lg font-semibold text-[#000759]">
                             {result.inputs.flexLeaseMonths} mies. z {result.inputs.conventionalLeaseMonths}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7c8ab1]">Flex</p>
-                          <p className="mt-2 text-lg font-semibold text-[#000759]">pełne {result.inputs.flexLeaseMonths} mies.</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7c8ab1]">{getContentMessage(locale, 'calculator.comparable_period.flex')}</p>
+                          <p className="mt-2 text-lg font-semibold text-[#000759]">{formatContentMessage(locale, 'calculator.comparable_period.flex_full', { months: result.inputs.flexLeaseMonths })}</p>
                         </div>
                       </div>
                     </div>
@@ -435,17 +536,17 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
 
                   <div className="grid gap-4 md:grid-cols-3">
                     <ResultCard
-                      label="Redukcja zobowiązania"
+                      label={getContentMessage(locale, 'calculator.card.liability_reduction')}
                       valuePln={result.totals.liabilityReductionPln}
                       valueEur={result.totals.liabilityReductionEur}
                     />
                     <ResultCard
-                      label="Oszczędność w okresie flex"
+                      label={getContentMessage(locale, 'calculator.card.savings')}
                       valuePln={result.totals.comparablePeriodSavingsPln}
                       valueEur={result.totals.comparablePeriodSavingsEur}
                     />
                     <div className="border border-[#dbe4f3] bg-white p-5">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Premia za elastyczność</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">{getContentMessage(locale, 'calculator.card.premium')}</p>
                       <div className="mt-4 space-y-2">
                         <p
                           className="text-3xl font-normal text-[var(--colliers-navy)]"
@@ -454,7 +555,9 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                           {formatCurrency(result.totals.flexPremiumPerCapitaMonthlyEur, 'EUR')}
                         </p>
                         <p className="text-sm text-body-muted">
-                          {formatCompactNumber(result.totals.flexPremiumPct * 100, 1)}% per capita / mies.
+                          {formatContentMessage(locale, 'calculator.card.premium_detail', {
+                            pct: formatCompactNumber(result.totals.flexPremiumPct * 100, 1),
+                          })}
                         </p>
                       </div>
                     </div>
@@ -462,75 +565,72 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
 
                   <div className="grid gap-6 xl:grid-cols-[minmax(0,0.34fr)_minmax(0,0.66fr)] xl:items-start">
                     <div className="surface-panel p-5">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Powierzchnia</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">{getContentMessage(locale, 'calculator.areas.title')}</p>
                       <div className="mt-5 space-y-4 text-sm">
                         <div className="border-b border-[#edf1f7] pb-4">
                           <div className="flex items-center justify-between gap-4">
-                            <span className="text-body-muted">Konwencja netto</span>
+                            <span className="text-body-muted">{getContentMessage(locale, 'calculator.areas.conventional_net')}</span>
                             <strong className="text-[var(--colliers-navy)]">
                               {formatCompactNumber(result.areas.conventionalNetAreaSqm)} mkw.
                             </strong>
                           </div>
                           <p className="mt-3 text-xs leading-relaxed text-body-soft">
-                            Podstawowa powierzchnia użytkowa zajmowana wyłącznie przez najemcę.
+                            {getContentMessage(locale, 'calculator.areas.conventional_net_note')}
                           </p>
                         </div>
                         <div className="border-b border-[#edf1f7] pb-4">
                           <div className="flex items-center justify-between gap-4">
-                            <span className="text-body-muted">Konwencja brutto</span>
+                            <span className="text-body-muted">{getContentMessage(locale, 'calculator.areas.conventional_gross')}</span>
                             <strong className="text-[var(--colliers-navy)]">
                               {formatCompactNumber(result.areas.conventionalGrossAreaSqm)} mkw.
                             </strong>
                           </div>
                           <p className="mt-3 text-xs leading-relaxed text-body-soft">
-                            Powierzchnia netto powiększona o udział najemcy w korytarzach, lobby i innych częściach
-                            wspólnych budynku.
+                            {getContentMessage(locale, 'calculator.areas.conventional_gross_note')}
                           </p>
                         </div>
                         <div className="border-b border-[#edf1f7] pb-4">
                           <div className="flex items-center justify-between gap-4">
-                            <span className="text-body-muted">Flex — moduły prywatne</span>
+                            <span className="text-body-muted">{getContentMessage(locale, 'calculator.areas.flex_private')}</span>
                             <strong className="text-[var(--colliers-navy)]">
                               {formatCompactNumber(result.areas.flexPrivateAreaSqm)} mkw.
                             </strong>
                           </div>
                           <p className="mt-3 text-xs leading-relaxed text-body-soft">
-                            Powierzchnia wewnątrz prywatnych modułów w biurach serwisowanych.
+                            {getContentMessage(locale, 'calculator.areas.flex_private_note')}
                           </p>
                         </div>
                         <div className="border-b border-[#edf1f7] pb-4">
                           <div className="flex items-center justify-between gap-4">
-                            <span className="text-body-muted">Flex — moduły z udziałem wspólnym</span>
+                            <span className="text-body-muted">{getContentMessage(locale, 'calculator.areas.flex_shared')}</span>
                             <strong className="text-[var(--colliers-navy)]">
                               {formatCompactNumber(result.areas.flexGrossAreaSqm)} mkw.
                             </strong>
                           </div>
                           <p className="mt-3 text-xs leading-relaxed text-body-soft">
-                            Powierzchnia modułów prywatnych razem z proporcjonalnym udziałem w strefach wspólnych
-                            operatora, choć nie są one na wyłączność klienta.
+                            {getContentMessage(locale, 'calculator.areas.flex_shared_note')}
                           </p>
                         </div>
                         <div className="border-b border-[#edf1f7] pb-4">
                           <div className="flex items-center justify-between gap-4">
-                            <span className="text-body-muted">Konwencja mkw. / osoba</span>
+                            <span className="text-body-muted">{getContentMessage(locale, 'calculator.areas.conventional_per_person')}</span>
                             <strong className="text-[var(--colliers-navy)]">
                               {formatCompactNumber(result.areas.conventionalGrossPerCapitaSqm)} mkw.
                             </strong>
                           </div>
                           <p className="mt-3 text-xs leading-relaxed text-body-soft">
-                            Wartość brutto na osobę, czyli z udziałem w częściach wspólnych budynku.
+                            {getContentMessage(locale, 'calculator.areas.conventional_per_person_note')}
                           </p>
                         </div>
                         <div>
                           <div className="flex items-center justify-between gap-4">
-                            <span className="text-body-muted">Flex mkw. / stanowisko</span>
+                            <span className="text-body-muted">{getContentMessage(locale, 'calculator.areas.flex_per_desk')}</span>
                             <strong className="text-[var(--colliers-navy)]">
                               {formatCompactNumber(result.areas.flexGrossPerCapitaSqm)} mkw.
                             </strong>
                           </div>
                           <p className="mt-3 text-xs leading-relaxed text-body-soft">
-                            Łączna metryka przypisana na stanowisko w modelu flex, razem z udziałem w częściach
-                            wspólnych operatora.
+                            {getContentMessage(locale, 'calculator.areas.flex_per_desk_note')}
                           </p>
                         </div>
                       </div>
@@ -540,10 +640,9 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                       <div className="flex items-center gap-3">
                         <BarChart3 size={18} className="text-[#1C54F4]" />
                         <div>
-                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">Koszty miesięczne</p>
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">{getContentMessage(locale, 'calculator.monthly_costs.title')}</p>
                           <p className="text-sm text-body-muted">
-                            Źródłowe dane rynkowe pozostają po stronie Colliers, a klient widzi już gotowe wyniki
-                            porównawcze.
+                            {getContentMessage(locale, 'calculator.monthly_costs.lead')}
                           </p>
                         </div>
                       </div>
@@ -552,16 +651,16 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                           <thead>
                             <tr className="border-b border-[var(--colliers-navy)]">
                               <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
-                                Pozycja
+                                {getContentMessage(locale, 'calculator.monthly_costs.col_item')}
                               </th>
                               <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
-                                Model
+                                {getContentMessage(locale, 'calculator.monthly_costs.col_model')}
                               </th>
                               <th className="pb-3 pr-4 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
-                                PLN / mies.
+                                {getContentMessage(locale, 'calculator.monthly_costs.col_pln')}
                               </th>
                               <th className="pb-3 text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4]">
-                                EUR / mies.
+                                {getContentMessage(locale, 'calculator.monthly_costs.col_eur')}
                               </th>
                             </tr>
                           </thead>
@@ -569,10 +668,10 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                             {result.conventionalLineItems.map((item) => (
                               <tr key={`conv-${item.label}`} className="border-b border-[#edf1f7] align-top">
                                 <td className="py-3 pr-4 text-[var(--colliers-navy)]">
-                                  <div className="font-semibold">{item.label}</div>
-                                  {item.note ? <div className="mt-1 text-xs text-body-soft">{item.note}</div> : null}
+                                  <div className="font-semibold">{getCalculatorLineItemContent(locale, item.label, item.note).label}</div>
+                                  {item.note ? <div className="mt-1 text-xs text-body-soft">{getCalculatorLineItemContent(locale, item.label, item.note).note}</div> : null}
                                 </td>
-                                <td className="py-3 pr-4 text-body-muted">Konwencja</td>
+                                <td className="py-3 pr-4 text-body-muted">{getContentMessage(locale, 'calculator.monthly_costs.model_conventional')}</td>
                                 <td className="py-3 pr-4 text-[var(--colliers-navy)]">
                                   {formatCurrency(item.monthlyTotalPln, 'PLN')}
                                 </td>
@@ -584,10 +683,10 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                             {result.flexLineItems.map((item) => (
                               <tr key={`flex-${item.label}`} className="border-b border-[#edf1f7] align-top">
                                 <td className="py-3 pr-4 text-[var(--colliers-navy)]">
-                                  <div className="font-semibold">{item.label}</div>
-                                  {item.note ? <div className="mt-1 text-xs text-body-soft">{item.note}</div> : null}
+                                  <div className="font-semibold">{getCalculatorLineItemContent(locale, item.label, item.note).label}</div>
+                                  {item.note ? <div className="mt-1 text-xs text-body-soft">{getCalculatorLineItemContent(locale, item.label, item.note).note}</div> : null}
                                 </td>
-                                <td className="py-3 pr-4 text-body-muted">Flex</td>
+                                <td className="py-3 pr-4 text-body-muted">{getContentMessage(locale, 'calculator.monthly_costs.model_flex')}</td>
                                 <td className="py-3 pr-4 text-[var(--colliers-navy)]">
                                   {formatCurrency(item.monthlyTotalPln, 'PLN')}
                                 </td>
@@ -597,8 +696,8 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                               </tr>
                             ))}
                             <tr className="bg-[#f7faff]">
-                              <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">Total konwencja / miesiąc</td>
-                              <td className="py-3 pr-4 text-body-muted">Konwencja</td>
+                              <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">{getContentMessage(locale, 'calculator.monthly_costs.total_conventional')}</td>
+                              <td className="py-3 pr-4 text-body-muted">{getContentMessage(locale, 'calculator.monthly_costs.model_conventional')}</td>
                               <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">
                                 {formatCurrency(result.totals.conventionalMonthlyTotalPln, 'PLN')}
                               </td>
@@ -607,8 +706,8 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                               </td>
                             </tr>
                             <tr className="bg-[#f7faff]">
-                              <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">Total flex / miesiąc</td>
-                              <td className="py-3 pr-4 text-body-muted">Flex</td>
+                              <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">{getContentMessage(locale, 'calculator.monthly_costs.total_flex')}</td>
+                              <td className="py-3 pr-4 text-body-muted">{getContentMessage(locale, 'calculator.monthly_costs.model_flex')}</td>
                               <td className="py-3 pr-4 font-semibold text-[var(--colliers-navy)]">
                                 {formatCurrency(result.totals.flexMonthlyTotalPln, 'PLN')}
                               </td>
