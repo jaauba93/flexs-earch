@@ -25,6 +25,8 @@ export interface TranslationImportSummary {
   errors: string[]
 }
 
+const TRANSLATION_BATCH_SIZE = 200
+
 function flattenMessages(
   input: Record<string, unknown>,
   prefix = ''
@@ -57,6 +59,16 @@ function hasAnyTranslatedValue(
       return typeof value === 'string' && value.trim().length > 0
     })
   )
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = []
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size))
+  }
+
+  return chunks
 }
 
 async function detectTranslationSupport(): Promise<TranslationSupport> {
@@ -287,103 +299,115 @@ export async function importTranslationWorkbook(buffer: ArrayBuffer): Promise<Tr
     )
   }
 
-  for (let index = 0; index < listingRows.length; index += 1) {
-    const row = listingRows[index]
+  const listingUpserts = listingRows.reduce<Record<string, string | null>[]>((acc, row) => {
     const id = String(row.id || '').trim()
-    const slug = String(row.slug || '').trim()
-    if (!id && !slug) continue
+    if (!id) return acc
 
-    const payload: Record<string, string | null> = {}
+    const payload: Record<string, string | null> = { id }
 
     if (support.listings.name_en) payload.name_en = String(row.name_en || '').trim() || null
     if (support.listings.name_uk) payload.name_uk = String(row.name_uk || '').trim() || null
     if (support.listings.description_en) payload.description_en = String(row.description_en || '').trim() || null
     if (support.listings.description_uk) payload.description_uk = String(row.description_uk || '').trim() || null
 
-    if (Object.keys(payload).length === 0) continue
+    acc.push(payload)
+    return acc
+  }, [])
 
-    const query = (admin as any).from('listings').update(payload)
-    const { error } = id ? await query.eq('id', id) : await query.eq('slug', slug)
+  for (const batch of chunkArray(listingUpserts, TRANSLATION_BATCH_SIZE)) {
+    const { error } = await (admin as any)
+      .from('listings')
+      .upsert(batch, { onConflict: 'id' })
 
     if (error) {
-      summary.errors.push(`Listings row ${index + 2}: ${error.message}`)
+      summary.errors.push(`Listings batch import: ${error.message}`)
       continue
     }
 
-    summary.listingsUpdated += 1
+    summary.listingsUpdated += batch.length
   }
 
-  for (let index = 0; index < amenityRows.length; index += 1) {
-    const row = amenityRows[index]
+  const amenityUpserts = amenityRows.reduce<Record<string, string | null>[]>((acc, row) => {
     const id = String(row.id || '').trim()
-    const slug = String(row.slug || '').trim()
-    if (!id && !slug) continue
+    if (!id) return acc
 
-    const payload: Record<string, string | null> = {}
+    const payload: Record<string, string | null> = { id }
 
     if (support.amenities.name_en) payload.name_en = String(row.name_en || '').trim() || null
     if (support.amenities.name_uk) payload.name_uk = String(row.name_uk || '').trim() || null
 
-    if (Object.keys(payload).length === 0) continue
+    acc.push(payload)
+    return acc
+  }, [])
 
-    const query = (admin as any).from('amenities').update(payload)
-    const { error } = id ? await query.eq('id', id) : await query.eq('slug', slug)
+  for (const batch of chunkArray(amenityUpserts, TRANSLATION_BATCH_SIZE)) {
+    const { error } = await (admin as any)
+      .from('amenities')
+      .upsert(batch, { onConflict: 'id' })
 
     if (error) {
-      summary.errors.push(`Amenities row ${index + 2}: ${error.message}`)
+      summary.errors.push(`Amenities batch import: ${error.message}`)
       continue
     }
 
-    summary.amenitiesUpdated += 1
+    summary.amenitiesUpdated += batch.length
   }
 
   if (support.publicUiTable) {
-    for (let index = 0; index < publicUiRows.length; index += 1) {
-      const row = publicUiRows[index]
+    const publicUiUpserts = publicUiRows.reduce<
+      Array<{ key: string; value_pl: string | null; value_en: string | null; value_uk: string | null }>
+    >((acc, row) => {
       const key = String(row.key || '').trim()
-      if (!key) continue
+      if (!key) return acc
 
-      const payload = {
+      acc.push({
         key,
         value_pl: String(row.value_pl || '').trim() || null,
         value_en: String(row.value_en || '').trim() || null,
         value_uk: String(row.value_uk || '').trim() || null,
-      }
+      })
+      return acc
+    }, [])
 
+    for (const batch of chunkArray(publicUiUpserts, TRANSLATION_BATCH_SIZE)) {
       const { error } = await (admin as any)
         .from('public_site_translations')
-        .upsert(payload, { onConflict: 'key' })
+        .upsert(batch, { onConflict: 'key' })
 
       if (error) {
-        summary.errors.push(`Public UI row ${index + 2}: ${error.message}`)
+        summary.errors.push(`Public UI batch import: ${error.message}`)
         continue
       }
 
-      summary.publicUiUpdated += 1
+      summary.publicUiUpdated += batch.length
     }
 
-    for (let index = 0; index < pageContentRows.length; index += 1) {
-      const row = pageContentRows[index]
+    const pageContentUpserts = pageContentRows.reduce<
+      Array<{ key: string; value_pl: string | null; value_en: string | null; value_uk: string | null }>
+    >((acc, row) => {
       const key = String(row.key || '').trim()
-      if (!key) continue
+      if (!key) return acc
 
-      const payload = {
+      acc.push({
         key,
         value_pl: String(row.value_pl || '').trim() || null,
         value_en: String(row.value_en || '').trim() || null,
         value_uk: String(row.value_uk || '').trim() || null,
-      }
+      })
+      return acc
+    }, [])
 
+    for (const batch of chunkArray(pageContentUpserts, TRANSLATION_BATCH_SIZE)) {
       const { error } = await (admin as any)
         .from('public_site_translations')
-        .upsert(payload, { onConflict: 'key' })
+        .upsert(batch, { onConflict: 'key' })
 
       if (error) {
-        summary.errors.push(`Page content row ${index + 2}: ${error.message}`)
+        summary.errors.push(`Page content batch import: ${error.message}`)
         continue
       }
 
-      summary.pageContentUpdated += 1
+      summary.pageContentUpdated += batch.length
     }
   }
 
