@@ -13,6 +13,7 @@ import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPriceShort } from '@/lib/currency/currency'
 import { localizeField } from '@/lib/i18n/localize'
 import { getContentMessage, getPublicMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import { slugify } from '@/lib/utils/slugify'
 import { CITY_OPTIONS, DISTRICT_OPTIONS, METRO_OPTIONS, findSearchOption, getSearchHref, normalizeSearchText } from '@/lib/search/locations'
 import type { Listing, Operator } from '@/types/database'
@@ -97,7 +98,10 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
   const featuredListingSuggestions = featuredListings.slice(0, 3).map((listing) => ({
     key: `listing-${listing.id}`,
     label: localizeField(listing, 'name', locale) ?? listing.name,
-    href: `/biura-serwisowane/${slugify(listing.address_city)}/${listing.address_district ? slugify(listing.address_district) : '_'}/${listing.slug}`,
+    href: withLocalePath(
+      locale,
+      `/biura-serwisowane/${slugify(listing.address_city)}/${listing.address_district ? slugify(listing.address_district) : '_'}/${listing.slug}`
+    ),
   }))
 
   const searchGroups = [
@@ -105,7 +109,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
       title: t('home.hero.search_group_cities', 'Miasta'),
       items: CITY_OPTIONS.filter((item) =>
         !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
-      ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
+      ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: withLocalePath(locale, getSearchHref(item)) })),
     },
     {
       title: t('home.hero.search_group_offices', 'Biura'),
@@ -115,13 +119,13 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
       title: t('home.hero.search_group_metro', 'Linie metra'),
       items: METRO_OPTIONS.filter((item) =>
         !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
-      ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
+      ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: withLocalePath(locale, getSearchHref(item)) })),
     },
     {
       title: t('home.hero.search_group_districts', 'Dzielnice'),
       items: DISTRICT_OPTIONS.filter((item) =>
         !normalizedSearch || [item.label, ...(item.aliases ?? [])].some((v) => normalizeSearchText(v).includes(normalizedSearch))
-      ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: getSearchHref(item) })),
+      ).slice(0, 3).map((item) => ({ key: item.key, label: item.label, href: withLocalePath(locale, getSearchHref(item)) })),
     },
   ]
 
@@ -132,11 +136,15 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
     const val = searchValue.trim()
     if (!val) return
     const option = findSearchOption(val)
-    router.push(option ? getSearchHref(option) : `/biura-serwisowane?q=${encodeURIComponent(val)}`)
+    router.push(
+      option
+        ? withLocalePath(locale, getSearchHref(option))
+        : `${withLocalePath(locale, '/biura-serwisowane')}?q=${encodeURIComponent(val)}`
+    )
   }
 
   function handleCityClick(slug: string) {
-    router.push(`/biura-serwisowane/${slug}`)
+    router.push(withLocalePath(locale, `/biura-serwisowane/${slug}`))
   }
 
   // Panel overlay transform: panel slides in from below when active
@@ -563,7 +571,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
               </div>
               <div className="flex flex-col items-end gap-3 mt-6 md:mt-0">
                 <div className="h-px w-24 bg-gradient-to-l from-[#1C54F4] to-transparent" />
-                <Link href="/biura-serwisowane" className="cta-link">
+                <Link href={withLocalePath(locale, '/biura-serwisowane')} className="cta-link">
                   {getPublicMessage(locale, 'home.seeAll')} →
                 </Link>
               </div>
@@ -573,7 +581,7 @@ export default function HomeClient({ featuredListings }: HomeClientProps) {
               {featuredListings.map((listing, index) => {
                 const citySlug = slugify(listing.address_city)
                 const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
-                const href = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
+                const href = withLocalePath(locale, `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`)
                 const listingName = localizeField(listing, 'name', locale) ?? listing.name
                 return (
                   <Link

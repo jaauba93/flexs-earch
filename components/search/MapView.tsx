@@ -13,6 +13,7 @@ import type { BasketItem } from '@/lib/hooks/useBasket'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { getPublicMessage } from '@/lib/i18n/runtime'
 import { localizeField } from '@/lib/i18n/localize'
+import { withLocalePath } from '@/lib/i18n/routing'
 
 export interface MapBounds {
   north: number
@@ -71,7 +72,7 @@ function buildPopupContent(
 ): HTMLDivElement {
   const citySlug = slugify(listing.address_city)
   const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
-  const detailsHref = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
+  const detailsHref = withLocalePath(options.locale, `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`)
   const listingName = localizeField(listing, 'name', options.locale) ?? listing.name
   const root = document.createElement('div')
   root.style.fontFamily = "'Open Sans', sans-serif"

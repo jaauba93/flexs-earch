@@ -9,6 +9,7 @@ import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { getContentMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import { BASICS_TOOLS_SECTION, getBasicsCards } from '@/lib/basics/flexBasics'
 
 function formatNumber(value: number) {
@@ -82,10 +83,10 @@ export default function BasicsHubClient() {
                 {t('basics_hub.hero.lead', 'Poznaj najważniejsze pojęcia, modele najmu i scenariusze, w których biuro flex może być lepszym rozwiązaniem niż najem tradycyjny.')}
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/podstawy-flex/czym-sa-biura-elastyczne" className="btn-primary inline-flex items-center gap-2">
+                <Link href={withLocalePath(locale, '/podstawy-flex/czym-sa-biura-elastyczne')} className="btn-primary inline-flex items-center gap-2">
                   {t('basics_hub.hero.primary_cta', 'Zacznij od definicji')} <ArrowRight size={14} />
                 </Link>
-                <Link href="/podstawy-flex/modele-biur-elastycznych" className="btn-outline inline-flex items-center gap-2">
+                <Link href={withLocalePath(locale, '/podstawy-flex/modele-biur-elastycznych')} className="btn-outline inline-flex items-center gap-2">
                   {t('basics_hub.hero.secondary_cta', 'Porównaj modele')} <ArrowRight size={14} />
                 </Link>
               </div>
@@ -151,7 +152,7 @@ export default function BasicsHubClient() {
               {cards.map((card, idx) => (
                 <Link
                   key={card.slug}
-                  href={`/podstawy-flex/${card.slug}`}
+                  href={withLocalePath(locale, `/podstawy-flex/${card.slug}`)}
                   className="surface-panel-soft group relative min-h-[240px] p-7 transition-all duration-500 hover:shadow-[0_22px_64px_rgba(0,7,89,0.11)] hover:-translate-y-1"
                   data-reveal={`d${(idx % 3) + 1}`}
                 >
@@ -181,7 +182,7 @@ export default function BasicsHubClient() {
                 return (
                   <Link
                     key={tool.title}
-                    href={tool.href}
+                    href={withLocalePath(locale, tool.href)}
                     className="surface-panel-soft group p-7 hover:-translate-y-1 transition-all duration-500 hover:shadow-[0_20px_56px_rgba(0,7,89,0.12)]"
                   >
                     <Icon size={20} className="text-[#1C54F4] mb-5" />
@@ -207,7 +208,7 @@ export default function BasicsHubClient() {
               {t('basics_hub.next.body', 'Możesz zacząć od definicji, porównać modele albo od razu przejść do narzędzi. Gdy będziesz gotowy, pomożemy przełożyć to na realne opcje rynkowe.')}
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/kalkulator-flex" className="btn-primary-bright inline-flex items-center gap-2">
+              <Link href={withLocalePath(locale, '/kalkulator-flex')} className="btn-primary-bright inline-flex items-center gap-2">
                 {t('basics_hub.next.primary_cta', 'Uruchom kalkulator')} <ArrowRight size={14} />
               </Link>
               <button onClick={() => setFormOpen(true)} className="btn-outline border-white/35 text-white hover:bg-white hover:text-[#000759]">

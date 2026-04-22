@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import Link from 'next/link'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getContentMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import { CITY_CENTERS, POLAND_BOUNDS, POLAND_CENTER } from '@/lib/mapbox/helpers'
 import { CITY_REPORTS, CITY_REPORT_ORDER, type CityReportSlug } from '@/lib/reports/cityReports'
 
@@ -19,6 +22,7 @@ export default function PolandOverviewMap({
   className = '',
   showCard = true,
 }: PolandOverviewMapProps) {
+  const { locale } = useLocaleContext()
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const markerElementsRef = useRef<Map<CityReportSlug, HTMLButtonElement>>(new Map())
@@ -31,10 +35,10 @@ export default function PolandOverviewMap({
         label: CITY_REPORTS[slug].cityName,
         teaser: CITY_REPORTS[slug].positioningHeadline,
         metric: CITY_REPORTS[slug].kpiSupply,
-        href: `/raporty-miejskie/${slug}`,
+        href: withLocalePath(locale, `/raporty-miejskie/${slug}`),
         center: CITY_CENTERS[slug],
       })),
-    []
+    [locale]
   )
 
   useEffect(() => {
@@ -104,7 +108,9 @@ export default function PolandOverviewMap({
   if (!token) {
     return (
       <div className={`h-full w-full flex items-center justify-center bg-[#f8fbff] border border-[#dbe4f8] ${className}`}>
-        <p className="text-sm text-body-muted">Mapa niedostępna (brak tokenu Mapbox)</p>
+        <p className="text-sm text-body-muted">
+          {getContentMessage(locale, 'reports_map.unavailable', 'Mapa niedostępna (brak tokenu Mapbox)')}
+        </p>
       </div>
     )
   }
@@ -118,10 +124,10 @@ export default function PolandOverviewMap({
           <p className="text-[#1C54F4] text-sm font-semibold mb-1">{active.kpiSupply}</p>
           <p className="text-[#5f6e98] text-xs leading-relaxed mb-3">{active.positioningHeadline}</p>
           <Link
-            href={`/raporty-miejskie/${active.citySlug}`}
+            href={withLocalePath(locale, `/raporty-miejskie/${active.citySlug}`)}
             className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1C54F4] hover:text-[#000759] transition-colors"
           >
-            Otwórz raport →
+            {getContentMessage(locale, 'reports_map.open_report', 'Otwórz raport →')}
           </Link>
         </div>
       )}

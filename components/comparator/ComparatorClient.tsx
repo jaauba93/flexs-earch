@@ -15,6 +15,7 @@ import { useCurrencyContext } from '@/lib/context/CurrencyContext'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPriceShort } from '@/lib/currency/currency'
 import { getContentMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator, Advisor } from '@/types/database'
@@ -70,7 +71,7 @@ export default function ComparatorClient() {
             <p className="text-[var(--colliers-gray)] mb-6 text-lg">
               {t('compare.empty', 'Nie dodałeś jeszcze żadnych biur do porównywarki.')}
             </p>
-            <Link href="/biura-serwisowane" className="btn-primary">
+            <Link href={withLocalePath(locale, '/biura-serwisowane')} className="btn-primary">
               {t('compare.empty_cta', 'Przeglądaj biura')}
             </Link>
           </div>
@@ -172,7 +173,7 @@ export default function ComparatorClient() {
                   {listings.map((l) => {
                     const citySlug = slugify(l.address_city)
                     const districtSlug = l.address_district ? slugify(l.address_district) : '_'
-                    const href = `/biura-serwisowane/${citySlug}/${districtSlug}/${l.slug}`
+                    const href = withLocalePath(locale, `/biura-serwisowane/${citySlug}/${districtSlug}/${l.slug}`)
                     return (
                       <tr
                         key={l.id}

@@ -10,6 +10,7 @@ import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import PolandOverviewMap from '@/components/maps/PolandOverviewMap'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { getContentMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import {
   CITY_REPORT_ORDER,
   CITY_REPORTS,
@@ -43,10 +44,10 @@ export default function ReportsHubClient() {
                 {t('reports_hub.hero.lead', 'Porównaj skalę rynku, strukturę operatorów, poziom cen i dostępność powierzchni flex w kluczowych ośrodkach biurowych.')}
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href={`/raporty-miejskie/${activeCity}`} className="btn-primary inline-flex items-center gap-2">
+                <Link href={withLocalePath(locale, `/raporty-miejskie/${activeCity}`)} className="btn-primary inline-flex items-center gap-2">
                   {t('reports_hub.hero.open_report_prefix', 'Otwórz raport:')} {active.cityName} <ArrowRight size={14} />
                 </Link>
-                <Link href="/przewodnik-flex" className="btn-outline">
+                <Link href={withLocalePath(locale, '/przewodnik-flex')} className="btn-outline">
                   {t('reports_hub.hero.back_to_guide', 'Wróć do Przewodnika Flex')}
                 </Link>
               </div>
@@ -73,7 +74,7 @@ export default function ReportsHubClient() {
                 return (
                   <Link
                     key={slug}
-                    href={`/raporty-miejskie/${slug}`}
+                    href={withLocalePath(locale, `/raporty-miejskie/${slug}`)}
                     onMouseEnter={() => setActiveCity(slug)}
                     className="surface-panel-soft group p-6 hover:-translate-y-1 transition-all duration-500 hover:shadow-[0_22px_60px_rgba(0,7,89,0.12)]"
                     data-reveal={`d${(idx % 3) + 1}`}
@@ -121,7 +122,7 @@ export default function ReportsHubClient() {
                     return (
                       <tr key={slug} className="border-b border-[#eef2fb] hover:bg-[#f8faff] transition-colors">
                         <td className="px-5 py-4 font-semibold text-[#000759]">
-                          <Link href={`/raporty-miejskie/${slug}`} className="hover:text-[#1C54F4] transition-colors">
+                          <Link href={withLocalePath(locale, `/raporty-miejskie/${slug}`)} className="hover:text-[#1C54F4] transition-colors">
                             {city.cityName}
                           </Link>
                         </td>
@@ -148,7 +149,7 @@ export default function ReportsHubClient() {
               {t('reports_hub.next.body', 'Sprawdź porównanie modeli biura i koszty, a jeśli potrzebujesz, przejdź przez analizę rynku z doradcą Colliers.')}
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/porownaj" className="btn-primary-bright inline-flex items-center gap-2">
+              <Link href={withLocalePath(locale, '/porownaj')} className="btn-primary-bright inline-flex items-center gap-2">
                 {t('reports_hub.next.primary_cta', 'Przejdź do porównywarki')} <ArrowRight size={14} />
               </Link>
               <button onClick={() => setFormOpen(true)} className="btn-outline border-white/35 text-white hover:bg-white hover:text-[#000759]">

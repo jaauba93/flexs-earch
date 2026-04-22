@@ -10,6 +10,9 @@ import MapView, { type MapBounds } from '@/components/search/MapView'
 import ContactForm, { type ContactFormPrefill } from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { formatPublicMessage, getPublicMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import { createClient } from '@/lib/supabase/client'
 import { slugToCity, slugToDistrict, slugify } from '@/lib/utils/slugify'
 import { METRO_LINES, type MetroLineId, isNearMetroLine } from '@/lib/mapbox/metro'
@@ -103,6 +106,7 @@ export default function SearchClient({
   const [showDistrictGrid, setShowDistrictGrid] = useState(true)
   const [showMetroLines, setShowMetroLines] = useState(true)
   const { currency, rates } = useCurrencyContext()
+  const { locale } = useLocaleContext()
 
   useEffect(() => {
     if (!filtersOpen) return
@@ -224,11 +228,11 @@ export default function SearchClient({
     [districtOptions, selectedDistrictSlugs]
   )
   const districtSummary = useMemo(() => {
-    if (!selectedCitySlug) return 'Najpierw wybierz miasto'
-    if (selectedDistrictLabels.length === 0) return 'Wszystkie dzielnice'
+    if (!selectedCitySlug) return getPublicMessage(locale, 'search.chooseCityFirst')
+    if (selectedDistrictLabels.length === 0) return getPublicMessage(locale, 'search.allDistricts')
     if (selectedDistrictLabels.length <= 2) return selectedDistrictLabels.join(', ')
     return `${selectedDistrictLabels.slice(0, 2).join(', ')} +${selectedDistrictLabels.length - 2}`
-  }, [selectedCitySlug, selectedDistrictLabels])
+  }, [locale, selectedCitySlug, selectedDistrictLabels])
   const parsedStanowiskaOd = stanowiskaOd ? parseInt(stanowiskaOd, 10) : null
   const parsedStanowiskaDo = stanowiskaDo ? parseInt(stanowiskaDo, 10) : null
   const workstationCapacityThreshold = useMemo(() => {
@@ -355,10 +359,11 @@ export default function SearchClient({
         : `/biura-serwisowane/${selectedCitySlug}`
       : '/biura-serwisowane'
 
-    const url = params.toString() ? `${basePath}?${params.toString()}` : basePath
+    const localizedBasePath = withLocalePath(locale, basePath)
+    const url = params.toString() ? `${localizedBasePath}?${params.toString()}` : localizedBasePath
     router.replace(url, { scroll: false })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [budgetInput, router, selectedAmenities, selectedCitySlug, selectedDistrictSlugs, selectedMetroLine, selectedOperator, sort, stanowiskaDo, stanowiskaOd])
+  }, [budgetInput, locale, router, selectedAmenities, selectedCitySlug, selectedDistrictSlugs, selectedMetroLine, selectedOperator, sort, stanowiskaDo, stanowiskaOd])
 
   useEffect(() => {
     if (searchParams.open_contact !== '1' || typeof window === 'undefined') return
@@ -421,18 +426,18 @@ export default function SearchClient({
     return [
       {
         key: 'office',
-        title: 'Udogodnienia w biurze',
-        description: 'Elementy związane z komfortem pracy w samej przestrzeni.',
+        title: getPublicMessage(locale, 'search.amenitiesOffice'),
+        description: getPublicMessage(locale, 'search.amenitiesOfficeDesc'),
         items: officeAmenities,
       },
       {
         key: 'building',
-        title: 'Udogodnienia w budynku',
-        description: 'Elementy dostępne w całym obiekcie lub w jego otoczeniu.',
+        title: getPublicMessage(locale, 'search.amenitiesBuilding'),
+        description: getPublicMessage(locale, 'search.amenitiesBuildingDesc'),
         items: buildingAmenities,
       },
     ].filter((group) => group.items.length > 0)
-  }, [availableAmenities])
+  }, [availableAmenities, locale])
 
   const isClientOnlyFilterActive = Boolean(selectedMetroLine || selectedDistrictSlugs.length > 0)
   const totalPages = isClientOnlyFilterActive ? 1 : Math.ceil(total / PAGE_SIZE)
@@ -454,13 +459,16 @@ export default function SearchClient({
   const filterMenuTextClass =
     'flex w-full items-center justify-between border px-4 py-3 text-left text-[14px] font-normal leading-tight transition-all'
   const sortOptions = [
-    { value: '', label: 'Domyślne (A–Z)' },
-    { value: 'cena_asc', label: 'Cena: od najniższej' },
-    { value: 'cena_desc', label: 'Cena: od najwyższej' },
+    { value: '', label: getPublicMessage(locale, 'search.sortDefault') },
+    { value: 'cena_asc', label: getPublicMessage(locale, 'search.sortPriceAsc') },
+    { value: 'cena_desc', label: getPublicMessage(locale, 'search.sortPriceDesc') },
   ]
-  const selectedOperatorLabel = operators.find((op) => op.slug === selectedOperator)?.name || 'Wszyscy'
-  const selectedMetroLabel = METRO_LINES.find((line) => line.id === selectedMetroLine)?.name || 'Wszystkie'
-  const selectedSortLabel = sortOptions.find((option) => option.value === sort)?.label || 'Domyślne (A–Z)'
+  const selectedOperatorLabel =
+    operators.find((op) => op.slug === selectedOperator)?.name || getPublicMessage(locale, 'search.allOperators')
+  const selectedMetroLabel =
+    METRO_LINES.find((line) => line.id === selectedMetroLine)?.name || getPublicMessage(locale, 'search.allMetro')
+  const selectedSortLabel =
+    sortOptions.find((option) => option.value === sort)?.label || getPublicMessage(locale, 'search.sortDefault')
 
   const filterBar = (
     <div
@@ -468,9 +476,11 @@ export default function SearchClient({
       className="grid items-start gap-5 md:grid-cols-2 xl:flex xl:flex-nowrap xl:items-start xl:gap-x-3"
     >
       <div className={`relative ${filterFieldWrapClass}`}>
-        <p className={filterLabelClass}>Miasto</p>
+        <p className={filterLabelClass}>{getPublicMessage(locale, 'search.city')}</p>
         <button type="button" onClick={() => setOpenMenu((value) => (value === 'city' ? null : 'city'))} className={filterTriggerClass}>
-          <span className="truncate">{selectedCitySlug ? slugToCity(selectedCitySlug) : 'Cała Polska'}</span>
+          <span className="truncate">
+            {selectedCitySlug ? slugToCity(selectedCitySlug) : getPublicMessage(locale, 'search.allPoland')}
+          </span>
           <span className="flex items-center gap-2">
             {selectedCitySlug ? (
               <span
@@ -505,7 +515,7 @@ export default function SearchClient({
                 }}
                 className="flex w-full items-center justify-between border border-[#e7edf9] bg-white px-4 py-3 text-left text-[14px] font-normal leading-tight text-[#000759] transition-all hover:border-[#b7cbff] hover:bg-[#f8fbff]"
               >
-                <span>Cała Polska</span>
+                <span>{getPublicMessage(locale, 'search.allPoland')}</span>
                 {!selectedCitySlug ? <Check size={14} className="text-[#1C54F4]" /> : null}
               </button>
               {CITY_AREAS.map((cityArea) => {
@@ -533,7 +543,7 @@ export default function SearchClient({
       </div>
 
       <div className={`relative ${filterFieldWrapClass}`}>
-        <p className={filterLabelClass}>Dzielnice</p>
+        <p className={filterLabelClass}>{getPublicMessage(locale, 'search.district')}</p>
         {/* District dropdown is intentionally wider than its trigger via min-w on filterMenuClass */}
         <button
           type="button"
@@ -548,7 +558,7 @@ export default function SearchClient({
               ? districtSummary
               : selectedDistrictLabels.length === 1
                 ? selectedDistrictLabels[0]
-                : `Wybrane dzielnice (${selectedDistrictLabels.length})`}
+                : formatPublicMessage(locale, 'search.selectedDistricts', { count: selectedDistrictLabels.length })}
           </span>
           <ChevronDown size={15} className={`shrink-0 transition-transform ${openMenu === 'district' ? 'rotate-180' : ''}`} />
         </button>
@@ -557,15 +567,17 @@ export default function SearchClient({
           <div className={`${filterMenuClass} min-w-[420px] filter-menu-enter`}>
             <div className="flex items-center justify-between border-b border-[#edf2fb] px-4 py-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1C54F4]">Dzielnice</p>
-                <p className="mt-1 text-[11px] text-[#61719a]">Możesz wybrać kilka dzielnic jednocześnie.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1C54F4]">
+                  {getPublicMessage(locale, 'search.district')}
+                </p>
+                <p className="mt-1 text-[11px] text-[#61719a]">{getPublicMessage(locale, 'search.districtHint')}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setDraftDistrictSlugs([])}
                 className="eyebrow-label text-[10px] transition-colors hover:text-[#000759]"
               >
-                Wyczyść
+                {getPublicMessage(locale, 'search.clear')}
               </button>
             </div>
             <div className="max-h-72 overflow-y-auto overscroll-contain px-4 py-3 space-y-2" data-lenis-prevent>
@@ -605,7 +617,7 @@ export default function SearchClient({
                 }}
                 className="btn-primary w-full justify-center"
               >
-                Zastosuj
+                {getPublicMessage(locale, 'search.apply')}
               </button>
             </div>
           </div>
@@ -613,13 +625,13 @@ export default function SearchClient({
       </div>
 
       <div className={filterFieldWrapClass}>
-        <FilterLabel tooltip="Liczba stanowisk pracy oznacza liczbę miejsc do pracy w całym biurze, rozumianych jako biurko plus fotel." labelClass={filterLabelItemClass}>
-          Stanowiska
+        <FilterLabel tooltip={getPublicMessage(locale, 'search.workstationsTooltip')} labelClass={filterLabelItemClass}>
+          {getPublicMessage(locale, 'search.workstations')}
         </FilterLabel>
         <div className="flex h-10 w-full items-center gap-2 bg-white px-4">
           <input
             type="text"
-            placeholder="od"
+            placeholder={getPublicMessage(locale, 'search.from')}
             className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal leading-none text-[#000759] focus:ring-0 focus:outline-none placeholder:text-slate-300 [appearance:textfield]"
             value={stanowiskaOd}
             onChange={(e) => setStanowiskaOd(e.target.value.replace(/\D/g, ''))}
@@ -629,7 +641,7 @@ export default function SearchClient({
           <span className="text-slate-300">—</span>
           <input
             type="text"
-            placeholder="do"
+            placeholder={getPublicMessage(locale, 'search.to')}
             className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal leading-none text-[#000759] focus:ring-0 focus:outline-none placeholder:text-slate-300 [appearance:textfield]"
             value={stanowiskaDo}
             onChange={(e) => setStanowiskaDo(e.target.value.replace(/\D/g, ''))}
@@ -640,14 +652,14 @@ export default function SearchClient({
       </div>
 
       <div className={filterFieldWrapClass}>
-        <FilterLabel tooltip="Budżet oznacza miesięczny limit za stanowisko pracy. Filtr przelicza się według aktualnie wybranej waluty." labelClass={filterLabelItemClass}>
-          Budżet ({currency})
+        <FilterLabel tooltip={getPublicMessage(locale, 'search.budgetTooltip')} labelClass={filterLabelItemClass}>
+          {formatPublicMessage(locale, 'search.budget', { currency })}
         </FilterLabel>
         <div className="flex h-10 w-full items-center gap-3 bg-white px-4">
           <input
             type="text"
             inputMode="numeric"
-            placeholder="dowolny"
+            placeholder={getPublicMessage(locale, 'search.budgetAny')}
             value={budgetInput}
             onChange={(e) => setBudgetInput(e.target.value.replace(/\D/g, ''))}
             className="w-full min-w-0 bg-transparent border-none p-0 text-left text-[14px] font-normal leading-none text-[#000759] focus:ring-0 focus:outline-none placeholder:text-slate-300 [appearance:textfield]"
@@ -659,7 +671,7 @@ export default function SearchClient({
       </div>
 
       <div className={`relative ${filterFieldWrapClass}`}>
-        <p className={filterLabelClass}>Operator</p>
+        <p className={filterLabelClass}>{getPublicMessage(locale, 'search.operator')}</p>
         <button type="button" onClick={() => setOpenMenu((value) => (value === 'operator' ? null : 'operator'))} className={filterTriggerClass}>
           <span className="truncate">{selectedOperatorLabel}</span>
           <ChevronDown size={15} className={`transition-transform ${openMenu === 'operator' ? 'rotate-180' : ''}`} />
@@ -677,7 +689,7 @@ export default function SearchClient({
                   !selectedOperator ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                 }`}
               >
-                <span>Wszyscy</span>
+                <span>{getPublicMessage(locale, 'search.allOperators')}</span>
                 {!selectedOperator ? <Check size={14} className="text-[#1C54F4]" /> : null}
               </button>
               {operators.map((op) => {
@@ -706,7 +718,7 @@ export default function SearchClient({
 
       {selectedCitySlug === 'warszawa' ? (
         <div className={`relative ${filterFieldWrapClass}`}>
-          <p className={filterLabelClass}>Linia metra</p>
+          <p className={filterLabelClass}>{getPublicMessage(locale, 'search.metro')}</p>
           <button type="button" onClick={() => setOpenMenu((value) => (value === 'metro' ? null : 'metro'))} className={filterTriggerClass}>
             <span className="truncate">{selectedMetroLabel}</span>
             <ChevronDown size={15} className={`transition-transform ${openMenu === 'metro' ? 'rotate-180' : ''}`} />
@@ -724,7 +736,7 @@ export default function SearchClient({
                     !selectedMetroLine ? 'border-[#1C54F4] bg-[#edf3ff] text-[#000759]' : 'border-[#e7edf9] bg-white text-[#000759] hover:border-[#b7cbff] hover:bg-[#f8fbff]'
                   }`}
                 >
-                  <span>Wszystkie</span>
+                  <span>{getPublicMessage(locale, 'search.allMetro')}</span>
                   {!selectedMetroLine ? <Check size={14} className="text-[#1C54F4]" /> : null}
                 </button>
                 {METRO_LINES.map((line) => {
@@ -753,20 +765,20 @@ export default function SearchClient({
       ) : null}
 
       <div className={`${filterFieldWrapClass}`}>
-        <p className={`${filterLabelClass} opacity-0`}>Filtry</p>
+        <p className={`${filterLabelClass} opacity-0`}>{getPublicMessage(locale, 'search.filters')}</p>
         <button
           type="button"
           onClick={() => setFiltersOpen(true)}
           className="inline-flex h-10 w-full items-center justify-center gap-2 bg-[rgba(255,255,255,0.08)] px-5 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:bg-white hover:text-[#000759]"
         >
-          Więcej filtrów
+          {getPublicMessage(locale, 'search.moreFilters')}
           <SlidersHorizontal size={13} />
           {selectedAmenities.length > 0 ? <span className="text-current">({selectedAmenities.length})</span> : null}
         </button>
       </div>
 
       <div className={`relative ${filterFieldWrapClass}`}>
-        <p className={filterLabelClass}>Sortowanie</p>
+        <p className={filterLabelClass}>{getPublicMessage(locale, 'search.sort')}</p>
         <button type="button" onClick={() => setOpenMenu((value) => (value === 'sort' ? null : 'sort'))} className={filterTriggerClass}>
           <span className="truncate">{selectedSortLabel}</span>
           <ChevronDown size={15} className={`transition-transform ${openMenu === 'sort' ? 'rotate-180' : ''}`} />
@@ -824,19 +836,19 @@ export default function SearchClient({
             {loading ? (
               <div className="p-8 flex flex-col items-center gap-3 text-[var(--colliers-gray)]">
                 <div className="w-5 h-5 border-2 border-[#1C54F4] border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm">Ładowanie…</span>
+                <span className="text-sm">{getPublicMessage(locale, 'search.loading')}</span>
               </div>
             ) : allVisible.length === 0 ? (
               <div className="p-8 text-center">
                 <p className="text-[var(--colliers-gray)] mb-4">
-                  Nie znaleźliśmy biur spełniających podane kryteria. Zmień filtry lub skontaktuj się z naszym doradcą.
+                  {getPublicMessage(locale, 'search.noResults')}
                 </p>
                 {mapBounds && (
                   <button
                     onClick={() => setMapBounds(null)}
                     className="text-sm text-[#1C54F4] hover:underline mb-4 block"
                   >
-                    Wyczyść filtr obszaru mapy
+                    {getPublicMessage(locale, 'search.clearMapBounds')}
                   </button>
                 )}
                 <button
@@ -846,7 +858,7 @@ export default function SearchClient({
                   }}
                   className="btn-primary text-sm"
                 >
-                  Skontaktuj się z doradcą
+                  {getPublicMessage(locale, 'search.contactAdvisor')}
                 </button>
               </div>
             ) : (
@@ -909,11 +921,11 @@ export default function SearchClient({
             {mobileView === 'list' ? (
               <div className="flex flex-col gap-4 pb-20">
                 {loading ? (
-                  <p className="text-center text-[var(--colliers-gray)] py-8">Ładowanie…</p>
+                  <p className="text-center text-[var(--colliers-gray)] py-8">{getPublicMessage(locale, 'search.loading')}</p>
                 ) : allVisible.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-[var(--colliers-gray)] mb-4">
-                      Nie znaleźliśmy biur spełniających podane kryteria.
+                      {getPublicMessage(locale, 'search.noResults')}
                     </p>
                     <button
                       onClick={() => {
@@ -922,7 +934,7 @@ export default function SearchClient({
                       }}
                       className="btn-primary text-sm"
                     >
-                      Skontaktuj się z doradcą
+                      {getPublicMessage(locale, 'search.contactAdvisor')}
                     </button>
                   </div>
                 ) : (
@@ -960,7 +972,7 @@ export default function SearchClient({
                   mobileView === 'list' ? 'bg-[var(--colliers-navy)] text-white' : 'text-[var(--colliers-navy)]'
                 }`}
               >
-                <List size={16} /> Lista
+                <List size={16} /> {getPublicMessage(locale, 'search.list')}
               </button>
               <button
                 onClick={() => setMobileView('map')}
@@ -968,7 +980,7 @@ export default function SearchClient({
                   mobileView === 'map' ? 'bg-[var(--colliers-navy)] text-white' : 'text-[var(--colliers-navy)]'
                 }`}
               >
-                <MapIcon size={16} /> Mapa
+                <MapIcon size={16} /> {getPublicMessage(locale, 'search.map')}
               </button>
             </div>
           </div>
@@ -982,7 +994,7 @@ export default function SearchClient({
         <div className="fixed inset-0 z-[120]" data-lenis-prevent>
           <button
             type="button"
-            aria-label="Zamknij panel udogodnień"
+            aria-label={getPublicMessage(locale, 'search.closeAmenities')}
             className="absolute inset-0 bg-[rgba(0,7,89,0.34)] backdrop-blur-[10px]"
             onClick={() => setFiltersOpen(false)}
           />
@@ -993,12 +1005,12 @@ export default function SearchClient({
           >
             <div className="sticky top-0 z-10 flex items-start justify-between gap-6 border-b border-[#e9edf6] bg-white px-7 md:px-8 py-6">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-2">Udogodnienia</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] mb-2">{getPublicMessage(locale, 'search.amenities')}</p>
                 <h3 className="text-2xl font-normal text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
-                  Filtruj po tym, co naprawdę jest dostępne
+                  {getPublicMessage(locale, 'search.amenitiesTitle')}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-[#61719a]">
-                  Pokazujemy tylko udogodnienia występujące w aktualnym zestawie biur. Lista wyników reaguje natychmiast.
+                  {getPublicMessage(locale, 'search.amenitiesLead')}
                 </p>
               </div>
               <button onClick={() => setFiltersOpen(false)} className="text-[#7a88b1] hover:text-[#000759] transition-colors mt-1">
@@ -1009,14 +1021,14 @@ export default function SearchClient({
             <div className="flex-1 overflow-y-auto overscroll-contain px-7 md:px-8 py-6 space-y-7" data-lenis-prevent>
               <div className="rounded-none border border-[#dbe4f8] bg-[linear-gradient(180deg,#fbfcff_0%,#f7faff_100%)] px-5 py-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-1">Wyniki na żywo</p>
-                  <p className="text-sm text-[#61719a]">Biura spełniające wybrane warunki</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] mb-1">{getPublicMessage(locale, 'search.liveResults')}</p>
+                  <p className="text-sm text-[#61719a]">{getPublicMessage(locale, 'search.officesMatching')}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-normal text-[#000759]" style={{ fontFamily: 'var(--font-serif)' }}>
                     {allVisible.length}
                   </p>
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#7a88b1]">ofert</p>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#7a88b1]">{getPublicMessage(locale, 'search.offers')}</p>
                 </div>
               </div>
 
@@ -1028,7 +1040,7 @@ export default function SearchClient({
                       <p className="text-sm text-[#61719a]">{group.description}</p>
                     </div>
                     <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7a88b1]">
-                      {group.items.length} pozycji
+                      {group.items.length} {getPublicMessage(locale, 'search.positions')}
                     </span>
                   </div>
 
@@ -1069,10 +1081,10 @@ export default function SearchClient({
 
             <div className="border-t border-[#e9edf6] bg-white px-7 md:px-8 py-5 sticky bottom-0 z-10 flex items-center gap-3">
               <button onClick={() => setSelectedAmenities([])} className="btn-outline flex-1 justify-center">
-                Wyczyść
+                {getPublicMessage(locale, 'search.clear')}
               </button>
               <button onClick={() => setFiltersOpen(false)} className="btn-primary flex-1 justify-center">
-                Gotowe
+                {getPublicMessage(locale, 'search.apply')}
               </button>
             </div>
           </aside>

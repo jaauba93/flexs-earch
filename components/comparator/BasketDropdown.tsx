@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingBag, X, ArrowRight, ArrowLeftRight } from 'lucide-react'
 import { useBasketContext } from '@/lib/context/BasketContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { withLocalePath } from '@/lib/i18n/routing'
 
 interface BasketDropdownProps {
   onOpenForm?: () => void
@@ -14,6 +16,7 @@ interface BasketDropdownProps {
 
 export default function BasketDropdown({ onOpenForm, variant = 'mobile', transparent = false }: BasketDropdownProps) {
   const { items, count, removeItem, mounted } = useBasketContext()
+  const { locale } = useLocaleContext()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -123,7 +126,7 @@ export default function BasketDropdown({ onOpenForm, variant = 'mobile', transpa
                 >
                   Wyślij zapytanie o wybrane biura
                 </button>
-                <Link href="/porownaj" onClick={() => setOpen(false)}
+                <Link href={withLocalePath(locale, '/porownaj')} onClick={() => setOpen(false)}
                   className="btn-outline w-full justify-center text-sm py-2">
                   Porównaj szczegółowo <ArrowRight size={16} />
                 </Link>

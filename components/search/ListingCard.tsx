@@ -9,6 +9,7 @@ import { formatPricePreview } from '@/lib/currency/currency'
 import UnavailableValueTooltip from '@/components/ui/UnavailableValueTooltip'
 import { localizeField } from '@/lib/i18n/localize'
 import { getPublicMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import { slugify } from '@/lib/utils/slugify'
 import type { Listing, Operator } from '@/types/database'
 
@@ -25,17 +26,12 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
   const { locale } = useLocaleContext()
   const { currency, rates } = useCurrencyContext()
   const inBasket = mounted && isInBasket(listing.id)
-  const missingPriceTooltip =
-    locale === 'pl'
-      ? 'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
-      : locale === 'en'
-        ? 'We do not have an up-to-date rate for this listing yet. Send an enquiry and a Colliers advisor will confirm it with the operator.'
-        : 'Наразі ми ще не маємо актуальної ставки для цієї пропозиції. Надішліть запит, і консультант Colliers уточнить її в оператора.'
+  const missingPriceTooltip = getPublicMessage(locale, 'listing.missingPriceTooltip')
   const listingName = localizeField(listing, 'name', locale) ?? listing.name
 
   const citySlug = slugify(listing.address_city)
   const districtSlug = listing.address_district ? slugify(listing.address_district) : '_'
-  const href = `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`
+  const href = withLocalePath(locale, `/biura-serwisowane/${citySlug}/${districtSlug}/${listing.slug}`)
 
   const basketItem = {
     id: listing.id,
@@ -74,7 +70,7 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
   const totalPriceRows = [
     selectedWorkstationsFrom
       ? {
-          label: `${selectedWorkstationsFrom} st.`,
+          label: `${selectedWorkstationsFrom} ${getPublicMessage(locale, 'listingCard.workstationsShort')}`,
           value: totalPriceFromLabel ? (
             totalPriceFromLabel
           ) : (
@@ -84,7 +80,7 @@ export default function ListingCard({ listing, highlighted, selectedWorkstations
       : null,
     selectedWorkstationsTo && selectedWorkstationsTo !== selectedWorkstationsFrom
       ? {
-          label: `${selectedWorkstationsTo} st.`,
+          label: `${selectedWorkstationsTo} ${getPublicMessage(locale, 'listingCard.workstationsShort')}`,
           value: totalPriceToLabel ? (
             totalPriceToLabel
           ) : (

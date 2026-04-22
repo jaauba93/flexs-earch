@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
 import {
@@ -10,6 +11,7 @@ import {
   PUBLIC_SITE_LOCALES,
 } from '@/lib/i18n/messages'
 import { getPublicMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 
 interface LanguageSwitcherProps {
   transparent?: boolean
@@ -17,6 +19,9 @@ interface LanguageSwitcherProps {
 
 export default function LanguageSwitcher({ transparent = false }: LanguageSwitcherProps) {
   const { locale, setLocale } = useLocaleContext()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -84,7 +89,10 @@ export default function LanguageSwitcher({ transparent = false }: LanguageSwitch
                 type="button"
                 onClick={() => {
                   setLocale(option)
+                  const nextPath = withLocalePath(option, pathname || '/')
+                  const search = searchParams?.toString()
                   setOpen(false)
+                  router.push(search ? `${nextPath}?${search}` : nextPath)
                 }}
                 className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors ${
                   option === locale ? 'bg-[#edf3ff] text-[#000759]' : 'text-[#000759] hover:bg-[#f7faff]'

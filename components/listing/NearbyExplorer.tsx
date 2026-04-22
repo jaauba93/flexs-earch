@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import { Bike, Bus, Car, CircleParking, Dumbbell, Info, Loader2, ShoppingBag, TrainFront, TramFront, Trees, UtensilsCrossed, Waves } from 'lucide-react'
+import type { PublicLocale } from '@/lib/i18n/messages'
+import { formatPublicMessage, getPublicMessage } from '@/lib/i18n/runtime'
 
 type SurroundingCategory =
   | 'bus'
@@ -46,12 +48,13 @@ interface NearbyExplorerProps {
   addressLabel: string
   latitude: number | null
   longitude: number | null
+  locale: PublicLocale
 }
 
-const CATEGORY_GROUPS: { title: string; categories: SurroundingCategory[] }[] = [
-  { title: 'Komunikacja', categories: ['bus', 'tram', 'rail', 'metroStation', 'metroLine'] },
-  { title: 'Mobilność i parkowanie', categories: ['publicParking', 'privateParking', 'bike'] },
-  { title: 'Atrakcje i udogodnienia', categories: ['food', 'fitness', 'retail', 'park'] },
+const CATEGORY_GROUPS: { titleKey: string; categories: SurroundingCategory[] }[] = [
+  { titleKey: 'nearby.communication', categories: ['bus', 'tram', 'rail', 'metroStation', 'metroLine'] },
+  { titleKey: 'nearby.mobility', categories: ['publicParking', 'privateParking', 'bike'] },
+  { titleKey: 'nearby.attractions', categories: ['food', 'fitness', 'retail', 'park'] },
 ]
 
 const CATEGORY_ICONS: Record<SurroundingCategory, typeof Bus> = {
@@ -93,6 +96,7 @@ export default function NearbyExplorer({
   addressLabel,
   latitude,
   longitude,
+  locale,
 }: NearbyExplorerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
@@ -120,6 +124,10 @@ export default function NearbyExplorer({
   const [viewBounds, setViewBounds] = useState<ViewBounds | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+  const labelForCategory = useCallback(
+    (category: SurroundingCategory) => getPublicMessage(locale, `nearby.${category}`),
+    [locale]
+  )
 
   useEffect(() => {
     if (typeof latitude !== 'number' || typeof longitude !== 'number') return
@@ -326,7 +334,7 @@ export default function NearbyExplorer({
                   <p style="margin:0 0 6px;color:#000759;font-size:14px;font-weight:700;line-height:1.3;">
                     ${nearbyFeature.name}
                   </p>
-                  <p style="margin:0;color:#5c6b95;font-size:12px;">${nearbyFeature.walkMinutes} min spacerem</p>
+                  <p style="margin:0;color:#5c6b95;font-size:12px;">${formatPublicMessage(locale, 'nearby.walkMinutes', { minutes: nearbyFeature.walkMinutes })}</p>
                   ${
                     nearbyFeature.lines.length > 0
                       ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">${nearbyFeature.lines
@@ -368,7 +376,7 @@ export default function NearbyExplorer({
       mapRef.current?.remove()
       mapRef.current = null
     }
-  }, [latitude, longitude, listingName, token])
+  }, [latitude, locale, longitude, listingName, token])
 
   useEffect(() => {
     const map = mapRef.current
@@ -385,7 +393,7 @@ export default function NearbyExplorer({
         properties: {
           id: feature.id,
           category: feature.category,
-          label: categories?.[feature.category]?.label || feature.category,
+          label: labelForCategory(feature.category),
           color: categories?.[feature.category]?.color || '#1C54F4',
           active: feature.id === activeFeatureId ? 1 : 0,
         },
@@ -393,7 +401,7 @@ export default function NearbyExplorer({
     }
 
     ;(map.getSource(MAP_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(nextGeoJson)
-  }, [activeFeatureId, categories, mapLoaded, visibleFeatures])
+  }, [activeFeatureId, categories, labelForCategory, mapLoaded, visibleFeatures])
 
   useEffect(() => {
     const map = mapRef.current
@@ -427,7 +435,7 @@ export default function NearbyExplorer({
   return (
     <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
       <aside className="border border-[#dbe4f8] bg-[linear-gradient(180deg,#f7f9ff_0%,#f2f6ff_100%)] p-6">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#1C54F4]">Otoczenie biura</p>
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#1C54F4]">{getPublicMessage(locale, 'nearby.title')}</p>
         <h3
           className="mb-1 text-2xl font-normal text-[#000759]"
           style={{ fontFamily: 'var(--font-serif)' }}
@@ -447,9 +455,9 @@ export default function NearbyExplorer({
             if (visibleGroupItems.length === 0) return null
 
             return (
-              <div key={group.title} className={groupIndex > 0 ? 'border-t border-[#e7edf8] pt-5' : ''}>
+              <div key={group.titleKey} className={groupIndex > 0 ? 'border-t border-[#e7edf8] pt-5' : ''}>
                 <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#6f7fa8]">
-                  {group.title}
+                  {getPublicMessage(locale, group.titleKey)}
                 </p>
                 <div className="space-y-3">
                   {visibleGroupItems.map((category) => {
@@ -477,7 +485,7 @@ export default function NearbyExplorer({
                         >
                           <Icon size={15} />
                         </span>
-                        <span className="flex-1 text-sm font-semibold text-[#23325f]">{meta.label}</span>
+                        <span className="flex-1 text-sm font-semibold text-[#23325f]">{labelForCategory(category)}</span>
                         <span className="rounded-full border border-[#d7e1fa] bg-white px-2 py-0.5 text-[11px] font-bold text-[#6c7aa4]">
                           {count}
                         </span>
@@ -493,13 +501,13 @@ export default function NearbyExplorer({
         <div className="mt-5 rounded-none border border-[#dbe4f8] bg-white p-4 text-sm text-[#5e6d98]">
           <div className="flex items-start gap-3">
             <Info size={18} className="mt-0.5 text-[#6b78b8]" />
-            <p>Kliknij znaczniki na mapie, aby sprawdzić nazwę punktu, czas dojścia i dostępne linie.</p>
+            <p>{getPublicMessage(locale, 'nearby.clickHint')}</p>
           </div>
         </div>
 
         {!loading && !failed && features.length === 0 ? (
           <div className="mt-4 rounded-none border border-[#dbe4f8] bg-[#f8fbff] p-4 text-sm leading-relaxed text-[#5e6d98]">
-            Nie udało się potwierdzić punktów w bezpośrednim otoczeniu tej lokalizacji. Mapa nadal pokazuje samą pozycję biura, a po wysłaniu zapytania doradca może uzupełnić dane ręcznie.
+            {getPublicMessage(locale, 'nearby.empty')}
           </div>
         ) : null}
       </aside>
@@ -508,11 +516,11 @@ export default function NearbyExplorer({
         <div className="flex h-full min-h-[760px] flex-col space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4]">Najbliższe punkty</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1C54F4]">{getPublicMessage(locale, 'nearby.pointsTitle')}</p>
               <p className="mt-1 text-sm text-[#5d6d97]">
-                Aktywne kategorie: {Object.entries(enabledCategories)
+                {getPublicMessage(locale, 'nearby.activeCategories')}: {Object.entries(enabledCategories)
                   .filter(([, enabled]) => enabled)
-                  .map(([category]) => categories?.[category as SurroundingCategory]?.label || category)
+                  .map(([category]) => labelForCategory(category as SurroundingCategory))
                   .join(', ')}
               </p>
             </div>
@@ -528,7 +536,7 @@ export default function NearbyExplorer({
                       className="h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: categories?.[category]?.color || '#1C54F4' }}
                     />
-                    {categories?.[category]?.label}: {categoryFeatures.length}
+                    {labelForCategory(category)}: {categoryFeatures.length}
                   </span>
                 ))}
             </div>
@@ -539,17 +547,17 @@ export default function NearbyExplorer({
             {loading ? (
               <div className="absolute inset-0 flex items-center justify-center gap-3 bg-white/80 backdrop-blur-[2px] text-[#5e6d98]">
                 <Loader2 size={18} className="animate-spin" />
-                <span>Sprawdzamy najbliższe otoczenie biura…</span>
+                <span>{getPublicMessage(locale, 'nearby.loading')}</span>
               </div>
             ) : null}
             {failed ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-center text-[#5e6d98]">
-                Nie udało się pobrać danych o otoczeniu. Spróbuj ponownie za chwilę.
+                {getPublicMessage(locale, 'nearby.failed')}
               </div>
             ) : null}
             {!loading && !failed && features.length === 0 ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white/75 text-center text-[#5e6d98]">
-                Brak potwierdzonych punktów w promieniu 900 m.
+                {getPublicMessage(locale, 'nearby.emptyRadius')}
               </div>
             ) : null}
           </div>

@@ -3,10 +3,14 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { X } from 'lucide-react'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { getPublicMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 
 const COOKIE_KEY = 'colliers-flex-cookies'
 
 export default function CookieBanner() {
+  const { locale } = useLocaleContext()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -34,17 +38,19 @@ export default function CookieBanner() {
     <div className="fixed bottom-0 inset-x-0 z-50 bg-[var(--colliers-navy)] text-white p-4 shadow-[var(--shadow-md)]">
       <div className="container-colliers flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <p className="text-sm flex-1 leading-relaxed">
-          Używamy plików cookies, aby zapewnić najlepsze doświadczenie. Więcej w{' '}
-          <Link href="/polityka-cookies" className="underline hover:text-white/80">polityce cookies</Link>.
+          {getPublicMessage(locale, 'cookies.bannerText')}{' '}
+          <Link href={withLocalePath(locale, '/polityka-cookies')} className="underline hover:text-white/80">
+            {getPublicMessage(locale, 'cookies.policyLink')}
+          </Link>.
         </p>
         <div className="flex items-center gap-3 flex-shrink-0">
           <button onClick={reject} className="text-sm text-white/82 hover:text-white underline whitespace-nowrap">
-            Odrzuć niewymagane
+            {getPublicMessage(locale, 'cookies.reject')}
           </button>
           <button onClick={accept} className="btn-outline-white text-sm py-2 px-5 whitespace-nowrap">
-            Akceptuję wszystkie
+            {getPublicMessage(locale, 'cookies.acceptAll')}
           </button>
-          <button onClick={reject} className="text-white/78 hover:text-white" aria-label="Zamknij">
+          <button onClick={reject} className="text-white/78 hover:text-white" aria-label={getPublicMessage(locale, 'cookies.close')}>
             <X size={18} />
           </button>
         </div>

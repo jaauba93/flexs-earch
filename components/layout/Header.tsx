@@ -8,7 +8,8 @@ import BasketDropdown from '@/components/comparator/BasketDropdown'
 import CurrencySwitcher from '@/components/layout/CurrencySwitcher'
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
-import { getPublicMessage } from '@/lib/i18n/runtime'
+import { getContentMessage, getPublicMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 
 const cities = [
   { label: 'Warszawa', slug: 'warszawa' },
@@ -28,11 +29,11 @@ interface HeaderProps {
 }
 
 const guideBasics = [
-  { key: 'what-is-flex', label: 'Czym są biura elastyczne', href: '/podstawy-flex/czym-sa-biura-elastyczne' },
-  { key: 'models', label: 'Modele biur elastycznych', href: '/podstawy-flex/modele-biur-elastycznych' },
-  { key: 'when-flex', label: 'Kiedy warto wybrać flex', href: '/podstawy-flex/kiedy-warto-wybrac-flex' },
-  { key: 'flex-vs-traditional', label: 'Flex a najem tradycyjny', href: '/podstawy-flex/flex-a-najem-tradycyjny' },
-  { key: 'choose-flex', label: 'Jak wybrać biuro flex', href: '/podstawy-flex/jak-wybrac-biuro-flex' },
+  { key: 'czym-sa-biura-elastyczne', href: '/podstawy-flex/czym-sa-biura-elastyczne' },
+  { key: 'modele-biur-elastycznych', href: '/podstawy-flex/modele-biur-elastycznych' },
+  { key: 'kiedy-warto-wybrac-flex', href: '/podstawy-flex/kiedy-warto-wybrac-flex' },
+  { key: 'flex-a-najem-tradycyjny', href: '/podstawy-flex/flex-a-najem-tradycyjny' },
+  { key: 'jak-wybrac-biuro-flex', href: '/podstawy-flex/jak-wybrac-biuro-flex' },
 ]
 
 const guideCities = [
@@ -109,6 +110,10 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
           ? getPublicMessage(locale, 'header.officeModel')
           : getPublicMessage(locale, 'header.knowledgeBase'),
   }))
+  const localizedGuideBasics = guideBasics.map((item) => ({
+    ...item,
+    label: getContentMessage(locale, `basics.${item.key}.hero.title`),
+  }))
 
   return (
     <header
@@ -131,7 +136,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
 
         {/* Logo */}
         <div className="flex items-center gap-12 h-full">
-          <Link href="/" className="flex items-center h-full py-4 flex-shrink-0">
+          <Link href={withLocalePath(locale, '/')} className="flex items-center h-full py-4 flex-shrink-0">
             <Image
               src={transparent ? '/images/logo-light.png' : '/images/logo-dark.png'}
               alt="Colliers Flex"
@@ -153,7 +158,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               onMouseLeave={scheduleClose}
             >
               <Link
-                href="/biura-serwisowane"
+                href={withLocalePath(locale, '/biura-serwisowane')}
                 className="nav-link active flex items-center gap-1.5 h-full border-b-2 border-[#1C54F4] opacity-100"
                 style={transparent ? { color: '#ffffff' } : undefined}
               >
@@ -186,13 +191,13 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                   />
 
                   <p className="px-6 pt-5 pb-3 text-[11px] font-bold uppercase text-[#1C54F4]" style={{ letterSpacing: '0.24em' }}>
-                    Biura w Polsce
+                    {getPublicMessage(locale, 'header.officesLabel')}
                   </p>
 
                   {cities.map((c) => (
                     <Link
                       key={c.slug}
-                      href={`/biura-serwisowane/${c.slug}`}
+                      href={withLocalePath(locale, `/biura-serwisowane/${c.slug}`)}
                       className="flex items-center px-6 py-3 text-[0.98rem] font-normal text-[#222c4d] hover:bg-[#f5f8ff] hover:text-[#1C54F4] transition-colors"
                     >
                       {c.label}
@@ -201,7 +206,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
 
                   <div className="border-t border-[#f2f4f6] mt-2 pt-2">
                     <Link
-                      href="/biura-serwisowane"
+                      href={withLocalePath(locale, '/biura-serwisowane')}
                       className="flex items-center gap-3 px-6 py-3 text-[11px] font-bold uppercase text-[#1C54F4] hover:bg-[#EDF2FF] transition-colors"
                       style={{ letterSpacing: '0.2em' }}
                     >
@@ -218,7 +223,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               onMouseLeave={scheduleClose}
             >
               <Link
-                href="/przewodnik-flex"
+                href={withLocalePath(locale, '/przewodnik-flex')}
                 className={`nav-link h-full flex items-center gap-1.5 ${activeMenu === 'guide' ? 'opacity-100 border-b-2 border-[#1C54F4]' : ''}`}
                 style={transparent ? { color: '#ffffff', opacity: activeMenu === 'guide' ? 1 : 0.9 } : undefined}
               >
@@ -293,7 +298,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                   {cities.map((c) => (
                     <Link
                       key={c.slug}
-                      href={`/biura-serwisowane/${c.slug}`}
+                      href={withLocalePath(locale, `/biura-serwisowane/${c.slug}`)}
                       onClick={() => setMobileOpen(false)}
                       className="list-none py-2 pl-0 text-[11px] font-bold uppercase text-[#000759] hover:text-[#1C54F4] transition-colors before:content-none"
                       style={{ letterSpacing: '0.14em' }}
@@ -303,7 +308,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                   ))}
                 </div>
                 <Link
-                  href="/biura-serwisowane"
+                  href={withLocalePath(locale, '/biura-serwisowane')}
                   onClick={() => setMobileOpen(false)}
                   className="mt-2 inline-flex text-[11px] font-bold uppercase text-[#1C54F4]"
                   style={{ letterSpacing: '0.14em' }}
@@ -327,13 +332,13 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               <div className="pl-3 pr-1 pb-2 space-y-4">
                 <div>
                   <p className="eyebrow-label mb-3 text-[9px]">
-                    Podstawy flex
+                    {getPublicMessage(locale, 'header.basicsSection')}
                   </p>
                   <div className="flex flex-col">
-                    {guideBasics.map((item) => (
+                    {localizedGuideBasics.map((item) => (
                       <Link
-                        key={item.label}
-                        href={item.href}
+                        key={item.key}
+                        href={withLocalePath(locale, item.href)}
                         onClick={() => setMobileOpen(false)}
                         className="py-1.5 pl-0 text-[11px] font-bold uppercase text-[#000759] hover:text-[#1C54F4] transition-colors before:content-none"
                         style={{ letterSpacing: '0.12em' }}
@@ -346,13 +351,13 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
 
                 <div>
                   <p className="eyebrow-label mb-3 text-[9px]">
-                    Raporty miejskie
+                    {getPublicMessage(locale, 'header.reportsSection')}
                   </p>
                   <div className="flex flex-col">
                     {guideCities.map((item) => (
                       <Link
                         key={item.label}
-                        href={item.href}
+                        href={withLocalePath(locale, item.href)}
                         onClick={() => setMobileOpen(false)}
                         className="list-none py-1.5 pl-0 text-[11px] font-bold uppercase text-[#000759] hover:text-[#1C54F4] transition-colors before:content-none"
                         style={{ letterSpacing: '0.12em' }}
@@ -365,7 +370,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
 
                 <div>
                   <p className="eyebrow-label mb-3 text-[9px]">
-                    {locale === 'pl' ? 'Narzędzia' : locale === 'en' ? 'Tools' : 'Інструменти'}
+                    {getPublicMessage(locale, 'header.toolsSection')}
                   </p>
                   <div className="flex flex-col gap-1">
                     {localizedGuideTools.map((item) =>
@@ -382,7 +387,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                       ) : (
                         <Link
                           key={item.key}
-                          href={item.href}
+                          href={withLocalePath(locale, item.href)}
                           onClick={() => setMobileOpen(false)}
                           className="py-1.5 text-[11px] font-bold uppercase text-[#000759] hover:text-[#1C54F4] transition-colors"
                           style={{ letterSpacing: '0.12em' }}
@@ -408,7 +413,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
             </button>
             {mobileSection === 'why' && (
               <div className="px-4 py-3 text-sm text-body-muted leading-relaxed border border-[#e3e9f6] bg-white/80">
-                Colliers łączy wiedzę rynkową, narzędzia decyzyjne i wsparcie doradców, żeby szybciej zawęzić wybór i przygotować realną ofertę.
+                {getPublicMessage(locale, 'header.whyColliersBody')}
               </div>
             )}
             <button
@@ -434,16 +439,17 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
           <div className="container-colliers">
             <div className="grid grid-cols-[1fr_3fr]">
               <div className="border-r border-[#e7e8ea] py-16 pr-12">
-                <p className="font-serif text-[3rem] leading-none text-[#000759] mb-6">Przewodnik flex</p>
+                <p className="font-serif text-[3rem] leading-none text-[#000759] mb-6">
+                  {getPublicMessage(locale, 'header.guide')}
+                </p>
                 <p className="max-w-md text-[1.05rem] leading-relaxed text-[#4c587b] mb-10">
-                  Przewodnik po biurach elastycznych w Polsce: modelach najmu, różnicach względem biura tradycyjnego,
-                  decyzjach zakupowych i sytuacji na największych rynkach miejskich.
+                  {getPublicMessage(locale, 'header.guideLead')}
                 </p>
                 <Link
-                  href="/przewodnik-flex"
+                  href={withLocalePath(locale, '/przewodnik-flex')}
                   className="inline-flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#1C54F4] hover:text-[#000759] transition-colors"
                 >
-                  Dowiedz się więcej
+                  {getPublicMessage(locale, 'header.learnMore')}
                   <ArrowRight size={16} />
                 </Link>
               </div>
@@ -451,13 +457,13 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
               <div className="grid grid-cols-3 gap-12 py-16 pl-10 pr-2">
                 <div className="animate-[modal-enter_0.24s_ease]">
                   <p className="pb-4 mb-6 text-[11px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] border-b border-[#e7e8ea]">
-                    Podstawy flex
+                    {getPublicMessage(locale, 'header.basicsSection')}
                   </p>
                   <div className="space-y-5">
-                  {guideBasics.map((item) => (
+                  {localizedGuideBasics.map((item) => (
                       <Link
                         key={item.key}
-                        href={item.href}
+                        href={withLocalePath(locale, item.href)}
                         className="block text-left text-[0.98rem] leading-snug text-[#222c4d] hover:text-[#1C54F4] transition-colors"
                       >
                         {item.label}
@@ -468,16 +474,16 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
 
                 <div className="animate-[modal-enter_0.28s_ease]">
                   <Link
-                    href="/raporty-miejskie"
+                    href={withLocalePath(locale, '/raporty-miejskie')}
                     className="inline-block pb-4 mb-6 text-[11px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] border-b border-[#e7e8ea] hover:text-[#000759] transition-colors"
                   >
-                    Raporty miejskie
+                    {getPublicMessage(locale, 'header.reportsSection')}
                   </Link>
                   <div className="space-y-5">
                     {guideCities.map((item) => (
                       <Link
                         key={item.label}
-                        href={item.href}
+                        href={withLocalePath(locale, item.href)}
                         className="block text-left text-[0.98rem] leading-snug text-[#222c4d] hover:text-[#1C54F4] transition-colors"
                       >
                         {item.label}
@@ -488,7 +494,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
 
                 <div className="animate-[modal-enter_0.32s_ease]">
                   <p className="pb-4 mb-6 text-[11px] font-bold uppercase tracking-[0.24em] text-[#1C54F4] border-b border-[#e7e8ea]">
-                    Narzędzia
+                    {getPublicMessage(locale, 'header.toolsSection')}
                   </p>
                   <div className="space-y-5">
                     {localizedGuideTools.map((item) => (
@@ -504,7 +510,7 @@ export default function Header({ onOpenForm, onOpenWizard, transparent = false, 
                       ) : (
                         <Link
                           key={item.key}
-                          href={item.href}
+                          href={withLocalePath(locale, item.href)}
                           className="block text-left text-[0.98rem] leading-snug text-[#222c4d] hover:text-[#1C54F4] transition-colors"
                         >
                           {item.label}

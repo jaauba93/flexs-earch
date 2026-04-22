@@ -7,6 +7,8 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ContactForm from '@/components/forms/ContactForm'
 import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
+import { withLocalePath } from '@/lib/i18n/routing'
 import type {
   FlexCalculatorComputedResult,
   FlexCalculatorInputs,
@@ -115,6 +117,7 @@ function ResultCard({
 }
 
 export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps) {
+  const { locale } = useLocaleContext()
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [inputs, setInputs] = useState<FlexCalculatorInputs>(() => getInitialInputs(data))
@@ -330,7 +333,7 @@ export default function FlexCalculatorClient({ data }: FlexCalculatorClientProps
                         <button onClick={() => setFormOpen(true)} className="btn-primary" type="button">
                           Porozmawiaj z doradcą
                         </button>
-                        <Link href="/biura-serwisowane" className="btn-outline">
+                        <Link href={withLocalePath(locale, '/biura-serwisowane')} className="btn-outline">
                           Zobacz oferty <ArrowRight size={14} />
                         </Link>
                       </div>

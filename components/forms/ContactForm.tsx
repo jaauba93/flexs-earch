@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useBasketContext } from '@/lib/context/BasketContext'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { getContentMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import type { BasketItem } from '@/lib/hooks/useBasket'
 
 export interface ContactFormPrefill {
@@ -137,7 +138,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
           <p className="text-body-muted mb-8 text-sm leading-relaxed">
             {t('contact_form.success.body', 'Dziękujemy. Nasz doradca skontaktuje się z Tobą w ciągu jednego dnia roboczego.')}
           </p>
-          <Link href="/biura-serwisowane" onClick={onClose} className="btn-outline">
+          <Link href={withLocalePath(locale, '/biura-serwisowane')} onClick={onClose} className="btn-outline">
             {t('contact_form.success.cta', 'Wróć do wyszukiwarki')}
           </Link>
         </div>
@@ -267,7 +268,7 @@ export default function ContactForm({ onClose, preselectedListing, prefill }: Co
               <label className="text-body-muted cursor-pointer select-none text-[11px] leading-relaxed">
                 {t('contact_form.consent', 'Wyrażam zgodę na przetwarzanie moich danych osobowych przez Colliers International Poland sp. z o.o. w celu obsługi zapytania oraz przesyłania informacji handlowych.')}
                 {' '}
-                <Link href="/polityka-prywatnosci" target="_blank" className="text-[#1C54F4] underline">
+                <Link href={withLocalePath(locale, '/polityka-prywatnosci')} target="_blank" className="text-[#1C54F4] underline">
                   {t('contact_form.privacy_link', 'Polityka prywatności')}
                 </Link>
                 .

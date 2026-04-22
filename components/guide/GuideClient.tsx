@@ -10,6 +10,7 @@ import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import PolandOverviewMap from '@/components/maps/PolandOverviewMap'
 import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { getContentMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import { CITY_REPORT_ORDER, CITY_REPORTS, type CityReportSlug } from '@/lib/reports/cityReports'
 
 const basics = [
@@ -283,7 +284,7 @@ export default function GuideClient() {
                   <p className="text-[#1C54F4] text-[11px] font-bold uppercase tracking-[0.2em] mb-5">{item.number}</p>
                   <h3 className="text-[#000759] text-[1.45rem] font-normal leading-tight mb-4">{item.title}</h3>
                   <p className="text-body-muted text-sm leading-relaxed mb-7">{item.copy}</p>
-                  <Link href={`/podstawy-flex/${item.id}`} className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
+                  <Link href={withLocalePath(locale, `/podstawy-flex/${item.id}`)} className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1C54F4] inline-flex items-center gap-2">
                     Rozwiń temat <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </article>
@@ -317,7 +318,7 @@ export default function GuideClient() {
                 {cities.map((city) => (
                   <Link
                     key={city.key}
-                    href={city.href}
+                    href={withLocalePath(locale, city.href)}
                     onMouseEnter={() => setActiveCity(city.key)}
                     className={`block border px-5 py-4 transition-all ${
                       activeCity === city.key
@@ -351,7 +352,7 @@ export default function GuideClient() {
                 return (
                   <Link
                     key={card.title}
-                    href={card.href}
+                    href={withLocalePath(locale, card.href)}
                     className="surface-panel-soft group p-7 lg:p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(0,7,89,0.12)]"
                     data-reveal={`d${index + 1}`}
                   >
@@ -397,7 +398,7 @@ export default function GuideClient() {
               Możesz zacząć od podstaw, sprawdzić rynek w wybranym mieście albo od razu porównać modele i koszty. Jeśli wolisz, przeprowadzimy Cię przez ten proces wspólnie.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/kalkulator-flex" className="btn-primary-bright inline-flex items-center gap-2">
+              <Link href={withLocalePath(locale, '/kalkulator-flex')} className="btn-primary-bright inline-flex items-center gap-2">
                 Uruchom kalkulator <ArrowRight size={14} />
               </Link>
               <button type="button" onClick={() => setFormOpen(true)} className="btn-outline border-white/35 text-white hover:bg-white hover:text-[#000759]">

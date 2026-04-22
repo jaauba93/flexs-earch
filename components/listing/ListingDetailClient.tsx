@@ -17,6 +17,7 @@ import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPricePreview } from '@/lib/currency/currency'
 import { localizeField } from '@/lib/i18n/localize'
 import { formatPublicMessage, getPublicMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import type { Listing, Operator, Advisor, ListingImage, Amenity } from '@/types/database'
 import AmenityIcon from '@/components/ui/AmenityIcon'
 
@@ -38,12 +39,7 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
   const { addItem, removeItem, isInBasket, isFull, mounted } = useBasketContext()
   const { locale } = useLocaleContext()
   const { currency, rates } = useCurrencyContext()
-  const missingPriceTooltip =
-    locale === 'pl'
-      ? 'Nie mamy jeszcze aktualnej stawki dla tej oferty. Wyślij zapytanie, a doradca uzupełni dane po kontakcie z operatorem.'
-      : locale === 'en'
-        ? 'We do not have an up-to-date rate for this listing yet. Send an enquiry and a Colliers advisor will confirm it with the operator.'
-        : 'Наразі ми ще не маємо актуальної ставки для цієї пропозиції. Надішліть запит, і консультант Colliers уточнить її в оператора.'
+  const missingPriceTooltip = getPublicMessage(locale, 'listing.missingPriceTooltip')
   const inBasket = mounted && isInBasket(listing.id)
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -74,9 +70,9 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
   }
 
   const crumbs = [
-    { label: getPublicMessage(locale, 'listing.home'), href: '/' },
-    { label: listing.address_city, href: `/biura-serwisowane/${citySlug}` },
-    ...(listing.address_district ? [{ label: listing.address_district, href: `/biura-serwisowane/${citySlug}/${districtSlug}` }] : []),
+    { label: getPublicMessage(locale, 'listing.home'), href: withLocalePath(locale, '/') },
+    { label: listing.address_city, href: withLocalePath(locale, `/biura-serwisowane/${citySlug}`) },
+    ...(listing.address_district ? [{ label: listing.address_district, href: withLocalePath(locale, `/biura-serwisowane/${citySlug}/${districtSlug}`) }] : []),
     { label: listingName },
   ]
 
@@ -391,12 +387,13 @@ export default function ListingDetailClient({ listing, relatedListings, citySlug
         </div>
 
         <section id="lokalizacja" className="mb-12">
-          <p className="overline mb-5">Otoczenie biura</p>
+          <p className="overline mb-5">{getPublicMessage(locale, 'nearby.title')}</p>
           <NearbyExplorer
-            listingName={listing.name}
+            listingName={listingName}
             addressLabel={`${listing.address_street}, ${listing.address_city}`}
             latitude={listing.latitude}
             longitude={listing.longitude}
+            locale={locale}
           />
         </section>
 

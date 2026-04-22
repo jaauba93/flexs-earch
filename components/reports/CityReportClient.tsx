@@ -9,7 +9,10 @@ import OfficeModelWizard from '@/components/forms/OfficeModelWizard'
 import MapView from '@/components/search/MapView'
 import ListingCard from '@/components/search/ListingCard'
 import { useCurrencyContext } from '@/lib/context/CurrencyContext'
+import { useLocaleContext } from '@/lib/context/LocaleContext'
 import { formatPriceShort } from '@/lib/currency/currency'
+import { getContentMessage } from '@/lib/i18n/runtime'
+import { withLocalePath } from '@/lib/i18n/routing'
 import {
   CITY_REPORT_ORDER,
   CITY_REPORTS,
@@ -63,6 +66,7 @@ function compactLabel(label: string): string {
 
 export default function CityReportClient({ report, listings }: CityReportClientProps) {
   const { currency, rates } = useCurrencyContext()
+  const { locale } = useLocaleContext()
   const [formOpen, setFormOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
@@ -82,6 +86,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
   const scoreGrowth = toScoreValue(report.scoreGrowth)
   const scorePricing = toScoreValue(report.scorePricing)
   const scoreAvailability = toScoreValue(report.scoreAvailability)
+  const t = (key: string, fallback?: string) => getContentMessage(locale, key, fallback)
 
   return (
     <>
@@ -91,26 +96,26 @@ export default function CityReportClient({ report, listings }: CityReportClientP
         <section className="pt-32 pb-24 border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-12 items-center">
             <div data-reveal="left">
-              <p className="overline mb-6">{report.heroEyebrow}</p>
+              <p className="overline mb-6">{t(`report.${report.citySlug}.hero.eyebrow`, report.heroEyebrow)}</p>
               <h1
                 className="text-[#000759] leading-[1.05] mb-6"
                 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 'clamp(2.2rem,4.7vw,4rem)' }}
               >
-                {report.heroH1}
+                {t(`report.${report.citySlug}.hero.title`, report.heroH1)}
               </h1>
-              <p className="text-body-strong text-lg leading-relaxed mb-9">{report.heroLead}</p>
+              <p className="text-body-strong text-lg leading-relaxed mb-9">{t(`report.${report.citySlug}.hero.lead`, report.heroLead)}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="border border-[#dce4f7] bg-white px-4 py-3">
                   <p className="text-[#000759] text-2xl font-normal">{report.kpiOffices}</p>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">Liczba biur</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">{t(`report.${report.citySlug}.snapshot.offices_label`, 'Liczba biur')}</p>
                 </div>
                 <div className="border border-[#dce4f7] bg-white px-4 py-3">
                   <p className="text-[#000759] text-2xl font-normal">{report.kpiSupply}</p>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">Powierzchnia</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">{t(`report.${report.citySlug}.snapshot.supply_label`, 'Powierzchnia')}</p>
                 </div>
                 <div className="border border-[#dce4f7] bg-white px-4 py-3">
                   <p className="text-[#000759] text-2xl font-normal">{report.kpiOccupancy}</p>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">Zajętość</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#6d7da7]">{t(`report.${report.citySlug}.snapshot.occupancy_label`, 'Zajętość')}</p>
                 </div>
               </div>
             </div>
@@ -120,11 +125,11 @@ export default function CityReportClient({ report, listings }: CityReportClientP
               <div className="absolute inset-0 opacity-25" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.32) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.32) 1px, transparent 1px)', backgroundSize: '36px 36px' }} />
               <div className="relative z-10 text-white p-7 md:p-8 flex h-full items-end">
                 <div className="w-full bg-white/12 border border-white/25 backdrop-blur px-5 py-5">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#cfe4ff] mb-2">{report.heroImagePlaceholder}</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#cfe4ff] mb-2">{t(`report.${report.citySlug}.hero.placeholder`, report.heroImagePlaceholder)}</p>
                   <h3 className="text-2xl font-normal mb-3" style={{ fontFamily: 'var(--font-serif)' }}>
-                    {report.positioningHeadline}
+                    {t(`report.${report.citySlug}.hero.positioning_headline`, report.positioningHeadline)}
                   </h3>
-                  <p className="text-white/88 text-sm leading-relaxed">{report.positioningText}</p>
+                  <p className="text-white/88 text-sm leading-relaxed">{t(`report.${report.citySlug}.hero.positioning_text`, report.positioningText)}</p>
                 </div>
               </div>
             </div>
@@ -133,14 +138,14 @@ export default function CityReportClient({ report, listings }: CityReportClientP
 
         <section className="py-20 bg-[#f8fbff] border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers">
-            <p className="overline mb-7">Snapshot rynku</p>
+            <p className="overline mb-7">{t(`report.${report.citySlug}.snapshot.eyebrow`, 'Snapshot rynku')}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
               {[
-                { label: 'Liczba biur', value: String(report.kpiOffices) },
-                { label: 'Powierzchnia flex', value: report.kpiSupply },
-                { label: 'Szacowana zajętość', value: report.kpiOccupancy },
+                { label: t(`report.${report.citySlug}.snapshot.offices_label`, 'Liczba biur'), value: String(report.kpiOffices) },
+                { label: t(`report.${report.citySlug}.snapshot.supply_label`, 'Powierzchnia flex'), value: report.kpiSupply },
+                { label: t(`report.${report.citySlug}.snapshot.occupancy_label`, 'Szacowana zajętość'), value: report.kpiOccupancy },
                 {
-                  label: 'Ceny orientacyjne',
+                  label: t(`report.${report.citySlug}.snapshot.prices_label`, 'Ceny orientacyjne'),
                   value: `${formatPriceShort(report.prices.privateCenter, currency, rates)} / ${formatPriceShort(
                     report.prices.privateNonCenter,
                     currency,
@@ -157,9 +162,9 @@ export default function CityReportClient({ report, listings }: CityReportClientP
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { label: 'Dynamika rozwoju', value: scoreGrowth, raw: report.scoreGrowth },
-                { label: 'Wzrost stawek', value: scorePricing, raw: report.scorePricing },
-                { label: 'Dostępność powierzchni', value: scoreAvailability, raw: report.scoreAvailability },
+                { label: t(`report.${report.citySlug}.scores.growth_label`, 'Dynamika rozwoju'), value: scoreGrowth, raw: report.scoreGrowth },
+                { label: t(`report.${report.citySlug}.scores.pricing_label`, 'Wzrost stawek'), value: scorePricing, raw: report.scorePricing },
+                { label: t(`report.${report.citySlug}.scores.availability_label`, 'Dostępność powierzchni'), value: scoreAvailability, raw: report.scoreAvailability },
               ].map((item) => (
                 <div key={item.label} className="border border-[#dce5fa] bg-white p-4">
                   <div className="flex justify-between text-[11px] uppercase tracking-[0.16em] mb-3">
@@ -186,24 +191,24 @@ export default function CityReportClient({ report, listings }: CityReportClientP
         <section className="py-20 border-b border-[#e7e8ea]" data-reveal>
           <div className="container-colliers grid grid-cols-1 lg:grid-cols-[1.45fr_1fr] gap-10">
             <div data-reveal="left">
-              <p className="overline mb-5">O rynku</p>
+              <p className="overline mb-5">{t(`report.${report.citySlug}.market.eyebrow`, 'O rynku')}</p>
               <h2 className="text-[#000759] text-4xl font-normal mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
-                Charakterystyka rynku {report.cityName}
+                {t(`report.${report.citySlug}.market.title`, `Charakterystyka rynku ${report.cityName}`)}
               </h2>
-              <p className="text-body-strong leading-relaxed mb-4">{report.heroLead}</p>
-              <p className="text-body-strong leading-relaxed mb-4">{report.positioningText}</p>
+              <p className="text-body-strong leading-relaxed mb-4">{t(`report.${report.citySlug}.hero.lead`, report.heroLead)}</p>
+              <p className="text-body-strong leading-relaxed mb-4">{t(`report.${report.citySlug}.hero.positioning_text`, report.positioningText)}</p>
               <p className="text-body-strong leading-relaxed">
                 {report.marketStructureText}
               </p>
             </div>
 
             <aside className="surface-panel-soft p-6" data-reveal="right">
-              <p className="overline mb-5">Kluczowe fakty</p>
+              <p className="overline mb-5">{t(`report.${report.citySlug}.key_facts.eyebrow`, 'Kluczowe fakty')}</p>
               <ul className="space-y-3">
                 {report.keyFacts.map((fact, idx) => (
-                  <li key={fact} className="text-body-strong flex gap-3 text-sm leading-relaxed" data-reveal={`d${Math.min(idx + 1, 4)}`}>
+                  <li key={idx} className="text-body-strong flex gap-3 text-sm leading-relaxed" data-reveal={`d${Math.min(idx + 1, 4)}`}>
                     <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#1C54F4] shrink-0" />
-                    <span>{fact}</span>
+                    <span>{t(`report.${report.citySlug}.key_fact.${idx + 1}`, fact)}</span>
                   </li>
                 ))}
               </ul>
@@ -215,13 +220,13 @@ export default function CityReportClient({ report, listings }: CityReportClientP
           <div className="container-colliers">
             <div className="flex items-end justify-between mb-6">
               <div>
-                <p className="overline mb-3">Mapa ofert</p>
+                <p className="overline mb-3">{t(`report.${report.citySlug}.map.eyebrow`, 'Mapa ofert')}</p>
                 <h2 className="text-[#000759] text-4xl font-normal" style={{ fontFamily: 'var(--font-serif)' }}>
-                  Oferty biur elastycznych w {report.cityName}
+                  {t(`report.${report.citySlug}.map.title`, `Oferty biur elastycznych w ${report.cityName}`)}
                 </h2>
               </div>
-              <Link href={`/biura-serwisowane/${report.citySlug}`} className="cta-link">
-                Przejdź do wyszukiwarki →
+              <Link href={withLocalePath(locale, `/biura-serwisowane/${report.citySlug}`)} className="cta-link">
+                {t(`report.${report.citySlug}.map.cta`, 'Przejdź do wyszukiwarki →')}
               </Link>
             </div>
 
@@ -240,7 +245,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
               <div className="space-y-4 max-h-[560px] overflow-y-auto pr-1" data-reveal="right" data-lenis-prevent>
                 {topListings.length === 0 && (
                   <div className="surface-panel-soft p-6 text-body-muted text-sm">
-                    Brak aktywnych ofert z geolokalizacją dla tego rynku.
+                    {t(`report.${report.citySlug}.map.empty`, 'Brak aktywnych ofert z geolokalizacją dla tego rynku.')}
                   </div>
                 )}
                 {topListings.map((listing) => (
@@ -310,11 +315,11 @@ export default function CityReportClient({ report, listings }: CityReportClientP
               Wybierz kolejny krok dla rynku {report.cityName}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href={`/biura-serwisowane/${report.citySlug}`} className="border border-white/25 p-5 hover:bg-white hover:text-[#000759] transition-colors">
+              <Link href={withLocalePath(locale, `/biura-serwisowane/${report.citySlug}`)} className="border border-white/25 p-5 hover:bg-white hover:text-[#000759] transition-colors">
                 <p className="text-sm mb-3">Zobacz oferty w {report.cityName}</p>
                 <span className="text-[11px] uppercase tracking-[0.17em] font-bold">Przejdź do listy →</span>
               </Link>
-              <Link href="/porownaj" className="border border-white/25 p-5 hover:bg-white hover:text-[#000759] transition-colors">
+              <Link href={withLocalePath(locale, '/porownaj')} className="border border-white/25 p-5 hover:bg-white hover:text-[#000759] transition-colors">
                 <p className="text-sm mb-3">Dodaj lokalizacje do porównania</p>
                 <span className="text-[11px] uppercase tracking-[0.17em] font-bold">Otwórz porównywarkę →</span>
               </Link>
@@ -330,7 +335,7 @@ export default function CityReportClient({ report, listings }: CityReportClientP
             <div className="mt-8 flex flex-wrap gap-2 text-sm">
               <span className="text-white/78">Pozostałe raporty:</span>
               {CITY_REPORT_ORDER.filter((slug) => slug !== report.citySlug).map((slug) => (
-                <Link key={slug} href={`/raporty-miejskie/${slug}`} className="text-[#9ec2ff] hover:text-white transition-colors">
+                <Link key={slug} href={withLocalePath(locale, `/raporty-miejskie/${slug}`)} className="text-[#9ec2ff] hover:text-white transition-colors">
                   {CITY_REPORTS[slug].cityName}
                 </Link>
               ))}
